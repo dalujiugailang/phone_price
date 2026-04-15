@@ -238,6 +238,7 @@ async function main() {
   const preloadedDataScript = `<script>window.__PRELOADED_WORKBOOK_DATA__ = ${JSON.stringify(dataset)};</script>`;
   const cacheHtml = distHtml
     .replace('<html lang="en">', '<html lang="zh-CN">')
+    .replace('<title>新机售价监控系统</title>', `<title>新机售价监控报告_${cacheDate}</title>`)
     .replace('<title>My Google AI Studio App</title>', `<title>新机售价监控报告_${cacheDate}</title>`)
     .replace(/(src|href)="\/assets\//g, '$1="./assets/')
     .replace(/<script\b[^>]*src="\.\/assets\/([^"]+\.js)"[^>]*><\/script>/, '<script defer src="./assets/$1"></script>')
