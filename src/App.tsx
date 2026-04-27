@@ -137,6 +137,7 @@ const formatPrice = (price: number) => `¥${Math.round(price).toLocaleString()}`
 const formatCoupon = (coupon: number) => (coupon > 0 ? `¥${Math.round(coupon).toLocaleString()}` : '--');
 const formatSignedPercent = (value: number) => `${value > 0 ? '+' : ''}${value.toFixed(1)}%`;
 const isZeroChange = (value: number) => Math.abs(value) < 0.0001;
+const SERIES_PIVOT_IGNORE_AMOUNT = 10;
 const KNOWN_BRANDS = ['REDMI', 'iQOO', 'OPPO', 'vivo', '华为', '荣耀', '一加', '小米'];
 const RAW_DRAFT_AUTOSAVE_MS = 1200;
 const LIST_PRICE_ATTRIBUTION_IGNORE_DIFF = 1;
@@ -266,10 +267,28 @@ function sortByChangePriority<T>(items: T[], getValue: (item: T) => number) {
   });
 }
 
+function isSeriesPivotChanged(series: SeriesAnalysisItem) {
+  return Math.abs(series.diff) > SERIES_PIVOT_IGNORE_AMOUNT;
+}
+
+function getSeriesPivotDisplayChange(series: SeriesAnalysisItem) {
+  if (!isSeriesPivotChanged(series)) {
+    return {
+      diff: 0,
+      diffPct: 0,
+    };
+  }
+
+  return {
+    diff: series.diff,
+    diffPct: series.diffPct,
+  };
+}
+
 function sortSeriesPivotRows(items: SeriesAnalysisItem[]) {
   return [...items].sort((left, right) => {
-    const leftHasChange = !isZeroChange(left.diffPct);
-    const rightHasChange = !isZeroChange(right.diffPct);
+    const leftHasChange = isSeriesPivotChanged(left);
+    const rightHasChange = isSeriesPivotChanged(right);
 
     if (leftHasChange !== rightHasChange) {
       return leftHasChange ? -1 : 1;
@@ -280,12 +299,12 @@ function sortSeriesPivotRows(items: SeriesAnalysisItem[]) {
       return brandDiff;
     }
 
-    const magnitudeDiff = Math.abs(right.diffPct) - Math.abs(left.diffPct);
+    const magnitudeDiff = Math.abs(right.diff) - Math.abs(left.diff);
     if (magnitudeDiff !== 0) {
       return magnitudeDiff;
     }
 
-    const directionDiff = right.diffPct - left.diffPct;
+    const directionDiff = right.diff - left.diff;
     if (directionDiff !== 0) {
       return directionDiff;
     }
@@ -1499,7 +1518,8 @@ export default function App() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {analysis.seriesAnalysis.map((series) => {
-                      const hasChange = !isZeroChange(series.diffPct);
+                      const hasChange = isSeriesPivotChanged(series);
+                      const displayChange = getSeriesPivotDisplayChange(series);
                       const brandTone = getBrandTone(series.brand, seriesBrandIndexMap);
                       const rowClassName = hasChange ? brandTone.row : 'bg-white hover:bg-gray-50/50';
                       const stickyClassName = hasChange ? brandTone.sticky : 'bg-white';
@@ -1530,7 +1550,7 @@ export default function App() {
                           <td
                             className={`sticky left-[330px] z-10 min-w-[210px] border-r border-gray-100 px-4 py-2 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.03)] ${stickyClassName}`}
                           >
-                            <SeriesTrendChart points={series.trendData} diffPct={series.diffPct} />
+                            <SeriesTrendChart points={series.trendData} diffPct={displayChange.diffPct} />
                           </td>
                           <td className="px-6 py-2.5 text-sm text-gray-500">{formatPrice(series.avgLaunch)}</td>
                           {dates.map((date) => {
@@ -1543,17 +1563,17 @@ export default function App() {
                           })}
                           <td className="px-6 py-2.5">
                             <span
-                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${getChangeBadgeClass(series.diffPct)}`}
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${getChangeBadgeClass(displayChange.diffPct)}`}
                             >
-                              {isZeroChange(series.diffPct) ? (
+                              {isZeroChange(displayChange.diffPct) ? (
                                 <Minus size={12} />
-                              ) : series.diffPct > 0 ? (
+                              ) : displayChange.diffPct > 0 ? (
                                 <ArrowUpRight size={12} />
                               ) : (
                                 <ArrowDownRight size={12} />
                               )}
-                              {Math.abs(series.diffPct).toFixed(1)}% ({series.diff > 0 ? '+' : ''}
-                              {Math.round(series.diff)})
+                              {Math.abs(displayChange.diffPct).toFixed(1)}% ({displayChange.diff > 0 ? '+' : ''}
+                              {Math.round(displayChange.diff)})
                             </span>
                           </td>
                           <td className="px-6 py-2.5 text-sm font-semibold text-gray-600">
