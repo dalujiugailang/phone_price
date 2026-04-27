@@ -266,8 +266,92 @@ function sortByChangePriority<T>(items: T[], getValue: (item: T) => number) {
   });
 }
 
+function sortSeriesPivotRows(items: SeriesAnalysisItem[]) {
+  return [...items].sort((left, right) => {
+    const leftHasChange = !isZeroChange(left.diffPct);
+    const rightHasChange = !isZeroChange(right.diffPct);
+
+    if (leftHasChange !== rightHasChange) {
+      return leftHasChange ? -1 : 1;
+    }
+
+    const brandDiff = compareText(left.brand, right.brand);
+    if (brandDiff !== 0) {
+      return brandDiff;
+    }
+
+    const magnitudeDiff = Math.abs(right.diffPct) - Math.abs(left.diffPct);
+    if (magnitudeDiff !== 0) {
+      return magnitudeDiff;
+    }
+
+    const directionDiff = right.diffPct - left.diffPct;
+    if (directionDiff !== 0) {
+      return directionDiff;
+    }
+
+    return compareText(left.model, right.model);
+  });
+}
+
 function compareText(left: string, right: string) {
   return left.localeCompare(right, 'zh-Hans-CN', { numeric: true, sensitivity: 'base' });
+}
+
+const BRAND_COLOR_TONES = [
+  {
+    row: 'bg-orange-50/35 hover:bg-orange-50/70',
+    sticky: 'bg-orange-50',
+    chip: 'bg-orange-100 text-orange-700 ring-orange-200',
+    bar: 'bg-orange-400',
+  },
+  {
+    row: 'bg-sky-50/35 hover:bg-sky-50/70',
+    sticky: 'bg-sky-50',
+    chip: 'bg-sky-100 text-sky-700 ring-sky-200',
+    bar: 'bg-sky-400',
+  },
+  {
+    row: 'bg-emerald-50/35 hover:bg-emerald-50/70',
+    sticky: 'bg-emerald-50',
+    chip: 'bg-emerald-100 text-emerald-700 ring-emerald-200',
+    bar: 'bg-emerald-400',
+  },
+  {
+    row: 'bg-violet-50/35 hover:bg-violet-50/70',
+    sticky: 'bg-violet-50',
+    chip: 'bg-violet-100 text-violet-700 ring-violet-200',
+    bar: 'bg-violet-400',
+  },
+  {
+    row: 'bg-rose-50/35 hover:bg-rose-50/70',
+    sticky: 'bg-rose-50',
+    chip: 'bg-rose-100 text-rose-700 ring-rose-200',
+    bar: 'bg-rose-400',
+  },
+  {
+    row: 'bg-amber-50/35 hover:bg-amber-50/70',
+    sticky: 'bg-amber-50',
+    chip: 'bg-amber-100 text-amber-700 ring-amber-200',
+    bar: 'bg-amber-400',
+  },
+  {
+    row: 'bg-cyan-50/35 hover:bg-cyan-50/70',
+    sticky: 'bg-cyan-50',
+    chip: 'bg-cyan-100 text-cyan-700 ring-cyan-200',
+    bar: 'bg-cyan-400',
+  },
+  {
+    row: 'bg-lime-50/35 hover:bg-lime-50/70',
+    sticky: 'bg-lime-50',
+    chip: 'bg-lime-100 text-lime-700 ring-lime-200',
+    bar: 'bg-lime-400',
+  },
+];
+
+function getBrandTone(brand: string, brandIndexMap: Map<string, number>) {
+  const index = brandIndexMap.get(brand) ?? 0;
+  return BRAND_COLOR_TONES[index % BRAND_COLOR_TONES.length];
 }
 
 function getChangeStroke(value: number) {
@@ -801,7 +885,7 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
     seriesMap.set(sku.model, current);
   });
 
-  const seriesAnalysis = sortByChangePriority(
+  const seriesAnalysis = sortSeriesPivotRows(
     Array.from(seriesMap.entries()).map(([model, data]) => {
       const avgLaunch = data.launchPrices.reduce((sum, value) => sum + value, 0) / data.launchPrices.length;
       const snapshotAvgs = dataset.dates
@@ -828,7 +912,6 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
         directionSummary: data.directionSummary,
       };
     }),
-    (series) => series.diffPct,
   );
 
   return {
@@ -1041,6 +1124,10 @@ export default function App() {
   const latestDate = dates.at(-1) ?? '--';
   const previousDate = dates.at(-2) ?? latestDate;
   const brandCount = dataset?.brands.length ?? 0;
+  const seriesBrandIndexMap = useMemo(() => {
+    const brands = Array.from(new Set(analysis.seriesAnalysis.map((series) => series.brand))).sort(compareText);
+    return new Map(brands.map((brand, index) => [brand, index]));
+  }, [analysis.seriesAnalysis]);
   const avgVolatility =
     analysis.skuList.length > 0
       ? (analysis.skuList.reduce((sum, sku) => sum + Math.abs(sku.recentChangePct), 0) / analysis.skuList.length).toFixed(2)
@@ -1411,46 +1498,70 @@ export default function App() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {analysis.seriesAnalysis.map((series) => (
-                      <tr key={series.model} className="transition-colors hover:bg-gray-50/50">
-                        <td className="sticky left-0 z-30 min-w-[120px] border-r border-gray-100 bg-white px-6 py-2.5 text-sm font-medium shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                          {series.brand}
-                        </td>
-                        <td className="sticky left-[120px] z-20 min-w-[210px] border-r border-gray-100 bg-white px-6 py-2.5 text-sm font-bold shadow-[2px_0_5px_-2px_rgba(0,0,0,0.04)]">
-                          {series.model}
-                        </td>
-                        <td className="sticky left-[330px] z-10 min-w-[210px] border-r border-gray-100 bg-white px-4 py-2 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.03)]">
-                          <SeriesTrendChart points={series.trendData} diffPct={series.diffPct} />
-                        </td>
-                        <td className="px-6 py-2.5 text-sm text-gray-500">{formatPrice(series.avgLaunch)}</td>
-                        {dates.map((date) => {
-                          const point = series.snapshotAvgs.find((item) => item.date === date);
-                          return (
-                            <td key={`${series.model}-${date}`} className="px-6 py-2.5 text-sm font-medium">
-                              {point ? formatPrice(point.avgPrice) : '--'}
-                            </td>
-                          );
-                        })}
-                        <td className="px-6 py-2.5">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${getChangeBadgeClass(series.diffPct)}`}
+                    {analysis.seriesAnalysis.map((series) => {
+                      const hasChange = !isZeroChange(series.diffPct);
+                      const brandTone = getBrandTone(series.brand, seriesBrandIndexMap);
+                      const rowClassName = hasChange ? brandTone.row : 'bg-white hover:bg-gray-50/50';
+                      const stickyClassName = hasChange ? brandTone.sticky : 'bg-white';
+
+                      return (
+                        <tr key={series.model} className={`transition-colors ${rowClassName}`}>
+                          <td
+                            className={`sticky left-0 z-30 min-w-[120px] border-r border-gray-100 px-6 py-2.5 text-sm font-medium shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] ${stickyClassName}`}
                           >
-                            {isZeroChange(series.diffPct) ? (
-                              <Minus size={12} />
-                            ) : series.diffPct > 0 ? (
-                              <ArrowUpRight size={12} />
+                            {hasChange ? (
+                              <>
+                                <span className={`absolute left-0 top-0 h-full w-1 ${brandTone.bar}`} />
+                                <span
+                                  className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ring-1 ${brandTone.chip}`}
+                                >
+                                  {series.brand}
+                                </span>
+                              </>
                             ) : (
-                              <ArrowDownRight size={12} />
+                              series.brand
                             )}
-                            {Math.abs(series.diffPct).toFixed(1)}% ({series.diff > 0 ? '+' : ''}
-                            {Math.round(series.diff)})
-                          </span>
-                        </td>
-                        <td className="px-6 py-2.5 text-sm font-semibold text-gray-600">
-                          {series.directionSummary.up}涨 / {series.directionSummary.down}跌 / {series.directionSummary.flat}平
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td
+                            className={`sticky left-[120px] z-20 min-w-[210px] border-r border-gray-100 px-6 py-2.5 text-sm font-bold shadow-[2px_0_5px_-2px_rgba(0,0,0,0.04)] ${stickyClassName}`}
+                          >
+                            {series.model}
+                          </td>
+                          <td
+                            className={`sticky left-[330px] z-10 min-w-[210px] border-r border-gray-100 px-4 py-2 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.03)] ${stickyClassName}`}
+                          >
+                            <SeriesTrendChart points={series.trendData} diffPct={series.diffPct} />
+                          </td>
+                          <td className="px-6 py-2.5 text-sm text-gray-500">{formatPrice(series.avgLaunch)}</td>
+                          {dates.map((date) => {
+                            const point = series.snapshotAvgs.find((item) => item.date === date);
+                            return (
+                              <td key={`${series.model}-${date}`} className="px-6 py-2.5 text-sm font-medium">
+                                {point ? formatPrice(point.avgPrice) : '--'}
+                              </td>
+                            );
+                          })}
+                          <td className="px-6 py-2.5">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${getChangeBadgeClass(series.diffPct)}`}
+                            >
+                              {isZeroChange(series.diffPct) ? (
+                                <Minus size={12} />
+                              ) : series.diffPct > 0 ? (
+                                <ArrowUpRight size={12} />
+                              ) : (
+                                <ArrowDownRight size={12} />
+                              )}
+                              {Math.abs(series.diffPct).toFixed(1)}% ({series.diff > 0 ? '+' : ''}
+                              {Math.round(series.diff)})
+                            </span>
+                          </td>
+                          <td className="px-6 py-2.5 text-sm font-semibold text-gray-600">
+                            {series.directionSummary.up}涨 / {series.directionSummary.down}跌 / {series.directionSummary.flat}平
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
