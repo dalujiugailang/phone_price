@@ -28,6 +28,8 @@ import { loadWorkbookData, PriceSnapshot, SKUData, WorkbookDataset } from './dat
 
 type ViewMode = 'dashboard' | 'summary' | 'table' | 'raw';
 
+const CHANGE_SUMMARY_MIN_AMOUNT = 11;
+
 interface AnalysisSKU extends SKUData {
   totalChange: number;
   recentChange: number;
@@ -601,6 +603,7 @@ function buildChangeSummaryReport(skuList: AnalysisSKU[]): ChangeSummaryReport {
   const listOnlyDownMap = new Map<string, ChangeSummaryRangeItem>();
   const couponOnlyDownMap = new Map<string, ChangeSummaryRangeItem>();
   const couponOnlyUpMap = new Map<string, ChangeSummaryRangeItem>();
+  const mixedModelSet = new Set<string>();
   const mixedMaps = {
     listUpCouponUp: new Map<string, ChangeSummaryMixedItem>(),
     listUpCouponDown: new Map<string, ChangeSummaryMixedItem>(),
@@ -629,8 +632,33 @@ function buildChangeSummaryReport(skuList: AnalysisSKU[]): ChangeSummaryReport {
   };
 
   skuList.forEach((sku) => {
-    const hasListChange = sku.listPriceDiff !== 0;
-    const hasCouponChange = sku.couponDiff !== 0;
+    const hasListChange = Math.abs(sku.listPriceDiff) >= CHANGE_SUMMARY_MIN_AMOUNT;
+    const hasCouponChange = Math.abs(sku.couponDiff) >= CHANGE_SUMMARY_MIN_AMOUNT;
+
+    if (!hasListChange || !hasCouponChange) {
+      return;
+    }
+
+    mixedModelSet.add(sku.model);
+
+    if (sku.listPriceDiff > 0 && sku.couponDiff > 0) {
+      ensureMixedItem(mixedMaps.listUpCouponUp, sku);
+    } else if (sku.listPriceDiff > 0 && sku.couponDiff < 0) {
+      ensureMixedItem(mixedMaps.listUpCouponDown, sku);
+    } else if (sku.listPriceDiff < 0 && sku.couponDiff > 0) {
+      ensureMixedItem(mixedMaps.listDownCouponUp, sku);
+    } else {
+      ensureMixedItem(mixedMaps.listDownCouponDown, sku);
+    }
+  });
+
+  skuList.forEach((sku) => {
+    if (mixedModelSet.has(sku.model)) {
+      return;
+    }
+
+    const hasListChange = Math.abs(sku.listPriceDiff) >= CHANGE_SUMMARY_MIN_AMOUNT;
+    const hasCouponChange = Math.abs(sku.couponDiff) >= CHANGE_SUMMARY_MIN_AMOUNT;
 
     if (hasListChange && !hasCouponChange) {
       ensureRangeItem(sku.listPriceDiff > 0 ? listOnlyUpMap : listOnlyDownMap, sku, sku.listPriceDiff);
@@ -639,19 +667,6 @@ function buildChangeSummaryReport(skuList: AnalysisSKU[]): ChangeSummaryReport {
 
     if (!hasListChange && hasCouponChange) {
       ensureRangeItem(sku.couponDiff > 0 ? couponOnlyUpMap : couponOnlyDownMap, sku, sku.couponDiff);
-      return;
-    }
-
-    if (hasListChange && hasCouponChange) {
-      if (sku.listPriceDiff > 0 && sku.couponDiff > 0) {
-        ensureMixedItem(mixedMaps.listUpCouponUp, sku);
-      } else if (sku.listPriceDiff > 0 && sku.couponDiff < 0) {
-        ensureMixedItem(mixedMaps.listUpCouponDown, sku);
-      } else if (sku.listPriceDiff < 0 && sku.couponDiff > 0) {
-        ensureMixedItem(mixedMaps.listDownCouponUp, sku);
-      } else {
-        ensureMixedItem(mixedMaps.listDownCouponDown, sku);
-      }
     }
   });
 
