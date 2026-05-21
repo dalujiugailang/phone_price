@@ -12,6 +12,7 @@ import {
   Table as TableIcon,
   TrendingDown,
   TrendingUp,
+  Upload,
 } from 'lucide-react';
 import {
   Bar,
@@ -25,8 +26,9 @@ import {
   YAxis,
 } from 'recharts';
 import { loadWorkbookData, PriceSnapshot, SKUData, WorkbookDataset } from './data';
+import { getNewMachinePpvMapping } from './ppvMapping';
 
-type ViewMode = 'dashboard' | 'summary' | 'table' | 'raw';
+type ViewMode = 'dashboard' | 'summary' | 'risk' | 'table' | 'raw';
 
 const CHANGE_SUMMARY_MIN_AMOUNT = 11;
 
@@ -72,6 +74,24 @@ interface AnalysisResult {
   seriesAnalysis: SeriesAnalysisItem[];
 }
 
+interface BiPriceRow {
+  ppv: string;
+  biPrice: number | null;
+  matched: boolean;
+  matchedPpv: string;
+  dataDate: string | null;
+}
+
+type RiskLevel = 'none' | 'risk' | 'high' | 'unmatched';
+
+interface RiskAnalysisRow {
+  sku: AnalysisSKU;
+  latestSnapshot: PriceSnapshot | null;
+  biPrice: number | null;
+  diff: number | null;
+  riskLevel: RiskLevel;
+}
+
 interface ChangeSummaryRangeItem {
   model: string;
   storages: string[];
@@ -104,6 +124,8 @@ interface RawEditorRow {
   id: string;
   model: string;
   storage: string;
+  position: string;
+  ppv: string;
   launchPrice: string;
   snapshots: Record<
     string,
@@ -111,6 +133,7 @@ interface RawEditorRow {
       finalPrice: string;
       listPrice: string;
       coupon: string;
+      biPrice?: string;
     }
   >;
 }
@@ -127,7 +150,8 @@ type RawEditorColumnKey =
   | 'launchPrice'
   | `${string}::finalPrice`
   | `${string}::listPrice`
-  | `${string}::coupon`;
+  | `${string}::coupon`
+  | `${string}::biPrice`;
 
 const EMPTY_ANALYSIS: AnalysisResult = {
   skuList: [],
@@ -162,6 +186,121 @@ function parseNumericInput(value: string) {
 
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function parseNumberValue(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  const normalized = String(value ?? '').replace(/,/g, '').trim();
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getRiskLevel(finalPrice: number, biPrice: number | null): RiskLevel {
+  if (!finalPrice || !biPrice) {
+    return 'unmatched';
+  }
+
+  if (biPrice >= finalPrice) {
+    return 'high';
+  }
+
+  if (biPrice >= finalPrice * 0.95) {
+    return 'risk';
+  }
+
+  return 'none';
+}
+
+function getRiskLabel(riskLevel: RiskLevel) {
+  if (riskLevel === 'high') {
+    return '高风险';
+  }
+
+  if (riskLevel === 'risk') {
+    return '有风险';
+  }
+
+  if (riskLevel === 'unmatched') {
+    return '未匹配';
+  }
+
+  return '无风险';
+}
+
+function getRiskBadgeClass(riskLevel: RiskLevel) {
+  if (riskLevel === 'high') {
+    return 'bg-red-50 text-red-700 ring-red-100';
+  }
+
+  if (riskLevel === 'risk') {
+    return 'bg-amber-50 text-amber-700 ring-amber-100';
+  }
+
+  if (riskLevel === 'unmatched') {
+    return 'bg-gray-100 text-gray-500 ring-gray-200';
+  }
+
+  return 'bg-emerald-50 text-emerald-700 ring-emerald-100';
+}
+
+async function lookupBiPrices(ppvs: string[]): Promise<{ dataDate: string | null; rows: BiPriceRow[] }> {
+  const response = await fetch('/api/bi-price-lookup', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ ppv: ppvs }),
+  });
+  const payload = await response.json();
+
+  if (!response.ok) {
+    throw new Error(payload?.message || payload?.error || 'BI 出货价接口调用失败');
+  }
+
+  return {
+    dataDate: payload.dataDate ?? null,
+    rows: ppvs.map((ppv, index) => {
+      const row = payload.rows?.[index] ?? {};
+      const biPrice = parseNumberValue(row['bi出货价']);
+
+      return {
+        ppv,
+        biPrice: biPrice > 0 ? biPrice : null,
+        matched: Boolean(row.matched),
+        matchedPpv: String(row.ppv ?? ''),
+        dataDate: row.dataDate ?? payload.dataDate ?? null,
+      };
+    }),
+  };
+}
+
+function buildRiskReportCsv(rows: RiskAnalysisRow[], latestDate: string) {
+  const headers = ['型号', '存储', '定位', 'ppv', `${latestDate}国补后`, 'BI出货价', '价差', '风险判定'];
+  const escapeCsv = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+  const bodyRows = rows.map((row) => [
+    row.sku.model,
+    row.sku.storage,
+    row.sku.position,
+    row.sku.ppv,
+    row.latestSnapshot?.finalPrice ?? '',
+    row.biPrice ?? '',
+    row.diff ?? '',
+    getRiskLabel(row.riskLevel),
+  ]);
+
+  return `\uFEFF${[headers, ...bodyRows].map((row) => row.map(escapeCsv).join(',')).join('\n')}`;
+}
+
+function downloadTextFile(filename: string, content: string, mimeType: string) {
+  const url = URL.createObjectURL(new Blob([content], { type: mimeType }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function normalizeDateLabelInput(value: string) {
@@ -700,6 +839,7 @@ function datasetToRawEditorRows(dataset: WorkbookDataset | null): RawEditorRow[]
             finalPrice: snapshot ? String(Math.round(snapshot.finalPrice)) : '',
             listPrice: snapshot ? String(Math.round(snapshot.listPrice)) : '',
             coupon: snapshot ? String(Math.round(snapshot.coupon)) : '',
+            biPrice: snapshot?.biPrice ? String(Math.round(snapshot.biPrice)) : '',
           },
         ];
       }),
@@ -709,6 +849,8 @@ function datasetToRawEditorRows(dataset: WorkbookDataset | null): RawEditorRow[]
       id: sku.id,
       model: sku.model,
       storage: sku.storage,
+      position: sku.position,
+      ppv: sku.ppv,
       launchPrice: String(Math.round(sku.launchPrice)),
       snapshots: snapshotMap,
     };
@@ -720,6 +862,8 @@ function createEmptyRawEditorRow(dates: string[], index: number): RawEditorRow {
     id: `raw-${Date.now()}-${index}`,
     model: '',
     storage: '',
+    position: '',
+    ppv: '',
     launchPrice: '',
     snapshots: Object.fromEntries(
       dates.map((date) => [
@@ -728,6 +872,7 @@ function createEmptyRawEditorRow(dates: string[], index: number): RawEditorRow {
           finalPrice: '',
           listPrice: '',
           coupon: '',
+          biPrice: '',
         },
       ]),
     ),
@@ -739,7 +884,9 @@ function getRawEditorColumnKeys(dates: string[]): RawEditorColumnKey[] {
     'model',
     'storage',
     'launchPrice',
-    ...dates.flatMap((date) => [`${date}::finalPrice`, `${date}::listPrice`, `${date}::coupon`] as RawEditorColumnKey[]),
+    ...dates.flatMap(
+      (date) => [`${date}::finalPrice`, `${date}::listPrice`, `${date}::coupon`, `${date}::biPrice`] as RawEditorColumnKey[],
+    ),
   ];
 }
 
@@ -751,7 +898,7 @@ function updateRawEditorCell(row: RawEditorRow, columnKey: RawEditorColumnKey, v
     };
   }
 
-  const [date, metric] = columnKey.split('::') as [string, 'finalPrice' | 'listPrice' | 'coupon'];
+  const [date, metric] = columnKey.split('::') as [string, 'finalPrice' | 'listPrice' | 'coupon' | 'biPrice'];
   return {
     ...row,
     snapshots: {
@@ -780,6 +927,9 @@ function buildDatasetFromRawEditorRows(
 
       const brand = inferBrand(model);
       const series = inferSeries(model, brand);
+      const ppvMapping = getNewMachinePpvMapping(model, storage);
+      const position = (row.position ?? '').trim();
+      const ppv = (row.ppv ?? '').trim();
       const snapshots = dates
         .map((date) => {
           const snapshot = row.snapshots[date];
@@ -790,17 +940,24 @@ function buildDatasetFromRawEditorRows(
           const finalPrice = parseNumericInput(snapshot.finalPrice);
           const listPrice = parseNumericInput(snapshot.listPrice);
           const coupon = parseNumericInput(snapshot.coupon);
+          const biPrice = parseNumericInput(snapshot.biPrice ?? '');
+          const hasInputValue = Boolean(
+            snapshot.finalPrice.trim() || snapshot.listPrice.trim() || snapshot.coupon.trim() || snapshot.biPrice?.trim(),
+          );
 
-          if (!finalPrice && !listPrice && !coupon) {
+          if (!finalPrice && !listPrice && !coupon && !biPrice && !hasInputValue) {
             return null;
           }
 
-          return {
+          const priceSnapshot: PriceSnapshot = {
             date,
             finalPrice,
             listPrice,
             coupon,
+            biPrice: biPrice || undefined,
           };
+
+          return priceSnapshot;
         })
         .filter((item): item is PriceSnapshot => item !== null);
 
@@ -810,6 +967,8 @@ function buildDatasetFromRawEditorRows(
         model,
         series,
         storage,
+        position: position || ppvMapping?.position || '',
+        ppv: ppv || ppvMapping?.ppv || '',
         launchPrice: parseNumericInput(row.launchPrice),
         snapshots,
       };
@@ -966,6 +1125,10 @@ export default function App() {
   const [rawEditorRows, setRawEditorRows] = useState<RawEditorRow[]>([]);
   const [rawEditorMessage, setRawEditorMessage] = useState<string | null>(null);
   const [rawEditorDateInput, setRawEditorDateInput] = useState('');
+  const [biPriceRows, setBiPriceRows] = useState<BiPriceRow[]>([]);
+  const [riskMessage, setRiskMessage] = useState<string | null>(null);
+  const [isRiskLoading, setIsRiskLoading] = useState(false);
+  const [riskConfirmedAt, setRiskConfirmedAt] = useState<string | null>(null);
   const hasHydratedRawDraftRef = useRef(false);
   const rawDraftAutosaveTimerRef = useRef<number | null>(null);
   const lastSavedRawDraftSignatureRef = useRef('');
@@ -1153,6 +1316,45 @@ export default function App() {
     [analysis.skuList],
   );
   const changeSummaryReport = useMemo(() => buildChangeSummaryReport(analysis.skuList), [analysis.skuList]);
+  const biPriceMap = useMemo(() => new Map(biPriceRows.map((row) => [row.ppv, row.biPrice])), [biPriceRows]);
+  const riskRows = useMemo<RiskAnalysisRow[]>(
+    () =>
+      analysis.skuList
+        .map((sku) => {
+          const latestSnapshot = sku.snapshots.at(-1) ?? null;
+          const biPrice = sku.ppv ? biPriceMap.get(sku.ppv) ?? latestSnapshot?.biPrice ?? null : latestSnapshot?.biPrice ?? null;
+          const diff = latestSnapshot && biPrice ? biPrice - latestSnapshot.finalPrice : null;
+
+          return {
+            sku,
+            latestSnapshot,
+            biPrice,
+            diff,
+            riskLevel: latestSnapshot ? getRiskLevel(latestSnapshot.finalPrice, biPrice) : 'unmatched',
+          };
+        })
+        .sort((left, right) => {
+          const priority = { high: 0, risk: 1, unmatched: 2, none: 3 };
+          const priorityDiff = priority[left.riskLevel] - priority[right.riskLevel];
+          if (priorityDiff !== 0) {
+            return priorityDiff;
+          }
+
+          return (right.diff ?? Number.NEGATIVE_INFINITY) - (left.diff ?? Number.NEGATIVE_INFINITY);
+        }),
+    [analysis.skuList, biPriceMap],
+  );
+  const riskStats = useMemo(
+    () => ({
+      high: riskRows.filter((row) => row.riskLevel === 'high').length,
+      risk: riskRows.filter((row) => row.riskLevel === 'risk').length,
+      none: riskRows.filter((row) => row.riskLevel === 'none').length,
+      unmatched: riskRows.filter((row) => row.riskLevel === 'unmatched').length,
+      ppvMatched: analysis.skuList.filter((sku) => sku.ppv).length,
+    }),
+    [analysis.skuList, riskRows],
+  );
+  const riskBiPriceCount = useMemo(() => riskRows.filter((row) => row.biPrice).length, [riskRows]);
 
   const dates = dataset?.dates ?? [];
   const latestDate = dates.at(-1) ?? '--';
@@ -1181,7 +1383,7 @@ export default function App() {
   const handleRawSnapshotChange = (
     rowId: string,
     date: string,
-    metric: 'finalPrice' | 'listPrice' | 'coupon',
+    metric: 'finalPrice' | 'listPrice' | 'coupon' | 'biPrice',
     value: string,
   ) => {
     setRawEditorRows((currentRows) =>
@@ -1258,7 +1460,7 @@ export default function App() {
     const nextDataset = buildDatasetFromRawEditorRows(
       nextDraft.rows,
       nextDraft.dates,
-      dataset?.sourceName ?? '新机售价数据源.xlsx',
+      dataset?.sourceName ?? '新机售价监控.xlsx',
     );
     setSourceDataset(nextDataset);
     try {
@@ -1305,12 +1507,151 @@ export default function App() {
             finalPrice: '',
             listPrice: '',
             coupon: '',
+            biPrice: '',
           },
         },
       })),
     );
     setRawEditorDateInput('');
-    setRawEditorMessage(`已新增 ${normalizedDate} 的国补后 / 挂牌价 / 优惠券三列`);
+    setRawEditorMessage(`已新增 ${normalizedDate} 的国补后 / 挂牌价 / 优惠券 / BI出货价四列`);
+  };
+
+  const handleFetchBiPrices = async () => {
+    const ppvs: string[] = Array.from(
+      new Set<string>(analysis.skuList.map((sku) => sku.ppv).filter((ppv): ppv is string => Boolean(ppv))),
+    );
+    if (ppvs.length === 0) {
+      setRiskMessage('当前底表没有可查询的 PPV');
+      return;
+    }
+
+    setIsRiskLoading(true);
+    try {
+      const lookupResult = await lookupBiPrices(ppvs);
+      setBiPriceRows(lookupResult.rows);
+      setRiskConfirmedAt(null);
+      const matchedCount = lookupResult.rows.filter((row) => row.matched && row.biPrice).length;
+      setRiskMessage(`已拉取 ${matchedCount}/${lookupResult.rows.length} 条 BI 出货价，请核对后确认落数`);
+    } catch (lookupError) {
+      setBiPriceRows([]);
+      setRiskConfirmedAt(null);
+      setRiskMessage(lookupError instanceof Error ? lookupError.message : 'BI 出货价接口调用失败');
+    } finally {
+      setIsRiskLoading(false);
+    }
+  };
+
+  const handleBiPriceChange = (ppv: string, value: string) => {
+    const biPrice = parseNumericInput(value);
+    setBiPriceRows((currentRows) => {
+      if (currentRows.some((row) => row.ppv === ppv)) {
+        return currentRows.map((row) =>
+          row.ppv === ppv
+            ? {
+                ...row,
+                biPrice: biPrice > 0 ? biPrice : null,
+                matched: biPrice > 0 ? row.matched : false,
+              }
+            : row,
+        );
+      }
+
+      return [
+        ...currentRows,
+        {
+          ppv,
+          biPrice: biPrice > 0 ? biPrice : null,
+          matched: biPrice > 0,
+          matchedPpv: ppv,
+          dataDate: null,
+        },
+      ];
+    });
+    setRiskConfirmedAt(null);
+  };
+
+  const handleConfirmRiskPrices = async () => {
+    const targetDate = rawEditorDates.at(-1) ?? latestDate;
+    const confirmedRows = riskRows.filter(
+      (row): row is RiskAnalysisRow & { sku: AnalysisSKU & { ppv: string }; biPrice: number } => Boolean(row.sku.ppv && row.biPrice),
+    );
+
+    if (!targetDate || targetDate === '--') {
+      setRiskMessage('当前没有可落数的日期');
+      return;
+    }
+
+    if (confirmedRows.length === 0) {
+      setRiskMessage('请先拉取 BI 出货价');
+      return;
+    }
+
+    const confirmedAt = new Date().toISOString();
+    const biPriceByPpv = new Map<string, number>(confirmedRows.map((row) => [row.sku.ppv, row.biPrice]));
+    const nextRows = rawEditorRows.map((row) => {
+      const biPrice = row.ppv ? biPriceByPpv.get(row.ppv) : null;
+      if (!biPrice) {
+        return row;
+      }
+
+      const currentSnapshot = row.snapshots[targetDate] ?? {
+        finalPrice: '',
+        listPrice: '',
+        coupon: '',
+        biPrice: '',
+      };
+
+      return {
+        ...row,
+        snapshots: {
+          ...row.snapshots,
+          [targetDate]: {
+            ...currentSnapshot,
+            biPrice: String(Math.round(biPrice)),
+          },
+        },
+      };
+    });
+    const nextDates = rawEditorDates.includes(targetDate) ? rawEditorDates : [...rawEditorDates, targetDate].sort(sortDateLabels);
+    const nextDraft = {
+      dates: nextDates,
+      rows: nextRows,
+      savedAt: confirmedAt,
+    };
+    const nextDataset = buildDatasetFromRawEditorRows(nextDraft.rows, nextDraft.dates, dataset?.sourceName ?? '新机售价监控.xlsx');
+
+    setRawEditorDates(nextDates);
+    setRawEditorRows(nextRows);
+    setSourceDataset(nextDataset);
+    setRiskConfirmedAt(confirmedAt);
+
+    try {
+      await persistRawEditorDraft(nextDraft);
+      lastSavedRawDraftSignatureRef.current = JSON.stringify({
+        dates: nextDraft.dates,
+        rows: nextDraft.rows,
+      });
+      setRiskMessage(
+        `已确认落数 ${confirmedRows.length} 条：${new Date(confirmedAt).toLocaleTimeString('zh-CN', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })}`,
+      );
+    } catch {
+      setRiskMessage('BI 价已写入当前页面，但服务端保存失败');
+    }
+  };
+
+  const handleExportRiskReport = () => {
+    if (!riskConfirmedAt) {
+      setRiskMessage('请先确认落数，再输出风险报告');
+      return;
+    }
+
+    const reportRows = riskRows.filter((row) => row.riskLevel === 'high' || row.riskLevel === 'risk');
+    const exportRows = reportRows.length > 0 ? reportRows : riskRows;
+    downloadTextFile(`S等级风险报告_${latestDate}.csv`, buildRiskReportCsv(exportRows, latestDate), 'text/csv;charset=utf-8');
+    setRiskMessage(`已输出风险报告：${reportRows.length} 条风险 SKU`);
   };
 
   return (
@@ -1356,6 +1697,14 @@ export default function App() {
                 }`}
               >
                 <FileText size={16} /> 汇总
+              </button>
+              <button
+                onClick={() => setView('risk')}
+                className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
+                  view === 'risk' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Upload size={16} /> S等级风险
               </button>
               <button
                 onClick={() => setView('raw')}
@@ -1604,6 +1953,20 @@ export default function App() {
           </>
         ) : view === 'summary' ? (
           <ReportSummaryPanel previousDate={previousDate} latestDate={latestDate} report={changeSummaryReport} />
+        ) : view === 'risk' ? (
+          <RiskMonitorPanel
+            latestDate={latestDate}
+            riskRows={riskRows}
+            riskStats={riskStats}
+            riskMessage={riskMessage}
+            isLoading={isRiskLoading}
+            confirmedAt={riskConfirmedAt}
+            uploadedCount={riskBiPriceCount}
+            onFetch={handleFetchBiPrices}
+            onBiPriceChange={handleBiPriceChange}
+            onConfirm={handleConfirmRiskPrices}
+            onExport={handleExportRiskReport}
+          />
         ) : view === 'raw' ? (
           <RawDataPanel
             dates={rawEditorDates}
@@ -1702,6 +2065,9 @@ export default function App() {
                             <p className="max-w-[150px] truncate text-sm font-bold">{sku.model}</p>
                             <p className="text-[10px] text-gray-500">
                               {sku.brand} · {sku.storage}
+                            </p>
+                            <p className="mt-1 max-w-[180px] truncate text-[10px] text-gray-400">
+                              {sku.position || '未定位'} · {sku.ppv || '未匹配PPV'}
                             </p>
                           </td>
                           <td className="w-40 border-r border-gray-100 px-4 py-4">
@@ -1911,6 +2277,185 @@ function ReportSummaryPanel({
   );
 }
 
+function RiskMonitorPanel({
+  latestDate,
+  riskRows,
+  riskStats,
+  riskMessage,
+  isLoading,
+  confirmedAt,
+  uploadedCount,
+  onFetch,
+  onBiPriceChange,
+  onConfirm,
+  onExport,
+}: {
+  latestDate: string;
+  riskRows: RiskAnalysisRow[];
+  riskStats: {
+    high: number;
+    risk: number;
+    none: number;
+    unmatched: number;
+    ppvMatched: number;
+  };
+  riskMessage: string | null;
+  isLoading: boolean;
+  confirmedAt: string | null;
+  uploadedCount: number;
+  onFetch: () => void;
+  onBiPriceChange: (ppv: string, value: string) => void;
+  onConfirm: () => void;
+  onExport: () => void;
+}) {
+  const [riskFilter, setRiskFilter] = useState<RiskLevel | 'all'>('all');
+  const filteredRows = riskFilter === 'all' ? riskRows : riskRows.filter((row) => row.riskLevel === riskFilter);
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <MetricCard
+          label="高风险 SKU"
+          value={riskStats.high}
+          subValue={`BI 出货价 ≥ ${latestDate} 国补后`}
+          trend={riskStats.high > 0 ? 'up' : undefined}
+          icon={<Info className="text-red-600" />}
+        />
+        <MetricCard
+          label="有风险 SKU"
+          value={riskStats.risk}
+          subValue={`BI 出货价 ≥ ${latestDate} 国补后 95%`}
+          trend={riskStats.risk > 0 ? 'up' : undefined}
+          icon={<TrendingUp className="text-amber-600" />}
+        />
+        <MetricCard
+          label="无风险 SKU"
+          value={riskStats.none}
+          subValue={`已拉取 BI 价 ${uploadedCount} 条`}
+          icon={<TrendingDown className="text-emerald-600" />}
+        />
+        <MetricCard
+          label="未匹配 SKU"
+          value={riskStats.unmatched}
+          subValue={`底表已匹配 PPV ${riskStats.ppvMatched} 条`}
+          icon={<Database className="text-gray-500" />}
+        />
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-4 border-b border-gray-100 p-6 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h2 className="text-lg font-bold">S等级回收价风险监控 ({latestDate})</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              使用底表 ppv 从 daily price API 拉取 S 等级 BI 出货价，核对后确认落数并输出风险报告。
+            </p>
+            {confirmedAt ? (
+              <p className="mt-1 text-xs font-medium text-emerald-600">
+                已确认：{new Date(confirmedAt).toLocaleString('zh-CN', { hour12: false })}
+              </p>
+            ) : (
+              <p className="mt-1 text-xs font-medium text-amber-600">当前结果待确认</p>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={riskFilter}
+              onChange={(event) => setRiskFilter(event.target.value as RiskLevel | 'all')}
+              className="min-w-[160px] rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            >
+              <option value="all">全部风险</option>
+              <option value="high">高风险</option>
+              <option value="risk">有风险</option>
+              <option value="none">无风险</option>
+                <option value="unmatched">未匹配</option>
+              </select>
+            <button
+              type="button"
+              onClick={onFetch}
+              disabled={isLoading}
+              className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:bg-orange-300"
+            >
+              <Upload size={16} />
+              {isLoading ? '拉取中' : '拉取BI价'}
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100"
+            >
+              确认落数
+            </button>
+            <button
+              type="button"
+              onClick={onExport}
+              className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-300 hover:text-gray-900"
+            >
+              输出风险报告
+            </button>
+            {riskMessage ? <span className="text-sm font-medium text-gray-600">{riskMessage}</span> : null}
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-[1500px] w-full border-collapse text-left">
+            <thead>
+              <tr className="bg-gray-50/50">
+                <th className="border-b border-r border-gray-100 px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">型号</th>
+                <th className="border-b border-r border-gray-100 px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">存储</th>
+                <th className="border-b border-r border-gray-100 px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">定位</th>
+                <th className="border-b border-r border-gray-100 px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">PPV</th>
+                <th className="border-b border-r border-gray-100 px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">{latestDate} 国补后</th>
+                <th className="border-b border-r border-gray-100 px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">BI出货价</th>
+                <th className="border-b border-r border-gray-100 px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">价差</th>
+                <th className="border-b px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">判定</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredRows.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-6 py-10 text-center text-sm text-gray-500">
+                    没有匹配当前筛选条件的数据。
+                  </td>
+                </tr>
+              ) : (
+                filteredRows.map((row) => (
+                  <tr key={row.sku.id} className="transition-colors hover:bg-gray-50/50">
+                    <td className="border-r border-gray-100 px-4 py-3 text-sm font-bold text-gray-800">{row.sku.model}</td>
+                    <td className="border-r border-gray-100 px-4 py-3 text-sm text-gray-600">{row.sku.storage}</td>
+                    <td className="border-r border-gray-100 px-4 py-3 text-sm text-gray-600">{row.sku.position || '--'}</td>
+                    <td className="max-w-[460px] border-r border-gray-100 px-4 py-3 text-xs text-gray-500">
+                      <span className="line-clamp-2">{row.sku.ppv || '--'}</span>
+                    </td>
+                    <td className="border-r border-gray-100 px-4 py-3 text-sm font-semibold text-gray-800">
+                      {row.latestSnapshot ? formatPrice(row.latestSnapshot.finalPrice) : '--'}
+                    </td>
+                    <td className="border-r border-gray-100 px-4 py-3 text-sm font-semibold text-gray-800">
+                      <input
+                        type="text"
+                        value={row.biPrice ?? ''}
+                        onChange={(event) => onBiPriceChange(row.sku.ppv, event.target.value)}
+                        className="w-28 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-800 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                      />
+                    </td>
+                    <td className={`border-r border-gray-100 px-4 py-3 text-sm font-semibold ${row.diff && row.diff > 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                      {row.diff === null ? '--' : `${row.diff > 0 ? '+' : ''}${Math.round(row.diff).toLocaleString()}`}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ring-1 ${getRiskBadgeClass(row.riskLevel)}`}>
+                        {getRiskLabel(row.riskLevel)}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RawDataPanel({
   dates,
   rawEditorRows,
@@ -1933,7 +2478,7 @@ function RawDataPanel({
   onDateInputChange: (value: string) => void;
   onAddDateColumns: () => void;
   onCellChange: (rowId: string, field: 'model' | 'storage' | 'launchPrice', value: string) => void;
-  onSnapshotChange: (rowId: string, date: string, metric: 'finalPrice' | 'listPrice' | 'coupon', value: string) => void;
+  onSnapshotChange: (rowId: string, date: string, metric: 'finalPrice' | 'listPrice' | 'coupon' | 'biPrice', value: string) => void;
   onBulkPaste: (rowId: string, columnKey: RawEditorColumnKey, pastedText: string) => void;
 }) {
   const [selectedCell, setSelectedCell] = useState<{ rowId: string; columnKey: RawEditorColumnKey } | null>(null);
@@ -2043,7 +2588,7 @@ function RawDataPanel({
             onClick={onAddDateColumns}
             className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-600 transition hover:border-orange-300 hover:bg-orange-100"
           >
-            新增三列
+            新增四列
           </button>
           {rawEditorMessage ? <span className="text-sm font-medium text-emerald-600">{rawEditorMessage}</span> : null}
           <button
@@ -2064,7 +2609,7 @@ function RawDataPanel({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-[2200px] w-full border-collapse text-left">
+        <table className="min-w-[2800px] w-full border-collapse text-left">
           <thead>
             <tr className="bg-gray-50/50">
               <th
@@ -2088,7 +2633,7 @@ function RawDataPanel({
               {dates.map((date) => (
                 <th
                   key={date}
-                  colSpan={3}
+                  colSpan={4}
                   className="border-b border-r border-gray-100 bg-gray-50/30 px-4 py-2 text-center text-xs font-bold uppercase tracking-wider text-gray-500"
                 >
                   {date} 数据
@@ -2100,7 +2645,8 @@ function RawDataPanel({
                 <React.Fragment key={`${date}-sub`}>
                   <th className="border-b border-gray-100 px-3 py-2 text-[10px] font-bold uppercase text-gray-400">国补后</th>
                   <th className="border-b border-gray-100 px-3 py-2 text-[10px] font-bold uppercase text-gray-400">挂牌价</th>
-                  <th className="border-b border-r border-gray-100 px-3 py-2 text-[10px] font-bold uppercase text-gray-400">优惠券</th>
+                  <th className="border-b border-gray-100 px-3 py-2 text-[10px] font-bold uppercase text-gray-400">优惠券</th>
+                  <th className="border-b border-r border-gray-100 px-3 py-2 text-[10px] font-bold uppercase text-gray-400">BI出货价</th>
                 </React.Fragment>
               ))}
             </tr>
@@ -2247,6 +2793,29 @@ function RawDataPanel({
                             row.id,
                             `${date}::coupon`,
                             'w-full min-w-[100px] rounded-lg border border-gray-200 px-3 py-2 text-sm text-emerald-600 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100',
+                          )}
+                        />
+                      </td>
+                      <td className="border-r border-gray-100 px-3 py-3">
+                        <input
+                          type="text"
+                          value={snapshot?.biPrice ?? ''}
+                          onChange={(event) => onSnapshotChange(row.id, date, 'biPrice', event.target.value)}
+                          onFocus={() => setSelectedCell({ rowId: row.id, columnKey: `${date}::biPrice` })}
+                          onClick={() => setSelectedCell({ rowId: row.id, columnKey: `${date}::biPrice` })}
+                          onKeyDown={(event) => handleCellKeyDown(event, row.id, `${date}::biPrice`)}
+                          onPaste={(event) => {
+                            const text = event.clipboardData.getData('text');
+                            if (text.includes('\t') || text.includes('\n')) {
+                              event.preventDefault();
+                              onBulkPaste(row.id, `${date}::biPrice`, text);
+                            }
+                          }}
+                          ref={(element) => setCellRef(row.id, `${date}::biPrice`, element)}
+                          className={getCellClass(
+                            row.id,
+                            `${date}::biPrice`,
+                            'w-full min-w-[110px] rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-sky-700 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100',
                           )}
                         />
                       </td>

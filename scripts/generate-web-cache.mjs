@@ -7,13 +7,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..');
 
-const SOURCE_NAME = '新机售价数据源.xlsx';
+const SOURCE_NAME = '新机售价监控.xlsx';
 const DIST_DIR = path.join(projectRoot, 'dist');
 const WEB_CACHE_DIR = path.join(projectRoot, 'Web Cache');
 const KNOWN_BRANDS = ['REDMI', 'iQOO', 'OPPO', 'vivo', '华为', '荣耀', '一加', '小米'];
 
 function normalizeHeader(value) {
   return String(value ?? '').replace(/\s+/g, '').trim();
+}
+
+function findHeaderIndex(headers, keywords) {
+  return headers.findIndex((header) => keywords.some((keyword) => header.includes(keyword)));
 }
 
 function parseNumber(value) {
@@ -91,15 +95,34 @@ function parseWorkbook(filePath) {
     throw new Error('Excel 数据为空，无法生成网页缓存。');
   }
 
-  const headers = (rows[0] ?? []).map(normalizeHeader);
+  const headerRowIndex = rows.findIndex((row) => {
+    const headers = row.map(normalizeHeader);
+    return headers.includes('型号名称') && headers.includes('存储版本');
+  });
+  if (headerRowIndex === -1) {
+    throw new Error('Excel 中未找到“型号名称 / 存储版本”表头。');
+  }
+
+  const groupHeaders = (rows[headerRowIndex - 1] ?? []).map(normalizeHeader);
+  const headers = (rows[headerRowIndex] ?? []).map(normalizeHeader);
+  const modelIndex = findHeaderIndex(headers, ['型号名称']);
+  const storageIndex = findHeaderIndex(headers, ['存储版本']);
+  const launchPriceIndex = findHeaderIndex(headers, ['发布挂牌售价', '发布价']);
+  const brandIndex = findHeaderIndex(headers, ['所属品牌名称']);
   const dateColumns = new Map();
+  let currentGroupHeader = '';
 
   headers.forEach((header, index) => {
-    if (!header || index < 3) {
+    const groupHeader = groupHeaders[index];
+    if (groupHeader) {
+      currentGroupHeader = groupHeader;
+    }
+
+    if (!header) {
       return;
     }
 
-    const dateLabel = toDateLabel(header);
+    const dateLabel = toDateLabel(currentGroupHeader) ?? toDateLabel(header);
     const metric = toSnapshotMetric(header);
 
     if (!dateLabel || !metric) {
@@ -113,17 +136,17 @@ function parseWorkbook(filePath) {
 
   const dates = Array.from(dateColumns.keys()).sort(sortDateLabels);
   const skus = rows
-    .slice(1)
+    .slice(headerRowIndex + 1)
     .map((row, index) => {
-      const model = String(row[0] ?? '').trim();
-      const storage = String(row[1] ?? '').trim();
-      const launchPrice = parseNumber(row[2]);
+      const model = String(row[modelIndex] ?? '').trim();
+      const storage = String(row[storageIndex] ?? '').trim();
+      const launchPrice = parseNumber(row[launchPriceIndex]);
 
       if (!model || !storage) {
         return null;
       }
 
-      const brand = inferBrand(model);
+      const brand = String(brandIndex === -1 ? '' : row[brandIndex] ?? '').trim() || inferBrand(model);
       const snapshots = dates
         .map((date) => {
           const mapping = dateColumns.get(date);
@@ -149,7 +172,7 @@ function parseWorkbook(filePath) {
         .filter(Boolean);
 
       return {
-        id: `${model}-${storage}-${index + 2}`,
+        id: `${model}-${storage}-${headerRowIndex + index + 2}`,
         brand,
         model,
         series: '',

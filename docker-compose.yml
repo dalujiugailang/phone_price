@@ -7,8 +7,12 @@ services:
     environment:
       NODE_ENV: production
       PORT: 8787
+      DAILY_PRICE_LOOKUP_URL: ${DAILY_PRICE_LOOKUP_URL:-http://host.docker.internal:8765/api/lookup}
+      DAILY_PRICE_TOKEN_PATH: /app/data/api_token.txt
     volumes:
       - ./data:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     expose:
       - "8787"
 

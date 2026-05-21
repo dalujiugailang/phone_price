@@ -14,6 +14,10 @@ const databasePath = path.join(dataDir, 'raw-editor-draft.sqlite');
 const distDir = path.join(projectRoot, 'dist');
 const indexHtmlPath = path.join(distDir, 'index.html');
 const port = Number(process.env.PORT || process.env.PRICE_MONITOR_API_PORT || 8787);
+const dailyPriceLookupUrl = process.env.DAILY_PRICE_LOOKUP_URL || 'http://127.0.0.1:8765/api/lookup';
+const dailyPriceTokenPath =
+  process.env.DAILY_PRICE_TOKEN_PATH ||
+  '/Users/dudu/Desktop/trae/重点日常项目/【daily price】/data/api_token.txt';
 
 const app = express();
 let database;
@@ -142,6 +146,44 @@ app.post('/api/raw-editor-draft', async (request, response) => {
   await ensureDataDir();
   const nextDraft = writeDraftToDatabase(payload);
   response.json({ ok: true, savedAt: nextDraft.savedAt });
+});
+
+app.post('/api/bi-price-lookup', async (request, response) => {
+  const ppvs = Array.isArray(request.body?.ppv)
+    ? request.body.ppv
+    : Array.isArray(request.body?.ppvs)
+      ? request.body.ppvs
+      : [];
+  const normalizedPpvs = ppvs.map((item) => String(item ?? '').trim()).filter(Boolean);
+
+  if (normalizedPpvs.length === 0) {
+    response.status(400).json({ message: 'ppv is required' });
+    return;
+  }
+
+  try {
+    const token = (await fs.readFile(dailyPriceTokenPath, 'utf8')).trim();
+    const lookupResponse = await fetch(dailyPriceLookupUrl, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ ppv: normalizedPpvs }),
+    });
+    const payload = await lookupResponse.json();
+
+    if (!lookupResponse.ok) {
+      response.status(lookupResponse.status).json(payload);
+      return;
+    }
+
+    response.json(payload);
+  } catch (error) {
+    response.status(502).json({
+      message: error instanceof Error ? error.message : 'BI 出货价接口调用失败',
+    });
+  }
 });
 
 if (fsSync.existsSync(distDir)) {

@@ -1,11 +1,13 @@
 import * as XLSX from 'xlsx';
-import workbookUrl from '../新机售价数据源.xlsx?url';
+import workbookUrl from '../新机售价监控.xlsx?url';
+import { getNewMachinePpvMapping } from './ppvMapping';
 
 export interface PriceSnapshot {
   date: string;
   listPrice: number;
   coupon: number;
   finalPrice: number;
+  biPrice?: number;
 }
 
 export interface SKUData {
@@ -14,6 +16,8 @@ export interface SKUData {
   model: string;
   series: string;
   storage: string;
+  position: string;
+  ppv: string;
   launchPrice: number;
   snapshots: PriceSnapshot[];
 }
@@ -26,22 +30,27 @@ export interface WorkbookDataset {
   sourceName: string;
 }
 
-type SnapshotMetric = 'finalPrice' | 'listPrice' | 'coupon';
+type SnapshotMetric = 'finalPrice' | 'listPrice' | 'coupon' | 'biPrice';
 
 interface SnapshotColumnMap {
   label: string;
   finalPrice?: number;
   listPrice?: number;
   coupon?: number;
+  biPrice?: number;
 }
 
 const KNOWN_BRANDS = ['REDMI', 'iQOO', 'OPPO', 'vivo', '华为', '荣耀', '一加', '小米'];
-const SOURCE_NAME = '新机售价数据源.xlsx';
+const SOURCE_NAME = '新机售价监控.xlsx';
 
 let workbookPromise: Promise<WorkbookDataset> | null = null;
 
 function normalizeHeader(value: unknown) {
   return String(value ?? '').replace(/\s+/g, '').trim();
+}
+
+function findHeaderIndex(headers: string[], keywords: string[]) {
+  return headers.findIndex((header) => keywords.some((keyword) => header.includes(keyword)));
 }
 
 function parseNumber(value: unknown) {
@@ -52,6 +61,11 @@ function parseNumber(value: unknown) {
   const normalized = String(value ?? '').replace(/,/g, '').trim();
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function isExplicitZeroCell(value: unknown) {
+  const normalized = String(value ?? '').replace(/\s+/g, '').trim();
+  return normalized === '#VALUE!' || normalized === '已下架';
 }
 
 function toDateLabel(header: string) {
@@ -69,6 +83,12 @@ function toDateLabel(header: string) {
 }
 
 function toSnapshotMetric(header: string): SnapshotMetric | null {
+  const lowerHeader = header.toLowerCase();
+
+  if (lowerHeader.includes('bi价') || lowerHeader.includes('bi出货价')) {
+    return 'biPrice';
+  }
+
   if (header.includes('国补后')) {
     return 'finalPrice';
   }
@@ -135,15 +155,43 @@ function parseWorkbook(arrayBuffer: ArrayBuffer): WorkbookDataset {
     throw new Error('Excel 数据为空，无法生成页面内容。');
   }
 
-  const headers = (rows[0] ?? []).map(normalizeHeader);
+  const headerRowIndex = rows.findIndex((row) => {
+    const headers = row.map(normalizeHeader);
+    return headers.includes('型号名称') && headers.includes('存储版本');
+  });
+
+  if (headerRowIndex === -1) {
+    throw new Error('Excel 中未找到“型号名称 / 存储版本”表头。');
+  }
+
+  const groupHeaders = (rows[headerRowIndex - 1] ?? []).map(normalizeHeader);
+  const headers = (rows[headerRowIndex] ?? []).map(normalizeHeader);
+  const modelIndex = findHeaderIndex(headers, ['型号名称']);
+  const storageIndex = findHeaderIndex(headers, ['存储版本']);
+  const positionIndex = findHeaderIndex(headers, ['定位']);
+  const ppvIndex = findHeaderIndex(headers, ['ppv']);
+  const launchPriceIndex = findHeaderIndex(headers, ['发布挂牌售价', '发布价']);
+  const brandIndex = findHeaderIndex(headers, ['所属品牌名称']);
+  const seriesIndex = findHeaderIndex(headers, ['系列版本']);
+
+  if (modelIndex === -1 || storageIndex === -1 || launchPriceIndex === -1) {
+    throw new Error('Excel 中缺少型号名称、存储版本或发布价字段。');
+  }
+
   const dateColumns = new Map<string, SnapshotColumnMap>();
+  let currentGroupHeader = '';
 
   headers.forEach((header, index) => {
-    if (!header || index < 3) {
+    const groupHeader = groupHeaders[index];
+    if (groupHeader) {
+      currentGroupHeader = groupHeader;
+    }
+
+    if (!header) {
       return;
     }
 
-    const dateLabel = toDateLabel(header);
+    const dateLabel = toDateLabel(currentGroupHeader) ?? toDateLabel(header);
     const metric = toSnapshotMetric(header);
 
     if (!dateLabel || !metric) {
@@ -157,18 +205,21 @@ function parseWorkbook(arrayBuffer: ArrayBuffer): WorkbookDataset {
 
   const dates = Array.from(dateColumns.keys()).sort(sortDateLabels);
   const skus = rows
-    .slice(1)
+    .slice(headerRowIndex + 1)
     .map((row, index) => {
-      const model = String(row[0] ?? '').trim();
-      const storage = String(row[1] ?? '').trim();
-      const launchPrice = parseNumber(row[2]);
+      const model = String(row[modelIndex] ?? '').trim();
+      const storage = String(row[storageIndex] ?? '').trim();
+      const launchPrice = parseNumber(row[launchPriceIndex]);
 
       if (!model || !storage) {
         return null;
       }
 
-      const brand = inferBrand(model);
-      const series = inferSeries(model, brand);
+      const brand = String(brandIndex === -1 ? '' : row[brandIndex] ?? '').trim() || inferBrand(model);
+      const series = String(seriesIndex === -1 ? '' : row[seriesIndex] ?? '').trim() || inferSeries(model, brand);
+      const position = String(positionIndex === -1 ? '' : row[positionIndex] ?? '').trim();
+      const ppv = String(ppvIndex === -1 ? '' : row[ppvIndex] ?? '').trim();
+      const ppvMapping = getNewMachinePpvMapping(model, storage);
       const snapshots = dates
         .map((date) => {
           const mapping = dateColumns.get(date);
@@ -176,29 +227,41 @@ function parseWorkbook(arrayBuffer: ArrayBuffer): WorkbookDataset {
             return null;
           }
 
-          const finalPrice = parseNumber(mapping.finalPrice === undefined ? '' : row[mapping.finalPrice]);
-          const listPrice = parseNumber(mapping.listPrice === undefined ? '' : row[mapping.listPrice]);
-          const coupon = parseNumber(mapping.coupon === undefined ? '' : row[mapping.coupon]);
+          const finalPriceValue = mapping.finalPrice === undefined ? '' : row[mapping.finalPrice];
+          const listPriceValue = mapping.listPrice === undefined ? '' : row[mapping.listPrice];
+          const couponValue = mapping.coupon === undefined ? '' : row[mapping.coupon];
+          const biPriceValue = mapping.biPrice === undefined ? '' : row[mapping.biPrice];
+          const finalPrice = parseNumber(finalPriceValue);
+          const listPrice = parseNumber(listPriceValue);
+          const coupon = parseNumber(couponValue);
+          const biPrice = parseNumber(biPriceValue);
+          const hasExplicitZeroCell =
+            isExplicitZeroCell(finalPriceValue) || isExplicitZeroCell(listPriceValue) || isExplicitZeroCell(couponValue);
 
-          if (!finalPrice && !listPrice && !coupon) {
+          if (!finalPrice && !listPrice && !coupon && !biPrice && !hasExplicitZeroCell) {
             return null;
           }
 
-          return {
+          const snapshot: PriceSnapshot = {
             date,
             finalPrice,
             listPrice,
             coupon,
+            biPrice: biPrice || undefined,
           };
+
+          return snapshot;
         })
         .filter((snapshot): snapshot is PriceSnapshot => snapshot !== null);
 
       return {
-        id: `${model}-${storage}-${index + 2}`,
+        id: `${model}-${storage}-${headerRowIndex + index + 2}`,
         brand,
         model,
         series,
         storage,
+        position: position || ppvMapping?.position || '',
+        ppv: ppv || ppvMapping?.ppv || '',
         launchPrice,
         snapshots,
       };
