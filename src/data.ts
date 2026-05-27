@@ -1,5 +1,4 @@
 import * as XLSX from 'xlsx';
-import workbookUrl from '../新机售价监控.xlsx?url';
 import { getNewMachinePpvMapping } from './ppvMapping';
 
 export interface PriceSnapshot {
@@ -42,6 +41,8 @@ interface SnapshotColumnMap {
 
 const KNOWN_BRANDS = ['REDMI', 'iQOO', 'OPPO', 'vivo', '华为', '荣耀', '一加', '小米'];
 const SOURCE_NAME = '新机售价监控.xlsx';
+const WORKBOOK_URL = '/api/workbook.xlsx';
+const WORKBOOK_FETCH_TIMEOUT_MS = 15000;
 
 let workbookPromise: Promise<WorkbookDataset> | null = null;
 
@@ -286,7 +287,23 @@ export async function loadWorkbookData() {
     if (typeof window !== 'undefined' && window.__PRELOADED_WORKBOOK_DATA__) {
       workbookPromise = Promise.resolve(window.__PRELOADED_WORKBOOK_DATA__);
     } else {
-      workbookPromise = fetch(workbookUrl)
+      workbookPromise = new Promise<Response>((resolve, reject) => {
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => {
+          controller.abort();
+          reject(new Error('Excel 文件读取超时，请检查线上静态资源是否可访问。'));
+        }, WORKBOOK_FETCH_TIMEOUT_MS);
+
+        fetch(WORKBOOK_URL, { cache: 'no-store', signal: controller.signal })
+          .then(resolve)
+          .catch((error) => {
+            if (error instanceof Error && error.name === 'AbortError') {
+              return;
+            }
+            reject(error);
+          })
+          .finally(() => window.clearTimeout(timeoutId));
+      })
         .then((response) => {
           if (!response.ok) {
             throw new Error(`Excel 文件读取失败: ${response.status}`);

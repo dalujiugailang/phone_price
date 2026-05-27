@@ -11,6 +11,7 @@ const projectRoot = path.resolve(__dirname, '..');
 const dataDir = path.join(projectRoot, 'data');
 const draftPath = path.join(dataDir, 'raw-editor-draft.json');
 const databasePath = path.join(dataDir, 'raw-editor-draft.sqlite');
+const workbookPath = process.env.PRICE_MONITOR_WORKBOOK_PATH || path.join(projectRoot, '新机售价监控.xlsx');
 const distDir = path.join(projectRoot, 'dist');
 const indexHtmlPath = path.join(distDir, 'index.html');
 const port = Number(process.env.PORT || process.env.PRICE_MONITOR_API_PORT || 8787);
@@ -184,6 +185,14 @@ app.post('/api/bi-price-lookup', async (request, response) => {
       message: error instanceof Error ? error.message : 'BI 出货价接口调用失败',
     });
   }
+});
+
+app.get('/api/workbook.xlsx', (_request, response) => {
+  response.sendFile(workbookPath, {
+    headers: {
+      'Cache-Control': 'no-store',
+    },
+  });
 });
 
 if (fsSync.existsSync(distDir)) {
