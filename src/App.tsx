@@ -148,6 +148,9 @@ interface RawEditorDraft {
 
 interface PersistRawEditorDraftOptions {
   syncWorkbook?: boolean;
+  workbookSyncMode?: 'latestBiPriceOnly';
+  workbookTargetDate?: string;
+  workbookTargetPpvs?: string[];
 }
 
 type RawEditorColumnKey =
@@ -416,6 +419,9 @@ async function persistRawEditorDraft(draft: RawEditorDraft, options: PersistRawE
     body: JSON.stringify({
       ...draft,
       syncWorkbook: options.syncWorkbook === true,
+      workbookSyncMode: options.workbookSyncMode,
+      workbookTargetDate: options.workbookTargetDate,
+      workbookTargetPpvs: options.workbookTargetPpvs,
     }),
   });
   const payload = await response.json().catch(() => null);
@@ -1697,7 +1703,12 @@ export default function App() {
     setRiskConfirmedAt(confirmedAt);
 
     try {
-      const persisted = await persistRawEditorDraft(nextDraft, { syncWorkbook: true });
+      const persisted = await persistRawEditorDraft(nextDraft, {
+        syncWorkbook: true,
+        workbookSyncMode: 'latestBiPriceOnly',
+        workbookTargetDate: targetDate,
+        workbookTargetPpvs: confirmedRows.map((row) => row.sku.ppv),
+      });
       lastSavedRawDraftSignatureRef.current = JSON.stringify({
         dates: nextDraft.dates,
         rows: nextDraft.rows,

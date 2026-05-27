@@ -366,6 +366,129 @@ function writeDraftToWorkbook(payload) {
   };
 }
 
+function writeLatestBiPricesToWorkbook(payload) {
+  const targetDate = typeof payload.workbookTargetDate === 'string' ? payload.workbookTargetDate : payload.dates.at(-1);
+  if (!targetDate) {
+    throw new Error('没有可写回的目标日期');
+  }
+
+  const targetPpvs = Array.isArray(payload.workbookTargetPpvs)
+    ? new Set(payload.workbookTargetPpvs.map((item) => String(item ?? '').trim()).filter(Boolean))
+    : new Set();
+
+  const workbook = XLSX.readFile(workbookPath);
+  const [sheetName] = workbook.SheetNames;
+  if (!sheetName) {
+    throw new Error('Excel 文件中没有可读取的工作表');
+  }
+
+  const sheet = workbook.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(sheet, {
+    header: 1,
+    raw: true,
+    defval: '',
+  });
+  const headerRowIndex = rows.findIndex((row) => {
+    const headers = row.map(normalizeHeader);
+    return headers.includes('型号名称') && headers.includes('存储版本');
+  });
+
+  if (headerRowIndex === -1) {
+    throw new Error('Excel 中未找到“型号名称 / 存储版本”表头');
+  }
+
+  const headers = rows[headerRowIndex].map(normalizeHeader);
+  const modelIndex = findHeaderIndex(headers, ['型号名称']);
+  const storageIndex = findHeaderIndex(headers, ['存储版本']);
+  const positionIndex = findHeaderIndex(headers, ['定位']);
+  const ppvIndex = findHeaderIndex(headers, ['ppv']);
+  const launchPriceIndex = findHeaderIndex(headers, ['发布挂牌售价', '发布价']);
+  if (modelIndex === -1 || storageIndex === -1) {
+    throw new Error('Excel 中缺少型号名称或存储版本字段');
+  }
+
+  const rowIndexByKey = new Map();
+  rows.slice(headerRowIndex + 1).forEach((row, offset) => {
+    const model = String(row[modelIndex] ?? '').trim();
+    const storage = String(row[storageIndex] ?? '').trim();
+    const ppv = ppvIndex === -1 ? '' : String(row[ppvIndex] ?? '').trim();
+    const rowIndex = headerRowIndex + 1 + offset;
+
+    if (ppv) {
+      rowIndexByKey.set(`ppv:${ppv}`, rowIndex);
+    }
+    if (model && storage) {
+      rowIndexByKey.set(`model:${model}::${normalizeStorage(storage)}`, rowIndex);
+    }
+  });
+
+  const biPriceColumnIndex = findOrCreateSnapshotColumn(sheet, rows, headerRowIndex, targetDate, 'biPrice');
+  let cellsWritten = 0;
+  let rowsWritten = 0;
+  let rowsAppended = 0;
+
+  for (const draftRow of payload.rows) {
+    const model = String(draftRow.model ?? '').trim();
+    const storage = String(draftRow.storage ?? '').trim();
+    const rowPpv = String(draftRow.ppv ?? '').trim();
+    if (!model || !storage || (targetPpvs.size > 0 && !targetPpvs.has(rowPpv))) {
+      continue;
+    }
+
+    const biPrice = parseNumericInput(draftRow.snapshots?.[targetDate]?.biPrice);
+    if (biPrice === '') {
+      continue;
+    }
+
+    let rowIndex =
+      (rowPpv ? rowIndexByKey.get(`ppv:${rowPpv}`) : undefined) ??
+      rowIndexByKey.get(`model:${model}::${normalizeStorage(storage)}`);
+
+    if (rowIndex === undefined) {
+      rowIndex = rows.length;
+      rows.push([]);
+      rowsAppended += 1;
+
+      const baseValues = [
+        [modelIndex, model],
+        [storageIndex, storage],
+        [positionIndex, String(draftRow.position ?? '').trim()],
+        [ppvIndex, rowPpv],
+        [launchPriceIndex, parseNumericInput(draftRow.launchPrice)],
+      ].filter(([columnIndex]) => columnIndex !== -1);
+
+      for (const [columnIndex, value] of baseValues) {
+        if (value === '') {
+          continue;
+        }
+        XLSX.utils.sheet_add_aoa(sheet, [[value]], { origin: { r: rowIndex, c: columnIndex } });
+        rows[rowIndex][columnIndex] = value;
+        cellsWritten += 1;
+      }
+    }
+
+    XLSX.utils.sheet_add_aoa(sheet, [[biPrice]], { origin: { r: rowIndex, c: biPriceColumnIndex } });
+    rows[rowIndex][biPriceColumnIndex] = biPrice;
+    cellsWritten += 1;
+    rowsWritten += 1;
+
+    if (rowPpv) {
+      rowIndexByKey.set(`ppv:${rowPpv}`, rowIndex);
+    }
+    rowIndexByKey.set(`model:${model}::${normalizeStorage(storage)}`, rowIndex);
+  }
+
+  XLSX.writeFile(workbook, workbookPath);
+  return {
+    workbookPath,
+    mode: 'latestBiPriceOnly',
+    targetDate,
+    rowsWritten,
+    cellsWritten,
+    rowsAppended,
+  };
+}
+
 app.get('/api/health', (_request, response) => {
   response.json({ ok: true, storage: 'sqlite', databasePath });
 });
@@ -391,7 +514,8 @@ app.post('/api/raw-editor-draft', async (request, response) => {
   const nextDraft = writeDraftToDatabase(payload);
   if (payload.syncWorkbook === true) {
     try {
-      const workbookResult = writeDraftToWorkbook(payload);
+      const workbookResult =
+        payload.workbookSyncMode === 'latestBiPriceOnly' ? writeLatestBiPricesToWorkbook(payload) : writeDraftToWorkbook(payload);
       response.json({ ok: true, savedAt: nextDraft.savedAt, workbook: workbookResult });
     } catch (error) {
       response.status(500).json({
