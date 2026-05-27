@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import * as XLSX from 'xlsx';
 import {
   ArrowDownRight,
   ArrowUpRight,
   BarChart3,
   Database,
+  Download,
   FileText,
   Info,
   LayoutDashboard,
@@ -144,6 +146,10 @@ interface RawEditorDraft {
   savedAt: string;
 }
 
+interface PersistRawEditorDraftOptions {
+  syncWorkbook?: boolean;
+}
+
 type RawEditorColumnKey =
   | 'model'
   | 'storage'
@@ -166,6 +172,7 @@ const isZeroChange = (value: number) => Math.abs(value) < 0.0001;
 const SERIES_PIVOT_IGNORE_AMOUNT = 10;
 const KNOWN_BRANDS = ['REDMI', 'iQOO', 'OPPO', 'vivo', '华为', '荣耀', '一加', '小米'];
 const RAW_DRAFT_AUTOSAVE_MS = 1200;
+const RAW_DRAFT_FETCH_TIMEOUT_MS = 3000;
 const LIST_PRICE_ATTRIBUTION_IGNORE_DIFF = 1;
 
 function sortDateLabels(left: string, right: string) {
@@ -303,6 +310,53 @@ function downloadTextFile(filename: string, content: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
+function toRawExportCell(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  const parsed = Number(trimmed.replace(/,/g, ''));
+  return Number.isFinite(parsed) && /^-?\d+(\.\d+)?$/.test(trimmed.replace(/,/g, '')) ? parsed : trimmed;
+}
+
+function downloadRawEditorWorkbook(dates: string[], rows: RawEditorRow[]) {
+  const headerRows = [
+    ['型号名称', '存储版本', '发布挂牌售价', ...dates.flatMap((date) => [date, '', '', ''])],
+    ['', '', '', ...dates.flatMap(() => ['国补后价格试算', '挂牌价', '优惠券', 'BI出货价'])],
+  ];
+  const bodyRows = rows.map((row) => [
+    row.model,
+    row.storage,
+    toRawExportCell(row.launchPrice),
+    ...dates.flatMap((date) => {
+      const snapshot = row.snapshots[date];
+      return [
+        toRawExportCell(snapshot?.finalPrice ?? ''),
+        toRawExportCell(snapshot?.listPrice ?? ''),
+        toRawExportCell(snapshot?.coupon ?? ''),
+        toRawExportCell(snapshot?.biPrice ?? ''),
+      ];
+    }),
+  ]);
+  const worksheet = XLSX.utils.aoa_to_sheet([...headerRows, ...bodyRows]);
+
+  worksheet['!merges'] = dates.map((_, index) => {
+    const startColumn = 3 + index * 4;
+    return { s: { r: 0, c: startColumn }, e: { r: 0, c: startColumn + 3 } };
+  });
+  worksheet['!cols'] = [
+    { wch: 24 },
+    { wch: 14 },
+    { wch: 14 },
+    ...dates.flatMap(() => [{ wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 12 }]),
+  ];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, '原始数据');
+  XLSX.writeFile(workbook, `原始数据_${dates.at(-1) ?? '未命名'}.xlsx`);
+}
+
 function normalizeDateLabelInput(value: string) {
   const trimmed = value.trim();
   if (!trimmed) {
@@ -327,8 +381,11 @@ function normalizeListPriceDiffForAttribution(value: number) {
 }
 
 async function loadRawEditorDraftFromApi(): Promise<RawEditorDraft | null> {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), RAW_DRAFT_FETCH_TIMEOUT_MS);
+
   try {
-    const response = await fetch('/api/raw-editor-draft');
+    const response = await fetch('/api/raw-editor-draft', { signal: controller.signal });
     if (!response.ok) {
       return null;
     }
@@ -345,21 +402,29 @@ async function loadRawEditorDraftFromApi(): Promise<RawEditorDraft | null> {
     };
   } catch {
     return null;
+  } finally {
+    window.clearTimeout(timeoutId);
   }
 }
 
-async function persistRawEditorDraft(draft: RawEditorDraft) {
+async function persistRawEditorDraft(draft: RawEditorDraft, options: PersistRawEditorDraftOptions = {}) {
   const response = await fetch('/api/raw-editor-draft', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(draft),
+    body: JSON.stringify({
+      ...draft,
+      syncWorkbook: options.syncWorkbook === true,
+    }),
   });
+  const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error('Failed to persist raw editor draft');
+    throw new Error(payload?.message || 'Failed to persist raw editor draft');
   }
+
+  return payload;
 }
 
 function inferBrand(modelName: string) {
@@ -1464,16 +1529,18 @@ export default function App() {
     );
     setSourceDataset(nextDataset);
     try {
-      await persistRawEditorDraft(nextDraft);
+      const persisted = await persistRawEditorDraft(nextDraft, { syncWorkbook: true });
       lastSavedRawDraftSignatureRef.current = JSON.stringify({
         dates: nextDraft.dates,
         rows: nextDraft.rows,
       });
+      const workbookCellsWritten = Number(persisted?.workbook?.cellsWritten ?? persisted?.workbook?.rowsWritten ?? 0);
+      const workbookRowsAppended = Number(persisted?.workbook?.rowsAppended ?? 0);
       setRawEditorMessage(
-        `已保存并重算结果：${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`,
+        `已保存、写回 Excel ${workbookCellsWritten} 格${workbookRowsAppended ? `，新增 ${workbookRowsAppended} 行` : ''}并重算结果：${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`,
       );
     } catch {
-      setRawEditorMessage('结果已重算，但服务端保存失败');
+      setRawEditorMessage('结果已重算，但服务端保存或 Excel 写回失败');
     }
   };
 
@@ -1589,7 +1656,9 @@ export default function App() {
     const confirmedAt = new Date().toISOString();
     const biPriceByPpv = new Map<string, number>(confirmedRows.map((row) => [row.sku.ppv, row.biPrice]));
     const nextRows = rawEditorRows.map((row) => {
-      const biPrice = row.ppv ? biPriceByPpv.get(row.ppv) : null;
+      const ppvMapping = getNewMachinePpvMapping(row.model, row.storage);
+      const rowPpv = row.ppv || ppvMapping?.ppv || '';
+      const biPrice = rowPpv ? biPriceByPpv.get(rowPpv) : null;
       if (!biPrice) {
         return row;
       }
@@ -1603,6 +1672,8 @@ export default function App() {
 
       return {
         ...row,
+        position: row.position || ppvMapping?.position || '',
+        ppv: rowPpv,
         snapshots: {
           ...row.snapshots,
           [targetDate]: {
@@ -1626,19 +1697,21 @@ export default function App() {
     setRiskConfirmedAt(confirmedAt);
 
     try {
-      await persistRawEditorDraft(nextDraft);
+      const persisted = await persistRawEditorDraft(nextDraft, { syncWorkbook: true });
       lastSavedRawDraftSignatureRef.current = JSON.stringify({
         dates: nextDraft.dates,
         rows: nextDraft.rows,
       });
+      const workbookCellsWritten = Number(persisted?.workbook?.cellsWritten ?? persisted?.workbook?.rowsWritten ?? 0);
+      const workbookRowsAppended = Number(persisted?.workbook?.rowsAppended ?? 0);
       setRiskMessage(
-        `已确认落数 ${confirmedRows.length} 条：${new Date(confirmedAt).toLocaleTimeString('zh-CN', {
+        `已确认落数 ${confirmedRows.length} 条，已写回 Excel ${workbookCellsWritten} 格${workbookRowsAppended ? `，新增 ${workbookRowsAppended} 行` : ''}：${new Date(confirmedAt).toLocaleTimeString('zh-CN', {
           hour: '2-digit',
           minute: '2-digit',
         })}`,
       );
-    } catch {
-      setRiskMessage('BI 价已写入当前页面，但服务端保存失败');
+    } catch (saveError) {
+      setRiskMessage(saveError instanceof Error ? `BI 价已写入当前页面，但保存失败：${saveError.message}` : 'BI 价已写入当前页面，但保存失败');
     }
   };
 
@@ -1652,6 +1725,10 @@ export default function App() {
     const exportRows = reportRows.length > 0 ? reportRows : riskRows;
     downloadTextFile(`S等级风险报告_${latestDate}.csv`, buildRiskReportCsv(exportRows, latestDate), 'text/csv;charset=utf-8');
     setRiskMessage(`已输出风险报告：${reportRows.length} 条风险 SKU`);
+  };
+
+  const handleDownloadRawData = () => {
+    downloadRawEditorWorkbook(rawEditorDates, rawEditorRows);
   };
 
   return (
@@ -1980,6 +2057,7 @@ export default function App() {
             onCellChange={handleRawCellChange}
             onSnapshotChange={handleRawSnapshotChange}
             onBulkPaste={handleRawBulkPaste}
+            onDownload={handleDownloadRawData}
           />
         ) : (
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -2468,6 +2546,7 @@ function RawDataPanel({
   onCellChange,
   onSnapshotChange,
   onBulkPaste,
+  onDownload,
 }: {
   dates: string[];
   rawEditorRows: RawEditorRow[];
@@ -2480,6 +2559,7 @@ function RawDataPanel({
   onCellChange: (rowId: string, field: 'model' | 'storage' | 'launchPrice', value: string) => void;
   onSnapshotChange: (rowId: string, date: string, metric: 'finalPrice' | 'listPrice' | 'coupon' | 'biPrice', value: string) => void;
   onBulkPaste: (rowId: string, columnKey: RawEditorColumnKey, pastedText: string) => void;
+  onDownload: () => void;
 }) {
   const [selectedCell, setSelectedCell] = useState<{ rowId: string; columnKey: RawEditorColumnKey } | null>(null);
   const cellRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -2591,6 +2671,14 @@ function RawDataPanel({
             新增四列
           </button>
           {rawEditorMessage ? <span className="text-sm font-medium text-emerald-600">{rawEditorMessage}</span> : null}
+          <button
+            type="button"
+            onClick={onDownload}
+            disabled={rawEditorRows.length === 0}
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Download size={16} /> 下载
+          </button>
           <button
             type="button"
             onClick={onReset}

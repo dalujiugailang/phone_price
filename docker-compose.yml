@@ -11,6 +11,7 @@ services:
       DAILY_PRICE_TOKEN_PATH: /app/data/api_token.txt
     volumes:
       - ./data:/app/data
+      - ./新机售价监控.xlsx:/app/新机售价监控.xlsx
     extra_hosts:
       - "host.docker.internal:host-gateway"
     expose:
@@ -29,6 +30,8 @@ services:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   caddy_data:

@@ -1,4 +1,11 @@
 gtmdudu.xyz, www.gtmdudu.xyz {
   encode gzip zstd
-  reverse_proxy app:8787
+
+  handle /api/daily-price/* {
+    reverse_proxy host.docker.internal:8765
+  }
+
+  handle {
+    reverse_proxy app:8787
+  }
 }
