@@ -70,9 +70,25 @@ interface SeriesAnalysisItem {
   };
 }
 
+interface PositionAnalysisItem {
+  position: string;
+  skuCount: number;
+  avgLaunch: number;
+  snapshotAvgs: SeriesPoint[];
+  diff: number;
+  diffPct: number;
+  trendData: SeriesPoint[];
+  directionSummary: {
+    up: number;
+    down: number;
+    flat: number;
+  };
+}
+
 interface AnalysisResult {
   skuList: AnalysisSKU[];
   brandAnalysis: BrandAnalysisItem[];
+  positionAnalysis: PositionAnalysisItem[];
   seriesAnalysis: SeriesAnalysisItem[];
 }
 
@@ -165,6 +181,7 @@ type RawEditorColumnKey =
 const EMPTY_ANALYSIS: AnalysisResult = {
   skuList: [],
   brandAnalysis: [],
+  positionAnalysis: [],
   seriesAnalysis: [],
 };
 
@@ -522,6 +539,47 @@ function sortSeriesPivotRows(items: SeriesAnalysisItem[]) {
     }
 
     return compareText(left.model, right.model);
+  });
+}
+
+function isPositionPivotChanged(position: PositionAnalysisItem) {
+  return Math.abs(position.diff) > SERIES_PIVOT_IGNORE_AMOUNT;
+}
+
+function getPositionPivotDisplayChange(position: PositionAnalysisItem) {
+  if (!isPositionPivotChanged(position)) {
+    return {
+      diff: 0,
+      diffPct: 0,
+    };
+  }
+
+  return {
+    diff: position.diff,
+    diffPct: position.diffPct,
+  };
+}
+
+function sortPositionPivotRows(items: PositionAnalysisItem[]) {
+  return [...items].sort((left, right) => {
+    const leftHasChange = isPositionPivotChanged(left);
+    const rightHasChange = isPositionPivotChanged(right);
+
+    if (leftHasChange !== rightHasChange) {
+      return leftHasChange ? -1 : 1;
+    }
+
+    const magnitudeDiff = Math.abs(right.diff) - Math.abs(left.diff);
+    if (magnitudeDiff !== 0) {
+      return magnitudeDiff;
+    }
+
+    const directionDiff = right.diff - left.diff;
+    if (directionDiff !== 0) {
+      return directionDiff;
+    }
+
+    return compareText(left.position, right.position);
   });
 }
 
@@ -1103,6 +1161,19 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
     }))
     .sort((left, right) => right.avgRecentChangePct - left.avgRecentChangePct);
 
+  const positionMap = new Map<
+    string,
+    {
+      skuCount: number;
+      launchPrices: number[];
+      snapshotPrices: Record<string, number[]>;
+      directionSummary: {
+        up: number;
+        down: number;
+        flat: number;
+      };
+    }
+  >();
   const seriesMap = new Map<
     string,
     {
@@ -1118,6 +1189,17 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
   >();
 
   processed.forEach((sku) => {
+    const positionName = sku.position || '未定位';
+    const positionCurrent = positionMap.get(positionName) ?? {
+      skuCount: 0,
+      launchPrices: [],
+      snapshotPrices: {},
+      directionSummary: {
+        up: 0,
+        down: 0,
+        flat: 0,
+      },
+    };
     const current = seriesMap.get(sku.model) ?? {
       brand: sku.brand,
       launchPrices: [],
@@ -1129,8 +1211,16 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
       },
     };
 
+    positionCurrent.skuCount += 1;
+    positionCurrent.launchPrices.push(sku.launchPrice);
     current.launchPrices.push(sku.launchPrice);
     sku.snapshots.forEach((snapshot) => {
+      if (!positionCurrent.snapshotPrices[snapshot.date]) {
+        positionCurrent.snapshotPrices[snapshot.date] = [];
+      }
+
+      positionCurrent.snapshotPrices[snapshot.date].push(snapshot.finalPrice);
+
       if (!current.snapshotPrices[snapshot.date]) {
         current.snapshotPrices[snapshot.date] = [];
       }
@@ -1139,15 +1229,48 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
     });
 
     if (sku.recentChange > 0) {
+      positionCurrent.directionSummary.up += 1;
       current.directionSummary.up += 1;
     } else if (sku.recentChange < 0) {
+      positionCurrent.directionSummary.down += 1;
       current.directionSummary.down += 1;
     } else {
+      positionCurrent.directionSummary.flat += 1;
       current.directionSummary.flat += 1;
     }
 
+    positionMap.set(positionName, positionCurrent);
     seriesMap.set(sku.model, current);
   });
+
+  const positionAnalysis = sortPositionPivotRows(
+    Array.from(positionMap.entries()).map(([position, data]) => {
+      const avgLaunch = data.launchPrices.reduce((sum, value) => sum + value, 0) / data.launchPrices.length;
+      const snapshotAvgs = dataset.dates
+        .filter((date) => data.snapshotPrices[date]?.length)
+        .map((date) => ({
+          date,
+          avgPrice:
+            data.snapshotPrices[date].reduce((sum, value) => sum + value, 0) / data.snapshotPrices[date].length,
+        }));
+
+      const lastPoint = snapshotAvgs[snapshotAvgs.length - 1];
+      const prevPoint = snapshotAvgs[snapshotAvgs.length - 2] ?? lastPoint;
+      const diff = lastPoint ? lastPoint.avgPrice - prevPoint.avgPrice : 0;
+      const diffPct = prevPoint?.avgPrice ? (diff / prevPoint.avgPrice) * 100 : 0;
+
+      return {
+        position,
+        skuCount: data.skuCount,
+        avgLaunch,
+        snapshotAvgs,
+        diff,
+        diffPct,
+        trendData: [{ date: '发布', avgPrice: avgLaunch }, ...snapshotAvgs],
+        directionSummary: data.directionSummary,
+      };
+    }),
+  );
 
   const seriesAnalysis = sortSeriesPivotRows(
     Array.from(seriesMap.entries()).map(([model, data]) => {
@@ -1181,6 +1304,7 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
   return {
     skuList: processed,
     brandAnalysis,
+    positionAnalysis,
     seriesAnalysis,
   };
 }
@@ -1933,6 +2057,95 @@ export default function App() {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            <div className="mb-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-gray-100 p-6">
+                <h2 className="text-lg font-bold">机型定位透视表 (汇总层)</h2>
+                <span className="rounded bg-orange-50 px-2 py-1 text-[10px] font-bold uppercase text-orange-600">
+                  {latestRangeLabel} Data
+                </span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-max border-collapse text-left">
+                  <thead>
+                    <tr className="bg-gray-50/50">
+                      <th className="sticky left-0 z-30 min-w-[150px] border-r border-gray-100 bg-gray-50/95 px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">
+                        机型定位
+                      </th>
+                      <th className="sticky left-[150px] z-20 min-w-[110px] border-r border-gray-100 bg-gray-50/95 px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">
+                        SKU 数
+                      </th>
+                      <th className="sticky left-[260px] z-10 min-w-[210px] border-r border-gray-100 bg-gray-50/95 px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">
+                        均价走势
+                      </th>
+                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">发布均价</th>
+                      {dates.map((date) => (
+                        <th key={date} className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">
+                          {date} 均价
+                        </th>
+                      ))}
+                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">最新环比 (金额)</th>
+                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">最新方向结构</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {analysis.positionAnalysis.map((position) => {
+                      const displayChange = getPositionPivotDisplayChange(position);
+                      const hasChange = isPositionPivotChanged(position);
+                      const rowClassName = hasChange ? 'bg-orange-50/40 hover:bg-orange-50/70' : 'bg-white hover:bg-gray-50/50';
+                      const stickyClassName = hasChange ? 'bg-orange-50/90' : 'bg-white';
+
+                      return (
+                        <tr key={position.position} className={`transition-colors ${rowClassName}`}>
+                          <td
+                            className={`sticky left-0 z-30 min-w-[150px] border-r border-gray-100 px-6 py-2.5 text-sm font-bold shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] ${stickyClassName}`}
+                          >
+                            {position.position}
+                          </td>
+                          <td
+                            className={`sticky left-[150px] z-20 min-w-[110px] border-r border-gray-100 px-6 py-2.5 text-sm font-semibold text-gray-600 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.04)] ${stickyClassName}`}
+                          >
+                            {position.skuCount}
+                          </td>
+                          <td
+                            className={`sticky left-[260px] z-10 min-w-[210px] border-r border-gray-100 px-4 py-2 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.03)] ${stickyClassName}`}
+                          >
+                            <SeriesTrendChart points={position.trendData} diffPct={displayChange.diffPct} />
+                          </td>
+                          <td className="px-6 py-2.5 text-sm text-gray-500">{formatPrice(position.avgLaunch)}</td>
+                          {dates.map((date) => {
+                            const point = position.snapshotAvgs.find((item) => item.date === date);
+                            return (
+                              <td key={`${position.position}-${date}`} className="px-6 py-2.5 text-sm font-medium">
+                                {point ? formatPrice(point.avgPrice) : '--'}
+                              </td>
+                            );
+                          })}
+                          <td className="px-6 py-2.5">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${getChangeBadgeClass(displayChange.diffPct)}`}
+                            >
+                              {isZeroChange(displayChange.diffPct) ? (
+                                <Minus size={12} />
+                              ) : displayChange.diffPct > 0 ? (
+                                <ArrowUpRight size={12} />
+                              ) : (
+                                <ArrowDownRight size={12} />
+                              )}
+                              {Math.abs(displayChange.diffPct).toFixed(1)}% ({displayChange.diff > 0 ? '+' : ''}
+                              {Math.round(displayChange.diff)})
+                            </span>
+                          </td>
+                          <td className="px-6 py-2.5 text-sm font-semibold text-gray-600">
+                            {position.directionSummary.up}涨 / {position.directionSummary.down}跌 / {position.directionSummary.flat}平
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
 
