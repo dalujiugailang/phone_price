@@ -24,5 +24,6 @@ COPY --from=builder /app/server ./server
 RUN mkdir -p /app/data
 
 EXPOSE 8787
+EXPOSE 8790
 
 CMD ["npm", "start"]

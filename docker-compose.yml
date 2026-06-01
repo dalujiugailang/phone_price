@@ -17,12 +17,33 @@ services:
     expose:
       - "8787"
 
+  mcp:
+    build:
+      context: .
+    container_name: gtm-price-monitor-mcp
+    restart: unless-stopped
+    command: npm run mcp
+    environment:
+      NODE_ENV: production
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: 8790
+      MCP_API_TOKENS: ${MCP_API_TOKENS}
+      MCP_ALLOWED_ORIGINS: ${MCP_ALLOWED_ORIGINS:-https://mcp.gtmdudu.xyz}
+      PRICE_MONITOR_DATA_DIR: /app/data
+      PRICE_MONITOR_WORKBOOK_PATH: /app/新机售价监控.xlsx
+    volumes:
+      - ./data:/app/data:ro
+      - ./新机售价监控.xlsx:/app/新机售价监控.xlsx:ro
+    expose:
+      - "8790"
+
   caddy:
     image: caddy:2-alpine
     container_name: gtm-price-monitor-caddy
     restart: unless-stopped
     depends_on:
       - app
+      - mcp
     ports:
       - "80:80"
       - "443:443"

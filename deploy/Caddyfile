@@ -14,3 +14,8 @@ daily-price.gtmdudu.xyz {
   encode gzip zstd
   reverse_proxy host.docker.internal:8765
 }
+
+mcp.gtmdudu.xyz {
+  encode gzip zstd
+  reverse_proxy mcp:8790
+}
