@@ -21,7 +21,11 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
   LabelList,
+  Legend,
+  Line,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -30,7 +34,7 @@ import {
 import { loadWorkbookData, PriceSnapshot, SKUData, WorkbookDataset } from './data';
 import { getNewMachinePpvMapping } from './ppvMapping';
 
-type ViewMode = 'dashboard' | 'summary' | 'risk' | 'table' | 'raw';
+type ViewMode = 'dashboard' | 'summary' | 'risk' | 'marketTrend' | 'table' | 'raw';
 
 const CHANGE_SUMMARY_MIN_AMOUNT = 11;
 
@@ -169,6 +173,75 @@ interface PersistRawEditorDraftOptions {
   workbookTargetPpvs?: string[];
 }
 
+interface MarketTrendWeek {
+  week: string;
+  timeRange: string;
+  totalIndex: number;
+  marketNote: string;
+  eventName: string;
+}
+
+interface MarketTrendPayload {
+  sheetName: string;
+  year: number;
+  weeks: MarketTrendWeek[];
+  brandShares: Record<string, Record<string, number | null>>;
+  savedAt: string;
+}
+
+interface MarketTrendOverview {
+  dataset: {
+    sheetName: string;
+    year: number;
+    periodStartWeek: string;
+    periodEndWeek: string;
+    marketScope: string;
+    savedAt: string;
+  };
+  weeklyTotal: MarketTrendWeek[];
+  brandShare: Array<{
+    year: number;
+    week: string;
+    brandName: string;
+    brandGroup: string;
+    sharePct: number;
+  }>;
+  events: Array<{
+    year: number;
+    week: string;
+    eventName: string;
+    eventType: string;
+    relatedBrand: string;
+    remark: string;
+  }>;
+  payload: MarketTrendPayload;
+  summary: {
+    latestWeek: string;
+    latestTotalIndex: number;
+    latestTotalIndexChangePct: number;
+    peakWeek: string;
+    peakTotalIndex: number;
+    topBrand: string;
+    topBrandShare: number;
+    appleShare: number;
+    appleChangePctPoint: number;
+    huaweiShare: number;
+    huaweiChangePctPoint: number;
+    oppoTotalShare: number;
+    oppoTotalChangePctPoint: number;
+    updatedAt: string;
+  };
+}
+
+interface MarketTrendWeekInput {
+  week: string;
+  timeRange: string;
+  totalIndex: string;
+  marketNote: string;
+  eventName: string;
+  brandShares: Record<string, string>;
+}
+
 type RawEditorColumnKey =
   | 'model'
   | 'storage'
@@ -194,6 +267,17 @@ const KNOWN_BRANDS = ['REDMI', 'iQOO', 'OPPO', 'vivo', '华为', '荣耀', '一�
 const RAW_DRAFT_AUTOSAVE_MS = 1200;
 const RAW_DRAFT_FETCH_TIMEOUT_MS = 3000;
 const LIST_PRICE_ATTRIBUTION_IGNORE_DIFF = 1;
+const MARKET_TREND_CORE_BRANDS = ['苹果', '小米', 'vivo总(含iQOO)', '华为', 'OPPO总(含一加、realme)', '荣耀', 'Others'];
+const MARKET_TREND_COLORS: Record<string, string> = {
+  totalIndex: '#3B73F6',
+  苹果: '#39BDEB',
+  小米: '#8B5CF6',
+  'vivo总(含iQOO)': '#F5C542',
+  华为: '#EF4444',
+  'OPPO总(含一加、realme)': '#F59E0B',
+  荣耀: '#7096F5',
+  Others: '#9CA3AF',
+};
 
 function sortDateLabels(left: string, right: string) {
   const [leftMonth, leftDay] = left.split('.').map(Number);
@@ -302,6 +386,173 @@ async function lookupBiPrices(ppvs: string[]): Promise<{ dataDate: string | null
       };
     }),
   };
+}
+
+async function loadMarketTrendOverview(): Promise<MarketTrendOverview> {
+  const response = await fetch('/api/market-trend/overview');
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(payload?.message || '市场趋势数据读取失败');
+  }
+  return payload;
+}
+
+async function persistMarketTrendDraft(payload: MarketTrendPayload) {
+  const response = await fetch('/api/market-trend/draft', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(result?.message || '市场趋势草稿保存失败');
+  }
+  return result;
+}
+
+async function applyMarketTrendPayload(payload: MarketTrendPayload) {
+  const response = await fetch('/api/market-trend/apply', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(result?.message || '市场趋势数据写回失败');
+  }
+  return result;
+}
+
+async function confirmMarketTrendWeek(payload: MarketTrendWeekInput, allowUpdate: boolean) {
+  const response = await fetch('/api/market-trend/weeks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...payload,
+      allowUpdate,
+      totalIndex: parseMarketTrendNumber(payload.totalIndex),
+      brandShares: MARKET_TREND_CORE_BRANDS.map((brandName) => ({
+        brandName,
+        sharePct: parseMarketTrendShareInput(payload.brandShares[brandName]),
+      })),
+    }),
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(result?.message || '市场趋势周度数据落数失败');
+  }
+  return result;
+}
+
+function parseMarketTrendWeekNumber(week: string) {
+  const matched = week.match(/(\d+)/);
+  return matched ? Number(matched[1]) : 0;
+}
+
+function parseMarketTrendNumber(value: string) {
+  const parsed = Number(String(value ?? '').replace(/,/g, '').replace(/%/g, '').trim());
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function parseMarketTrendShareInput(value: string | number | null | undefined) {
+  const parsed = parseMarketTrendNumber(String(value ?? ''));
+  if (!parsed) {
+    return 0;
+  }
+  return Math.abs(parsed) < 1 ? Number((parsed * 100).toFixed(4)) : parsed;
+}
+
+function formatPctPoint(value: number) {
+  return `${value > 0 ? '+' : ''}${value.toFixed(1)}pct`;
+}
+
+function formatMarketShare(value: number | null | undefined) {
+  return typeof value === 'number' && Number.isFinite(value) ? `${value.toFixed(1)}%` : '--';
+}
+
+function getMarketTrendWeeks(overview: MarketTrendOverview) {
+  return overview.weeklyTotal.map((item) => item.week).sort((left, right) => parseMarketTrendWeekNumber(left) - parseMarketTrendWeekNumber(right));
+}
+
+function getMarketTrendShare(overview: MarketTrendOverview, brand: string, week: string) {
+  return overview.brandShare.find((item) => item.brandName === brand && item.week === week)?.sharePct ?? null;
+}
+
+function buildMarketTrendChartData(overview: MarketTrendOverview) {
+  return getMarketTrendWeeks(overview).map((week) => {
+    const total = overview.weeklyTotal.find((item) => item.week === week);
+    const row: Record<string, string | number> = {
+      week,
+      totalIndex: total?.totalIndex ?? 0,
+    };
+    for (const brand of MARKET_TREND_CORE_BRANDS) {
+      row[brand] = getMarketTrendShare(overview, brand, week) ?? 0;
+    }
+    return row;
+  });
+}
+
+function createNextMarketTrendWeekInput(overview: MarketTrendOverview): MarketTrendWeekInput {
+  const weeks = getMarketTrendWeeks(overview);
+  const latestWeek = weeks.at(-1) ?? 'W0';
+  const nextWeek = `W${parseMarketTrendWeekNumber(latestWeek) + 1}`;
+  const latestShares = Object.fromEntries(
+    MARKET_TREND_CORE_BRANDS.map((brand) => [brand, String(getMarketTrendShare(overview, brand, latestWeek) ?? '')]),
+  );
+
+  return {
+    week: nextWeek,
+    timeRange: '',
+    totalIndex: '',
+    marketNote: '',
+    eventName: '',
+    brandShares: latestShares,
+  };
+}
+
+function normalizeMarketTrendBrand(value: string) {
+  const normalized = value.trim().toLowerCase();
+  const aliases: Record<string, string> = {
+    apple: '苹果',
+    苹果: '苹果',
+    xiaomi: '小米',
+    小米: '小米',
+    vivo: 'vivo总(含iQOO)',
+    vivo总: 'vivo总(含iQOO)',
+    'vivo总(含iqoo)': 'vivo总(含iQOO)',
+    iqoo: 'vivo总(含iQOO)',
+    huawei: '华为',
+    华为: '华为',
+    oppo: 'OPPO总(含一加、realme)',
+    oppo总: 'OPPO总(含一加、realme)',
+    'oppo总(含一加、realme)': 'OPPO总(含一加、realme)',
+    一加: 'OPPO总(含一加、realme)',
+    realme: 'OPPO总(含一加、realme)',
+    honor: '荣耀',
+    荣耀: '荣耀',
+    others: 'Others',
+    其他: 'Others',
+  };
+  return aliases[normalized] ?? aliases[value.trim()] ?? '';
+}
+
+function parseMarketTrendPaste(text: string) {
+  const result: Record<string, string> = {};
+  for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      continue;
+    }
+    const parts = trimmed.split(/\t|,|\s{2,}/).map((item) => item.trim()).filter(Boolean);
+    if (parts.length < 2) {
+      continue;
+    }
+    const brand = normalizeMarketTrendBrand(parts[0]);
+    if (brand) {
+      result[brand] = parts[1].replace(/%/g, '');
+    }
+  }
+  return result;
 }
 
 function buildRiskReportCsv(rows: RiskAnalysisRow[], latestDate: string) {
@@ -665,6 +916,59 @@ function getChangeBadgeClass(value: number) {
   }
 
   return value > 0 ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600';
+}
+
+function MarketShareChangeBadge({
+  value,
+  formatter,
+}: {
+  value: number;
+  formatter: (value: number) => string;
+}) {
+  const isFlat = isZeroChange(value);
+  const className = isFlat
+    ? 'market-share-change-badge market-share-change-flat'
+    : value > 0
+      ? 'market-share-change-badge market-share-change-up'
+      : 'market-share-change-badge market-share-change-down';
+  const arrow = isFlat ? '→' : value > 0 ? '↗' : '↘';
+
+  return (
+    <span className={className}>
+      <span className="market-share-change-arrow">{arrow}</span>
+      {formatter(value)}
+    </span>
+  );
+}
+
+function BrandLogoIcon({
+  brand,
+}: {
+  brand: 'apple' | 'huawei' | 'oppo';
+}) {
+  const config = {
+    apple: {
+      label: 'Apple',
+      src: 'https://api.iconify.design/simple-icons/apple.svg?color=%23111827',
+      className: 'brand-logo-icon brand-logo-apple',
+    },
+    huawei: {
+      label: 'Huawei',
+      src: 'https://api.iconify.design/simple-icons/huawei.svg?color=%23DC2626',
+      className: 'brand-logo-icon brand-logo-huawei',
+    },
+    oppo: {
+      label: 'OPPO',
+      src: 'https://api.iconify.design/simple-icons/oppo.svg?color=%23F97316',
+      className: 'brand-logo-icon brand-logo-oppo',
+    },
+  }[brand];
+
+  return (
+    <span className={config.className}>
+      <img src={config.src} alt={config.label} />
+    </span>
+  );
 }
 
 function getAttributionTagClass(detail: string) {
@@ -1324,9 +1628,17 @@ export default function App() {
   const [riskMessage, setRiskMessage] = useState<string | null>(null);
   const [isRiskLoading, setIsRiskLoading] = useState(false);
   const [riskConfirmedAt, setRiskConfirmedAt] = useState<string | null>(null);
+  const [marketTrendOverview, setMarketTrendOverview] = useState<MarketTrendOverview | null>(null);
+  const [marketTrendPayload, setMarketTrendPayload] = useState<MarketTrendPayload | null>(null);
+  const [marketTrendMessage, setMarketTrendMessage] = useState<string | null>(null);
+  const [isMarketTrendLoading, setIsMarketTrendLoading] = useState(true);
+  const [marketTrendError, setMarketTrendError] = useState<string | null>(null);
   const hasHydratedRawDraftRef = useRef(false);
+  const hasHydratedMarketTrendRef = useRef(false);
   const rawDraftAutosaveTimerRef = useRef<number | null>(null);
+  const marketTrendAutosaveTimerRef = useRef<number | null>(null);
   const lastSavedRawDraftSignatureRef = useRef('');
+  const lastSavedMarketTrendSignatureRef = useRef('');
 
   useEffect(() => {
     let cancelled = false;
@@ -1388,6 +1700,38 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    setIsMarketTrendLoading(true);
+    loadMarketTrendOverview()
+      .then((overview) => {
+        if (cancelled) {
+          return;
+        }
+        setMarketTrendOverview(overview);
+        setMarketTrendPayload(overview.payload);
+        setMarketTrendError(null);
+        lastSavedMarketTrendSignatureRef.current = JSON.stringify(overview.payload);
+        hasHydratedMarketTrendRef.current = true;
+      })
+      .catch((loadError) => {
+        if (cancelled) {
+          return;
+        }
+        setMarketTrendError(loadError instanceof Error ? loadError.message : '市场趋势数据读取失败');
+        hasHydratedMarketTrendRef.current = true;
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsMarketTrendLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!hasHydratedRawDraftRef.current || isLoading) {
       return;
     }
@@ -1427,6 +1771,38 @@ export default function App() {
       }
     };
   }, [isLoading, rawEditorDates, rawEditorRows]);
+
+  useEffect(() => {
+    if (!hasHydratedMarketTrendRef.current || !marketTrendPayload) {
+      return;
+    }
+
+    const nextSignature = JSON.stringify(marketTrendPayload);
+    if (nextSignature === lastSavedMarketTrendSignatureRef.current) {
+      return;
+    }
+
+    if (marketTrendAutosaveTimerRef.current) {
+      window.clearTimeout(marketTrendAutosaveTimerRef.current);
+    }
+
+    marketTrendAutosaveTimerRef.current = window.setTimeout(() => {
+      persistMarketTrendDraft(marketTrendPayload)
+        .then(() => {
+          lastSavedMarketTrendSignatureRef.current = nextSignature;
+          setMarketTrendMessage((currentMessage) => currentMessage ?? '市场趋势草稿已自动保存');
+        })
+        .catch((saveError) => {
+          setMarketTrendMessage(saveError instanceof Error ? saveError.message : '市场趋势草稿自动保存失败');
+        });
+    }, RAW_DRAFT_AUTOSAVE_MS);
+
+    return () => {
+      if (marketTrendAutosaveTimerRef.current) {
+        window.clearTimeout(marketTrendAutosaveTimerRef.current);
+      }
+    };
+  }, [marketTrendPayload]);
   const dataset = sourceDataset;
 
   const analysis = useMemo(() => buildAnalysis(dataset), [dataset]);
@@ -1866,6 +2242,54 @@ export default function App() {
     downloadRawEditorWorkbook(rawEditorDates, rawEditorRows);
   };
 
+  const handleApplyMarketTrend = async () => {
+    if (!marketTrendPayload) {
+      return;
+    }
+
+    try {
+      const result = await applyMarketTrendPayload(marketTrendPayload);
+      setMarketTrendOverview(result.overview);
+      setMarketTrendPayload(result.overview.payload);
+      lastSavedMarketTrendSignatureRef.current = JSON.stringify(result.overview.payload);
+      setMarketTrendMessage(`市场趋势已写回 Excel：${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`);
+    } catch (saveError) {
+      setMarketTrendMessage(saveError instanceof Error ? saveError.message : '市场趋势写回失败');
+    }
+  };
+
+  const handleConfirmMarketTrendWeek = async (weekInput: MarketTrendWeekInput, allowUpdate: boolean) => {
+    const result = await confirmMarketTrendWeek(weekInput, allowUpdate);
+    setMarketTrendOverview(result.overview);
+    setMarketTrendPayload(result.overview.payload);
+    lastSavedMarketTrendSignatureRef.current = JSON.stringify(result.overview.payload);
+    setMarketTrendMessage(`${weekInput.week} 数据已成功落库并写回 Excel`);
+  };
+
+  const handleDownloadMarketTrend = () => {
+    if (!marketTrendOverview) {
+      return;
+    }
+    const weeks = getMarketTrendWeeks(marketTrendOverview);
+    const rows = [
+      ['品牌', ...weeks, '最新周份额', '较上周变化'],
+      ...MARKET_TREND_CORE_BRANDS.map((brand) => {
+        const latest = getMarketTrendShare(marketTrendOverview, brand, weeks.at(-1) ?? '');
+        const previous = getMarketTrendShare(marketTrendOverview, brand, weeks.at(-2) ?? '');
+        return [
+          brand,
+          ...weeks.map((week) => getMarketTrendShare(marketTrendOverview, brand, week) ?? ''),
+          latest ?? '',
+          latest !== null && previous !== null ? Number((latest - previous).toFixed(1)) : '',
+        ];
+      }),
+    ];
+    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, '品牌周度份额');
+    XLSX.writeFile(workbook, `市场总量份额趋势_${marketTrendOverview.summary.latestWeek}.xlsx`);
+  };
+
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-[#1A1C1E] font-sans selection:bg-orange-100">
       <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 px-6 py-4 backdrop-blur-md">
@@ -1917,6 +2341,14 @@ export default function App() {
                 }`}
               >
                 <Upload size={16} /> S等级风险
+              </button>
+              <button
+                onClick={() => setView('marketTrend')}
+                className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
+                  view === 'marketTrend' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <BarChart3 size={16} /> 市场趋势
               </button>
               <button
                 onClick={() => setView('raw')}
@@ -2267,6 +2699,16 @@ export default function App() {
             onBiPriceChange={handleBiPriceChange}
             onConfirm={handleConfirmRiskPrices}
             onExport={handleExportRiskReport}
+          />
+        ) : view === 'marketTrend' ? (
+          <MarketTrendPanel
+            overview={marketTrendOverview}
+            isLoading={isMarketTrendLoading}
+            error={marketTrendError}
+            message={marketTrendMessage}
+            onApply={handleApplyMarketTrend}
+            onConfirmWeek={handleConfirmMarketTrendWeek}
+            onDownload={handleDownloadMarketTrend}
           />
         ) : view === 'raw' ? (
           <RawDataPanel
@@ -2754,6 +3196,629 @@ function RiskMonitorPanel({
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+function MarketTrendPanel({
+  overview,
+  isLoading,
+  error,
+  message,
+  onApply,
+  onConfirmWeek,
+  onDownload,
+}: {
+  overview: MarketTrendOverview | null;
+  isLoading: boolean;
+  error: string | null;
+  message: string | null;
+  onApply: () => void;
+  onConfirmWeek: (weekInput: MarketTrendWeekInput, allowUpdate: boolean) => Promise<void>;
+  onDownload: () => void;
+}) {
+  const [weekInput, setWeekInput] = useState<MarketTrendWeekInput | null>(null);
+  const [allowUpdate, setAllowUpdate] = useState(false);
+  const [tableMessage, setTableMessage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  if (isLoading) {
+    return <StatusPanel icon={<Database className="text-orange-600" size={20} />} title="正在读取市场趋势数据" description="页面会优先恢复 SQLite 草稿，没有草稿时读取 Excel 的市场趋势 sheet。" />;
+  }
+
+  if (error || !overview) {
+    return <StatusPanel icon={<Info className="text-red-500" size={20} />} title="市场趋势数据读取失败" description={error ?? '暂无市场趋势数据'} />;
+  }
+
+  const weeks = getMarketTrendWeeks(overview);
+  const latestWeek = overview.summary.latestWeek;
+  const previousWeek = weeks.at(-2) ?? '';
+  const draftWeek = weekInput?.week.trim().toUpperCase();
+  const visibleWeeks = weekInput && draftWeek && !weeks.includes(draftWeek) ? [...weeks, draftWeek] : weeks;
+  const chartData = buildMarketTrendChartData(overview);
+  if (weekInput && draftWeek) {
+    const draftChartRow = {
+      week: draftWeek,
+      totalIndex: parseMarketTrendNumber(weekInput.totalIndex),
+      ...Object.fromEntries(MARKET_TREND_CORE_BRANDS.map((brand) => [brand, parseMarketTrendShareInput(weekInput.brandShares[brand])])),
+    };
+    const existingChartIndex = chartData.findIndex((row) => row.week === draftWeek);
+    if (existingChartIndex >= 0) {
+      chartData[existingChartIndex] = draftChartRow;
+    } else {
+      chartData.push(draftChartRow);
+    }
+  }
+  const startInlineWeek = () => {
+    setWeekInput(createNextMarketTrendWeekInput(overview));
+    setAllowUpdate(false);
+    setTableMessage('已新增草稿周，可在表格中粘贴品牌份额后确认落数');
+  };
+  const startEditWeek = (week: string) => {
+    const total = overview.weeklyTotal.find((item) => item.week === week);
+    setWeekInput({
+      week,
+      timeRange: total?.timeRange ?? '',
+      totalIndex: total?.totalIndex ? String(total.totalIndex) : '',
+      marketNote: total?.marketNote ?? '',
+      eventName: total?.eventName ?? '',
+      brandShares: Object.fromEntries(
+        MARKET_TREND_CORE_BRANDS.map((brand) => {
+          const share = getMarketTrendShare(overview, brand, week);
+          return [brand, share === null ? '' : String(share)];
+        }),
+      ),
+    });
+    setAllowUpdate(true);
+    setTableMessage(`${week} 已进入编辑状态，修改后点击“确认更新”`);
+  };
+  const updateWeekInput = (patch: Partial<MarketTrendWeekInput>) => {
+    setWeekInput((current) => (current ? { ...current, ...patch } : current));
+  };
+  const updateShareInput = (brand: string, value: string) => {
+    setWeekInput((current) =>
+      current
+        ? {
+            ...current,
+            brandShares: {
+              ...current.brandShares,
+              [brand]: value,
+            },
+          }
+        : current,
+    );
+  };
+  const handlePasteShares = (text: string, startBrand?: string) => {
+    const parsed = parseMarketTrendPaste(text);
+    const normalizedRows = text
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (Object.keys(parsed).length === 0 && startBrand && normalizedRows.length > 0) {
+      const startIndex = MARKET_TREND_CORE_BRANDS.indexOf(startBrand);
+      normalizedRows.forEach((line, rowOffset) => {
+        const brand = MARKET_TREND_CORE_BRANDS[startIndex + rowOffset];
+        const value = line.split(/\t|,|\s+/).map((item) => item.trim()).filter(Boolean).at(-1);
+        if (brand && value) {
+          parsed[brand] = value.replace(/%/g, '');
+        }
+      });
+    }
+
+    setWeekInput((current) =>
+      current
+        ? {
+            ...current,
+            brandShares: {
+              ...current.brandShares,
+              ...parsed,
+            },
+          }
+        : current,
+    );
+    setTableMessage(`已解析 ${Object.keys(parsed).length} 个品牌份额`);
+  };
+  const handleConfirm = async () => {
+    if (!weekInput) {
+      return;
+    }
+    setIsSaving(true);
+    setTableMessage(null);
+    try {
+      await onConfirmWeek(weekInput, allowUpdate);
+      setWeekInput(null);
+      setAllowUpdate(false);
+    } catch (saveError) {
+      setTableMessage(saveError instanceof Error ? saveError.message : '周度数据落数失败');
+      if (saveError instanceof Error && saveError.message.includes('已存在')) {
+        setAllowUpdate(true);
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h2 className="flex items-center gap-2 text-xl font-black tracking-tight">
+            <BarChart3 className="text-orange-600" size={22} />
+            市场总量&份额趋势分析
+          </h2>
+          <p className="mt-1 text-sm text-gray-500">
+            {overview.dataset.year}年 · 周度数据 · 手机市场 · {overview.dataset.periodStartWeek}-{overview.dataset.periodEndWeek}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          {message ? <span className="text-sm font-medium text-emerald-600">{message}</span> : null}
+          <button type="button" onClick={startInlineWeek} className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-600 transition hover:border-orange-300 hover:bg-orange-100">
+            新增一周
+          </button>
+          <button type="button" onClick={onDownload} className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800">
+            <Download size={16} /> 导出Excel
+          </button>
+          <button type="button" onClick={onApply} className="rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-700">
+            更新结果
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
+        <MetricCard label="最新总量指数" value={overview.summary.latestTotalIndex.toFixed(1)} subValue={`较上周 ${formatSignedPercent(overview.summary.latestTotalIndexChangePct)}`} trend={overview.summary.latestTotalIndexChangePct > 0 ? 'up' : overview.summary.latestTotalIndexChangePct < 0 ? 'down' : undefined} icon={<BarChart3 className="text-blue-600" />} />
+        <MetricCard label="最高周峰值" value={overview.summary.peakTotalIndex.toFixed(1)} subValue={overview.summary.peakWeek} icon={<TrendingUp className="text-orange-600" />} />
+        <MetricCard label="苹果份额" value={formatMarketShare(overview.summary.appleShare)} subValue={`较上周 ${formatPctPoint(overview.summary.appleChangePctPoint)}`} trend={overview.summary.appleChangePctPoint > 0 ? 'up' : overview.summary.appleChangePctPoint < 0 ? 'down' : undefined} icon={<BrandLogoIcon brand="apple" />} />
+        <MetricCard label="华为份额" value={formatMarketShare(overview.summary.huaweiShare)} subValue={`较上周 ${formatPctPoint(overview.summary.huaweiChangePctPoint)}`} trend={overview.summary.huaweiChangePctPoint > 0 ? 'up' : overview.summary.huaweiChangePctPoint < 0 ? 'down' : undefined} icon={<BrandLogoIcon brand="huawei" />} />
+        <MetricCard label="OPPO总份额" value={formatMarketShare(overview.summary.oppoTotalShare)} subValue={`较上周 ${formatPctPoint(overview.summary.oppoTotalChangePctPoint)}`} trend={overview.summary.oppoTotalChangePctPoint > 0 ? 'up' : overview.summary.oppoTotalChangePctPoint < 0 ? 'down' : undefined} icon={<BrandLogoIcon brand="oppo" />} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm lg:col-span-3">
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="text-lg font-bold">市场总量&份额趋势</h3>
+            <span className="rounded bg-blue-50 px-2 py-1 text-[10px] font-bold uppercase text-blue-600">总量指数</span>
+          </div>
+          <div className="h-[420px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={chartData} margin={{ left: 8, right: 24, top: 12, bottom: 12 }}>
+                <CartesianGrid stroke="#f0f0f0" strokeDasharray="3 3" />
+                <XAxis dataKey="week" tick={{ fontSize: 12, fill: '#6B7280' }} />
+                <YAxis yAxisId="share" tickFormatter={(value) => `${value}%`} tick={{ fontSize: 12, fill: '#6B7280' }} />
+                <YAxis yAxisId="total" orientation="right" tick={{ fontSize: 12, fill: '#6B7280' }} />
+                <Tooltip contentStyle={{ border: 'none', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} formatter={(value: number, name: string) => (name === 'totalIndex' ? [value.toFixed(1), '总量指数'] : [`${Number(value).toFixed(1)}%`, name])} />
+                <Legend verticalAlign="bottom" height={36} />
+                <Bar yAxisId="total" dataKey="totalIndex" name="总量指数" fill={MARKET_TREND_COLORS.totalIndex} radius={[6, 6, 0, 0]} barSize={18} />
+                {MARKET_TREND_CORE_BRANDS.map((brand) => (
+                  <Line key={brand} yAxisId="share" type="monotone" dataKey={brand} name={brand} stroke={MARKET_TREND_COLORS[brand]} strokeWidth={2} dot={false} activeDot={{ r: 5 }} />
+                ))}
+                {overview.events.map((event) => (
+                  <ReferenceLine key={`${event.week}-${event.eventName}`} x={event.week} stroke="#F97316" strokeDasharray="4 4" label={{ value: event.eventName, position: 'top', fontSize: 11, fill: '#C2410C' }} />
+                ))}
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 className="mb-4 text-lg font-bold">核心结论</h3>
+          <div className="space-y-4 text-sm">
+            <p><span className="font-bold">{latestWeek}总量指数</span><br />{overview.summary.latestTotalIndex.toFixed(1)}，较上周 {formatSignedPercent(overview.summary.latestTotalIndexChangePct)}</p>
+            <p><span className="font-bold">{overview.summary.topBrand}份额领先</span><br />{formatMarketShare(overview.summary.topBrandShare)}</p>
+            <p><span className="font-bold">华为份额</span><br />{formatMarketShare(overview.summary.huaweiShare)}，较上周 {formatPctPoint(overview.summary.huaweiChangePctPoint)}</p>
+            <p><span className="font-bold">总量峰值出现在{overview.summary.peakWeek}</span><br />{overview.summary.peakTotalIndex.toFixed(1)}（上年度W52=100）</p>
+            <div className="border-t border-gray-100 pt-4 text-xs text-gray-500">
+              <p>统计周期：{overview.dataset.year}年{overview.dataset.periodStartWeek}-{overview.dataset.periodEndWeek}</p>
+              <p>数据来源：内部统计</p>
+              <p>更新于：{overview.summary.updatedAt ? new Date(overview.summary.updatedAt).toLocaleString('zh-CN', { hour12: false }) : '--'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-4 border-b border-gray-100 p-6 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h3 className="text-lg font-bold">品牌周度份额（%）</h3>
+            <p className="mt-1 text-sm text-gray-500">注：份额基于品牌在各周的销量计算，可能因四舍五入导致合计不为100%。</p>
+            {tableMessage ? <p className="mt-2 text-sm font-semibold text-orange-700">{tableMessage}</p> : null}
+          </div>
+          {weekInput ? (
+            <div className="grid min-w-[520px] grid-cols-2 gap-3 text-sm lg:grid-cols-3">
+              <label className="font-semibold text-gray-600">
+                周次
+                <input value={weekInput.week} onChange={(event) => updateWeekInput({ week: event.target.value.toUpperCase() })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100" />
+              </label>
+              <label className="font-semibold text-gray-600">
+                时间周期
+                <input value={weekInput.timeRange} onChange={(event) => updateWeekInput({ timeRange: event.target.value })} placeholder="2025.5.19-2025.5.25" className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100" />
+              </label>
+              <label className="font-semibold text-gray-600">
+                事件节点
+                <input value={weekInput.eventName} onChange={(event) => updateWeekInput({ eventName: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100" />
+              </label>
+              <label className="col-span-2 font-semibold text-gray-600 lg:col-span-3">
+                大盘环周描述
+                <input value={weekInput.marketNote} onChange={(event) => updateWeekInput({ marketNote: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100" />
+              </label>
+              <div className="col-span-2 flex justify-end gap-3 lg:col-span-3">
+                <button type="button" onClick={() => { setWeekInput(null); setAllowUpdate(false); setTableMessage(null); }} className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800">取消</button>
+                <button type="button" disabled={isSaving} onClick={handleConfirm} className="rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50">{isSaving ? '落数中...' : allowUpdate ? '确认更新' : '确认落数'}</button>
+              </div>
+            </div>
+          ) : null}
+        </div>
+        <div className="market-share-scroll">
+          <table className="market-share-table">
+            <thead>
+              <tr className="bg-gray-50/50">
+                <th className="market-share-brand-head">品牌</th>
+                {visibleWeeks.map((week) => (
+                  <th key={week} className={`market-share-week-head ${week === draftWeek ? 'market-share-draft-head' : ''}`}>
+                    <button type="button" onClick={() => startEditWeek(week)} className="market-share-week-button">
+                      {week}
+                    </button>
+                  </th>
+                ))}
+                <th className="market-share-change-head">较上周变化</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="market-share-row market-share-total-row">
+                <td className="market-share-brand-cell">总量指数</td>
+                {visibleWeeks.map((week) => {
+                  const isDraftWeek = week === draftWeek;
+                  const totalIndex = isDraftWeek && weekInput
+                    ? parseMarketTrendNumber(weekInput.totalIndex)
+                    : overview.weeklyTotal.find((item) => item.week === week)?.totalIndex ?? 0;
+
+                  return (
+                    <td key={`total-${week}`} className={`market-share-week-cell market-share-total-cell ${week === latestWeek ? 'market-share-current-week-cell' : ''} ${isDraftWeek ? 'market-share-draft-cell' : ''}`}>
+                      {isDraftWeek && weekInput ? (
+                        <input
+                          value={weekInput.totalIndex}
+                          onChange={(event) => updateWeekInput({ totalIndex: event.target.value })}
+                          className="market-share-input"
+                        />
+                      ) : (
+                        totalIndex ? totalIndex.toFixed(1) : '--'
+                      )}
+                    </td>
+                  );
+                })}
+                <td className="market-share-change-cell">
+                  <MarketShareChangeBadge value={overview.summary.latestTotalIndexChangePct} formatter={formatSignedPercent} />
+                </td>
+              </tr>
+              {MARKET_TREND_CORE_BRANDS.map((brand) => {
+                const latest = getMarketTrendShare(overview, brand, latestWeek);
+                const previous = getMarketTrendShare(overview, brand, previousWeek);
+                const change = latest !== null && previous !== null ? latest - previous : 0;
+                return (
+                  <tr key={brand} className="market-share-row">
+                    <td className="market-share-brand-cell">{brand}</td>
+                    {visibleWeeks.map((week) => {
+                      const isDraftWeek = week === draftWeek;
+                      const share = isDraftWeek && weekInput ? parseMarketTrendShareInput(weekInput.brandShares[brand]) : getMarketTrendShare(overview, brand, week);
+                      return (
+                        <td key={`${brand}-${week}`} className={`market-share-week-cell ${isDraftWeek ? 'market-share-draft-cell' : share && share >= 20 ? 'market-share-strong-cell' : ''}`}>
+                          {isDraftWeek && weekInput ? (
+                            <input
+                              value={weekInput.brandShares[brand] ?? ''}
+                              onChange={(event) => updateShareInput(brand, event.target.value)}
+                              onPaste={(event) => {
+                                event.preventDefault();
+                                handlePasteShares(event.clipboardData.getData('text'), brand);
+                              }}
+                              className="market-share-input"
+                            />
+                          ) : (
+                            formatMarketShare(share)
+                          )}
+                        </td>
+                      );
+                    })}
+                    <td className="market-share-change-cell">
+                      <MarketShareChangeBadge value={change} formatter={formatPctPoint} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function MarketTrendPanelV2({
+  overview,
+  isLoading,
+  error,
+  message,
+  onApply,
+  onConfirmWeek,
+  onDownload,
+}: {
+  overview: MarketTrendOverview | null;
+  isLoading: boolean;
+  error: string | null;
+  message: string | null;
+  onApply: () => void;
+  onConfirmWeek: (weekInput: MarketTrendWeekInput, allowUpdate: boolean) => Promise<void>;
+  onDownload: () => void;
+}) {
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [weekInput, setWeekInput] = useState<MarketTrendWeekInput | null>(null);
+  const [allowUpdate, setAllowUpdate] = useState(false);
+  const [modalMessage, setModalMessage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  if (isLoading) {
+    return <StatusPanel icon={<Database className="text-orange-600" size={20} />} title="正在读取市场趋势数据" description="页面会优先恢复 SQLite 草稿，没有草稿时读取 Excel 的市场趋势 sheet。" />;
+  }
+  if (error || !overview) {
+    return <StatusPanel icon={<Info className="text-red-500" size={20} />} title="市场趋势数据读取失败" description={error ?? '暂无市场趋势数据'} />;
+  }
+
+  const weeks = getMarketTrendWeeks(overview);
+  const latestWeek = overview.summary.latestWeek;
+  const previousWeek = weeks.at(-2) ?? '';
+  const chartData = buildMarketTrendChartData(overview);
+  const cardStyle: React.CSSProperties = { border: '1px solid #e5e7eb', borderRadius: 16, background: '#fff', boxShadow: '0 1px 3px rgba(15,23,42,0.06)' };
+  const smallButtonStyle: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 38, padding: '0 16px', border: '1px solid #e5e7eb', borderRadius: 12, background: '#fff', color: '#4b5563', fontSize: 13, fontWeight: 700, cursor: 'pointer' };
+  const selectBoxStyle: React.CSSProperties = { height: 42, minWidth: 170, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '0 16px', border: '1px solid #e5e7eb', borderRadius: 12, background: '#fff', color: '#374151', fontSize: 14, fontWeight: 700 };
+  const rowBands: Record<string, string> = {
+    苹果: '#eaf3ff',
+    小米: '#f2ecff',
+    'vivo总(含iQOO)': '#fff7db',
+    华为: '#ffe8e8',
+    'OPPO总(含一加、realme)': '#fff1da',
+    荣耀: '#ecfdf3',
+    Others: '#f3f4f6',
+  };
+  const getChangeColor = (value: number) => (value > 0 ? '#16a34a' : value < 0 ? '#ef4444' : '#64748b');
+  const openAddModal = () => {
+    setWeekInput(createNextMarketTrendWeekInput(overview));
+    setAllowUpdate(false);
+    setModalMessage(null);
+    setIsAddOpen(true);
+  };
+  const updateWeekInput = (patch: Partial<MarketTrendWeekInput>) => {
+    setWeekInput((current) => (current ? { ...current, ...patch } : current));
+  };
+  const updateShareInput = (brand: string, value: string) => {
+    setWeekInput((current) =>
+      current
+        ? {
+            ...current,
+            brandShares: { ...current.brandShares, [brand]: value },
+          }
+        : current,
+    );
+  };
+  const handlePasteShares = (text: string) => {
+    const parsed = parseMarketTrendPaste(text);
+    setWeekInput((current) => (current ? { ...current, brandShares: { ...current.brandShares, ...parsed } } : current));
+    setModalMessage(`已解析 ${Object.keys(parsed).length} 个品牌份额`);
+  };
+  const handleConfirm = async () => {
+    if (!weekInput) {
+      return;
+    }
+    setIsSaving(true);
+    setModalMessage(null);
+    try {
+      await onConfirmWeek(weekInput, allowUpdate);
+      setIsAddOpen(false);
+    } catch (saveError) {
+      setModalMessage(saveError instanceof Error ? saveError.message : '周度数据落数失败');
+      if (saveError instanceof Error && saveError.message.includes('已存在')) {
+        setAllowUpdate(true);
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  const Kpi = ({
+    title,
+    value,
+    sub,
+    color,
+    icon,
+    change,
+  }: {
+    title: string;
+    value: string;
+    sub: string;
+    color: string;
+    icon: React.ReactNode;
+    change?: number;
+  }) => (
+    <div style={{ ...cardStyle, minHeight: 132, padding: 22, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ width: 42, height: 42, borderRadius: 12, background: '#f9fafb', color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
+        {change !== undefined ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: getChangeColor(change), fontSize: 12, fontWeight: 900 }}>{change > 0 ? '上升' : change < 0 ? '下降' : '持平'}</span> : null}
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#6b7280', marginBottom: 8 }}>{title}</div>
+        <div style={{ fontSize: 28, lineHeight: 1, fontWeight: 950, color: '#111827', letterSpacing: 0 }}>{value}</div>
+        <div style={{ marginTop: 8, fontSize: 13, fontWeight: 800, color: change === undefined ? '#9ca3af' : getChangeColor(change) }}>{sub}</div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: '#ea580c', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 10px 20px rgba(234,88,12,0.2)' }}>
+            <BarChart3 size={30} />
+          </div>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 24, lineHeight: 1.2, fontWeight: 950, color: '#111827', letterSpacing: 0 }}>市场总量&份额趋势分析</h2>
+            <p style={{ margin: '6px 0 0', fontSize: 14, color: '#6b7280', fontWeight: 700 }}>{overview.dataset.year}年 · 周度数据 · 手机市场 · {overview.dataset.periodStartWeek}-{overview.dataset.periodEndWeek}</p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <button type="button" onClick={openAddModal} style={{ ...smallButtonStyle, borderColor: '#fed7aa', color: '#ea580c', background: '#fff7ed' }}>新增一周</button>
+          <button type="button" style={smallButtonStyle}>保存图片</button>
+          <button type="button" onClick={onDownload} style={smallButtonStyle}><Download size={16} /> 导出Excel</button>
+          <button type="button" style={smallButtonStyle}>分享</button>
+          <button type="button" style={smallButtonStyle}>全屏</button>
+          <button type="button" onClick={onApply} style={{ ...smallButtonStyle, background: '#ea580c', borderColor: '#ea580c', color: '#fff' }}>更新结果</button>
+        </div>
+      </div>
+
+      <div style={{ ...cardStyle, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 34, flexWrap: 'wrap' }}>
+        {[
+          ['时间范围', `${overview.dataset.year}年 · ${overview.dataset.periodStartWeek}-${overview.dataset.periodEndWeek}`],
+          ['周期粒度', '周度'],
+          ['市场范围', '全部市场'],
+          ['品牌范围', '全部品牌'],
+        ].map(([label, value]) => (
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <span style={{ color: '#475569', fontSize: 14, fontWeight: 900 }}>{label}</span>
+            <div style={selectBoxStyle}>
+              <span>{value}</span>
+              <span style={{ color: '#64748b' }}>⌄</span>
+            </div>
+          </div>
+        ))}
+        {message ? <span style={{ color: '#16a34a', fontSize: 13, fontWeight: 800 }}>{message}</span> : null}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 16 }}>
+        <Kpi title="最新总量指数" value={overview.summary.latestTotalIndex.toFixed(1)} sub={`较上周 ${formatSignedPercent(overview.summary.latestTotalIndexChangePct)}`} change={overview.summary.latestTotalIndexChangePct} color="#2563eb" icon={<BarChart3 size={24} />} />
+        <Kpi title="最高周峰值" value={overview.summary.peakTotalIndex.toFixed(1)} sub={overview.summary.peakWeek} color="#ea580c" icon={<TrendingUp size={24} />} />
+        <Kpi title="苹果份额" value={formatMarketShare(overview.summary.appleShare)} sub={`较上周 ${formatPctPoint(overview.summary.appleChangePctPoint)}`} change={overview.summary.appleChangePctPoint} color="#16a34a" icon={<Info size={24} />} />
+        <Kpi title="华为份额" value={formatMarketShare(overview.summary.huaweiShare)} sub={`较上周 ${formatPctPoint(overview.summary.huaweiChangePctPoint)}`} change={overview.summary.huaweiChangePctPoint} color="#ef4444" icon={<Info size={24} />} />
+        <Kpi title="OPPO总份额" value={formatMarketShare(overview.summary.oppoTotalShare)} sub={`较上周 ${formatPctPoint(overview.summary.oppoTotalChangePctPoint)}`} change={overview.summary.oppoTotalChangePctPoint} color="#f97316" icon={<Info size={24} />} />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 390px', gap: 18 }}>
+        <div style={{ ...cardStyle, padding: 22 }}>
+          <h3 style={{ margin: '0 0 16px', fontSize: 20, fontWeight: 950, color: '#111827' }}>市场总量&份额趋势</h3>
+          <div style={{ height: 470 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={chartData} margin={{ left: 8, right: 22, top: 34, bottom: 24 }}>
+                <CartesianGrid stroke="#e5e7eb" strokeDasharray="3 3" />
+                <XAxis dataKey="week" tick={{ fontSize: 12, fill: '#475569', fontWeight: 700 }} />
+                <YAxis yAxisId="share" tickFormatter={(value) => `${value}%`} domain={[0, 30]} tick={{ fontSize: 12, fill: '#475569', fontWeight: 700 }} />
+                <YAxis yAxisId="total" orientation="right" domain={[0, 300]} tick={{ fontSize: 12, fill: '#475569', fontWeight: 700 }} />
+                <Tooltip contentStyle={{ border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: '0 12px 24px rgba(15,23,42,0.12)' }} formatter={(value: number, name: string) => (name === 'totalIndex' ? [value.toFixed(1), '总量指数'] : [`${Number(value).toFixed(1)}%`, name])} />
+                <Legend verticalAlign="bottom" height={42} iconType="square" />
+                <Bar yAxisId="total" dataKey="totalIndex" name="总量指数" fill={MARKET_TREND_COLORS.totalIndex} radius={[4, 4, 0, 0]} barSize={22}>
+                  <LabelList dataKey="totalIndex" position="top" fill="#2563eb" fontSize={12} fontWeight={900} formatter={(value: number) => value.toFixed(1)} />
+                </Bar>
+                {MARKET_TREND_CORE_BRANDS.filter((brand) => brand !== 'Others').map((brand) => (
+                  <Line key={brand} yAxisId="share" type="monotone" dataKey={brand} name={brand} stroke={MARKET_TREND_COLORS[brand]} strokeWidth={2.4} dot={false} activeDot={{ r: 5 }} />
+                ))}
+                {overview.events.map((event) => (
+                  <ReferenceLine key={`${event.week}-${event.eventName}`} x={event.week} stroke="#93c5fd" strokeWidth={2} label={{ value: event.eventName, position: 'top', fontSize: 12, fontWeight: 800, fill: '#334155' }} />
+                ))}
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div style={{ ...cardStyle, padding: 22 }}>
+          <h3 style={{ margin: '0 0 14px', fontSize: 20, fontWeight: 950, color: '#111827' }}>核心结论</h3>
+          {[
+            [`${latestWeek}总量指数`, `${overview.summary.latestTotalIndex.toFixed(1)}，较上周 ${formatSignedPercent(overview.summary.latestTotalIndexChangePct)}`, '#2563eb'],
+            [`${overview.summary.topBrand}份额领先`, `${formatMarketShare(overview.summary.topBrandShare)}，较上周 ${overview.summary.topBrand === '苹果' ? formatPctPoint(overview.summary.appleChangePctPoint) : ''}`, '#16a34a'],
+            ['华为份额', `${formatMarketShare(overview.summary.huaweiShare)}，较上周 ${formatPctPoint(overview.summary.huaweiChangePctPoint)}`, '#ef4444'],
+            [`总量峰值出现在${overview.summary.peakWeek}`, `${overview.summary.peakTotalIndex.toFixed(1)}（上年度W52=100）`, '#f97316'],
+            ['统计周期', `${overview.dataset.year}年${overview.dataset.periodStartWeek}-${overview.dataset.periodEndWeek}`, '#7c3aed'],
+          ].map(([title, text, color]) => (
+            <div key={title} style={{ display: 'flex', gap: 12, padding: '14px 0', borderTop: '1px solid #e5e7eb' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 999, background: color, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto' }}><Info size={20} /></div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 900, color: '#334155' }}>{title}</div>
+                <div style={{ marginTop: 4, fontSize: 14, fontWeight: 700, color: '#64748b' }}>{text}</div>
+              </div>
+            </div>
+          ))}
+          <div style={{ borderTop: '1px solid #e5e7eb', marginTop: 6, paddingTop: 14, fontSize: 13, fontWeight: 800, color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
+            <span>数据来源：内部统计</span>
+            <span>更新于 {overview.summary.updatedAt ? new Date(overview.summary.updatedAt).toLocaleDateString('zh-CN') : '--'}</span>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ ...cardStyle, overflow: 'hidden' }}>
+        <div style={{ padding: '18px 22px', borderBottom: '1px solid #e5e7eb' }}>
+          <h3 style={{ margin: 0, fontSize: 20, fontWeight: 950, color: '#111827' }}>品牌周度份额（%）</h3>
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', minWidth: 1500, borderCollapse: 'collapse', fontSize: 14 }}>
+            <thead>
+              <tr style={{ background: '#f8fafc' }}>
+                <th style={{ position: 'sticky', left: 0, zIndex: 2, minWidth: 230, background: '#f8fafc', borderRight: '1px solid #e5e7eb', padding: '12px 16px', textAlign: 'left', fontWeight: 950, color: '#334155' }}>品牌</th>
+                {weeks.map((week) => <th key={week} style={{ border: '1px solid #e5e7eb', padding: '11px 14px', fontWeight: 950, color: '#334155', whiteSpace: 'nowrap' }}>{week}</th>)}
+                <th style={{ border: '1px solid #e5e7eb', padding: '11px 14px', fontWeight: 950, color: '#334155', whiteSpace: 'nowrap' }}>{latestWeek}份额</th>
+                <th style={{ border: '1px solid #e5e7eb', padding: '11px 14px', fontWeight: 950, color: '#334155', whiteSpace: 'nowrap' }}>较上周变化</th>
+              </tr>
+            </thead>
+            <tbody>
+              {MARKET_TREND_CORE_BRANDS.map((brand) => {
+                const latest = getMarketTrendShare(overview, brand, latestWeek);
+                const previous = getMarketTrendShare(overview, brand, previousWeek);
+                const change = latest !== null && previous !== null ? latest - previous : 0;
+                return (
+                  <tr key={brand}>
+                    <td style={{ position: 'sticky', left: 0, zIndex: 1, background: '#fff', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb', padding: '11px 16px', fontWeight: 950, color: '#334155', whiteSpace: 'nowrap' }}>{brand}</td>
+                    {weeks.map((week) => (
+                      <td key={`${brand}-${week}`} style={{ border: '1px solid #e5e7eb', padding: '10px 12px', textAlign: 'center', fontWeight: 800, color: '#334155', background: rowBands[brand] }}>{formatMarketShare(getMarketTrendShare(overview, brand, week))}</td>
+                    ))}
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px 12px', textAlign: 'center', fontWeight: 950, color: '#334155' }}>{formatMarketShare(latest)}</td>
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px 12px', textAlign: 'center', fontWeight: 950, color: getChangeColor(change) }}>{formatPctPoint(change)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <p style={{ margin: 0, padding: '14px 22px 20px', color: '#94a3b8', fontSize: 13, fontWeight: 700 }}>注：份额基于品牌在各周的销量计算，可能因四舍五入导致合计不为100%。</p>
+      </div>
+
+      {isAddOpen && weekInput ? (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15,23,42,0.32)', padding: 20 }}>
+          <div style={{ width: 'min(920px, 100%)', maxHeight: '90vh', overflow: 'auto', borderRadius: 16, background: '#fff', boxShadow: '0 24px 60px rgba(15,23,42,0.24)' }}>
+            <div style={{ padding: 22, borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+              <div><h3 style={{ margin: 0, fontSize: 20, fontWeight: 950 }}>新增周度数据</h3><p style={{ margin: '6px 0 0', color: '#64748b', fontWeight: 700 }}>复制 Excel 品牌份额到任意份额输入框即可自动识别。</p></div>
+              <button type="button" onClick={() => setIsAddOpen(false)} style={smallButtonStyle}>关闭</button>
+            </div>
+            <div style={{ padding: 22, display: 'grid', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14 }}>
+                {[
+                  ['周次', 'week'],
+                  ['时间周期', 'timeRange'],
+                  ['总量指数', 'totalIndex'],
+                  ['事件节点', 'eventName'],
+                ].map(([label, key]) => (
+                  <label key={key} style={{ color: '#475569', fontSize: 13, fontWeight: 900 }}>{label}<input value={String(weekInput[key as keyof MarketTrendWeekInput] ?? '')} onChange={(event) => updateWeekInput({ [key]: key === 'week' ? event.target.value.toUpperCase() : event.target.value } as Partial<MarketTrendWeekInput>)} style={{ marginTop: 8, width: '100%', height: 40, border: '1px solid #e5e7eb', borderRadius: 10, padding: '0 12px', fontWeight: 800 }} /></label>
+                ))}
+              </div>
+              <label style={{ color: '#475569', fontSize: 13, fontWeight: 900 }}>大盘环周描述<input value={weekInput.marketNote} onChange={(event) => updateWeekInput({ marketNote: event.target.value })} style={{ marginTop: 8, width: '100%', height: 40, border: '1px solid #e5e7eb', borderRadius: 10, padding: '0 12px', fontWeight: 800 }} /></label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+                {MARKET_TREND_CORE_BRANDS.map((brand) => (
+                  <label key={brand} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, border: '1px solid #e5e7eb', borderRadius: 12, background: '#f8fafc', color: '#334155', fontWeight: 900 }}><span style={{ width: 190 }}>{brand}</span><input value={weekInput.brandShares[brand] ?? ''} onChange={(event) => updateShareInput(brand, event.target.value)} onPaste={(event) => handlePasteShares(event.clipboardData.getData('text'))} style={{ flex: 1, minWidth: 0, height: 36, border: '1px solid #e5e7eb', borderRadius: 8, padding: '0 10px', fontWeight: 800 }} /></label>
+                ))}
+              </div>
+              {modalMessage ? <div style={{ padding: 12, borderRadius: 10, background: '#eff6ff', color: '#2563eb', fontWeight: 900 }}>{modalMessage}</div> : null}
+              {allowUpdate ? <div style={{ padding: 12, borderRadius: 10, background: '#fff7ed', color: '#ea580c', fontWeight: 900 }}>检测到周次可能已存在，再次确认会更新该周。</div> : null}
+            </div>
+            <div style={{ padding: 22, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+              <button type="button" onClick={() => setIsAddOpen(false)} style={smallButtonStyle}>取消</button>
+              <button type="button" disabled={isSaving} onClick={handleConfirm} style={{ ...smallButtonStyle, background: '#2563eb', borderColor: '#2563eb', color: '#fff', opacity: isSaving ? 0.55 : 1 }}>{isSaving ? '落数中...' : allowUpdate ? '确认更新' : '确认落数'}</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

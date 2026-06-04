@@ -9,9 +9,13 @@ services:
       PORT: 8787
       DAILY_PRICE_LOOKUP_URL: ${DAILY_PRICE_LOOKUP_URL:-http://host.docker.internal:8765/api/lookup}
       DAILY_PRICE_TOKEN_PATH: /app/data/api_token.txt
+      PRICE_MONITOR_DATA_DIR: /app/data
+      PRICE_MONITOR_WORKBOOK_PATH: /app/data/新机售价监控.xlsx
+      PRICE_MONITOR_DRAFT_DB_PATH: /app/data/raw-editor-draft.sqlite
+      MARKET_TREND_WORKBOOK_PATH: /app/data/市场总量份额趋势.xlsx
+      MARKET_TREND_DRAFT_DB_PATH: /app/data/market-trend.sqlite
     volumes:
       - ./data:/app/data
-      - ./新机售价监控.xlsx:/app/新机售价监控.xlsx
     extra_hosts:
       - "host.docker.internal:host-gateway"
     expose:
@@ -30,10 +34,9 @@ services:
       MCP_API_TOKENS: ${MCP_API_TOKENS}
       MCP_ALLOWED_ORIGINS: ${MCP_ALLOWED_ORIGINS:-https://mcp.gtmdudu.xyz}
       PRICE_MONITOR_DATA_DIR: /app/data
-      PRICE_MONITOR_WORKBOOK_PATH: /app/新机售价监控.xlsx
+      PRICE_MONITOR_WORKBOOK_PATH: /app/data/新机售价监控.xlsx
     volumes:
       - ./data:/app/data:ro
-      - ./新机售价监控.xlsx:/app/新机售价监控.xlsx:ro
     expose:
       - "8790"
 

@@ -36,13 +36,29 @@ docker compose up -d --build
 说明：
 
 - `Caddy` 会自动申请和续期 HTTPS 证书
-- 数据库文件会保存在宿主机的 `data/raw-editor-draft.sqlite`
+- 主数据源会保存在宿主机的 `data/新机售价监控.xlsx`
+- 市场趋势数据源会保存在宿主机的 `data/市场总量份额趋势.xlsx`
+- 原始数据编辑草稿会保存在宿主机的 `data/raw-editor-draft.sqlite`
+- 市场趋势草稿会保存在宿主机的 `data/market-trend.sqlite`
 - 域名 `gtmdudu.xyz` 和 `www.gtmdudu.xyz` 必须先指向服务器公网 IP
+
+如果服务器根目录已经有在线更新过的 `新机售价监控.xlsx`，首次升级到数据目录挂载前先执行：
+
+```bash
+cd /www/wwwroot/gtm-price-monitor
+mkdir -p data backup-before-data-split
+cp 新机售价监控.xlsx backup-before-data-split/新机售价监控.$(date +%Y%m%d%H%M%S).xlsx 2>/dev/null || true
+cp data/raw-editor-draft.sqlite backup-before-data-split/raw-editor-draft.$(date +%Y%m%d%H%M%S).sqlite 2>/dev/null || true
+cp 新机售价监控.xlsx data/新机售价监控.xlsx
+```
+
+后续发布代码时不要用本地 `新机售价监控.xlsx` 覆盖服务器的 `data/新机售价监控.xlsx`。
 
 更新发布：
 
 ```bash
 cd /www/wwwroot/gtm-price-monitor
+git pull
 docker compose up -d --build
 ```
 
@@ -84,8 +100,11 @@ certbot --nginx -d gtmdudu.xyz -d www.gtmdudu.xyz
 
 ## 持久化数据
 
-- SQLite 文件位置：`data/raw-editor-draft.sqlite`
-- 该文件保存在项目目录下，重启 PM2 或重启服务器后依然会保留
+- 主 Excel 数据源：`data/新机售价监控.xlsx`
+- 市场趋势 Excel 数据源：`data/市场总量份额趋势.xlsx`
+- 原始数据编辑 SQLite：`data/raw-editor-draft.sqlite`
+- 市场趋势 SQLite：`data/market-trend.sqlite`
+- 这些文件保存在项目目录的 `data/` 下，重启 PM2、Docker 或服务器后依然会保留
 
 ## 发布更新
 

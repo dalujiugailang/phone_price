@@ -1,9 +1,11 @@
 node_modules
 dist
 build
+data
 .git
 .DS_Store
 coverage
 *.log
+*.xlsx
 Web Cache
 reports
