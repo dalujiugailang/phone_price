@@ -277,6 +277,9 @@ export function WeeklySalesPanel() {
     launchDate: '',
     isVisible: true,
   });
+  const incompleteUnknownMappings = unknownMappings.filter(
+    (mapping) => !mapping.seriesPosition.trim(),
+  );
 
   const loadOverview = async (nextFilters = filters) => {
     setIsLoading(true);
@@ -317,7 +320,7 @@ export function WeeklySalesPanel() {
           rawModelName: item.rawModelName,
           standardModelName: item.rawModelName,
           brand: '',
-          seriesPosition: '主品牌旗舰',
+          seriesPosition: '',
           priceBand: '5K+',
           launchDate: '',
           isVisible: true,
@@ -331,6 +334,10 @@ export function WeeklySalesPanel() {
 
   const handleConfirm = async () => {
     if (!preview) {
+      return;
+    }
+    if (incompleteUnknownMappings.length > 0) {
+      setError(`发现 ${incompleteUnknownMappings.length} 个新型号/系列未选择系列定位，请先补齐后再落库。`);
       return;
     }
     setMessage(null);
@@ -570,24 +577,38 @@ export function WeeklySalesPanel() {
                     型号 {preview.summary.modelCount} 个，周字段 {preview.summary.weekCount} 个，新增 {preview.summary.newPoints} 个，已存在 {preview.summary.skippedPoints ?? 0} 个，异常 {preview.summary.errorCount} 个
                   </p>
                 </div>
-                <button
-                  onClick={handleConfirm}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800"
-                >
-                  <Save size={16} /> 确认落库
-                </button>
+                <div className="flex flex-col items-end gap-2">
+                  <button
+                    onClick={handleConfirm}
+                    disabled={incompleteUnknownMappings.length > 0}
+                    className="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+                  >
+                    <Save size={16} /> 确认落库
+                  </button>
+                  {incompleteUnknownMappings.length > 0 ? (
+                    <p className="text-xs font-bold text-orange-700">先选择 {incompleteUnknownMappings.length} 个新型号/系列的系列定位</p>
+                  ) : null}
+                </div>
               </div>
 
               {unknownMappings.length > 0 ? (
-                <div className="rounded-xl border border-orange-100 bg-orange-50 p-4">
-                  <h4 className="font-bold text-orange-800">待补型号</h4>
+                <div className="rounded-xl border border-orange-300 bg-orange-50 p-4 ring-2 ring-orange-100">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h4 className="text-base font-bold text-orange-900">发现新型号/系列，需先维护维度</h4>
+                      <p className="mt-1 text-sm font-semibold text-orange-800">这些型号/系列之前不在库里。系列定位必须选择，其他字段可按需要补充。</p>
+                    </div>
+                    <span className="rounded-full bg-white px-3 py-1 text-sm font-bold text-orange-700 shadow-sm">
+                      {unknownMappings.length} 个待处理
+                    </span>
+                  </div>
                   <div className="mt-3 grid gap-3">
                     {unknownMappings.map((mapping, index) => (
                       <div key={mapping.rawModelName} className="grid grid-cols-1 gap-2 md:grid-cols-6">
                         <Input label="原始型号" value={mapping.rawModelName} readOnly />
                         <Input label="标准型号" value={mapping.standardModelName} onChange={(value) => updateUnknownMapping(index, 'standardModelName', value, setUnknownMappings)} />
-                        <Input label="品牌" value={mapping.brand} onChange={(value) => updateUnknownMapping(index, 'brand', value, setUnknownMappings)} />
-                        <Select label="系列定位" value={mapping.seriesPosition} options={overview.filters.seriesPositions} onChange={(value) => updateUnknownMapping(index, 'seriesPosition', value, setUnknownMappings)} />
+                        <Select label="品牌" value={mapping.brand} options={overview.filters.brands} allowEmpty onChange={(value) => updateUnknownMapping(index, 'brand', value, setUnknownMappings)} />
+                        <Select label="系列定位" value={mapping.seriesPosition} options={overview.filters.seriesPositions} allowEmpty onChange={(value) => updateUnknownMapping(index, 'seriesPosition', value, setUnknownMappings)} />
                         <Input label="价格带" value={mapping.priceBand} onChange={(value) => updateUnknownMapping(index, 'priceBand', value, setUnknownMappings)} />
                         <Input label="上市日期" value={mapping.launchDate} onChange={(value) => updateUnknownMapping(index, 'launchDate', value, setUnknownMappings)} />
                       </div>
@@ -699,11 +720,24 @@ function Input({ label, value, readOnly, onChange }: { label: string; value: str
   );
 }
 
-function Select({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) {
+function Select({
+  label,
+  value,
+  options,
+  allowEmpty,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  allowEmpty?: boolean;
+  onChange: (value: string) => void;
+}) {
   return (
     <label className="space-y-1">
       <span className="text-xs font-bold text-gray-500">{label}</span>
       <select value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100">
+        {allowEmpty ? <option value="">请选择</option> : null}
         {options.map((option) => (
           <option key={option} value={option}>
             {option}
