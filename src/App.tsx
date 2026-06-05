@@ -33,8 +33,9 @@ import {
 } from 'recharts';
 import { loadWorkbookData, PriceSnapshot, SKUData, WorkbookDataset } from './data';
 import { getNewMachinePpvMapping } from './ppvMapping';
+import { WeeklySalesPanel } from './WeeklySalesPanel';
 
-type ViewMode = 'dashboard' | 'summary' | 'risk' | 'marketTrend' | 'table' | 'raw';
+type ViewMode = 'dashboard' | 'summary' | 'risk' | 'marketTrend' | 'weeklySales' | 'table' | 'raw';
 
 const CHANGE_SUMMARY_MIN_AMOUNT = 11;
 
@@ -2351,6 +2352,14 @@ export default function App() {
                 <BarChart3 size={16} /> 市场趋势
               </button>
               <button
+                onClick={() => setView('weeklySales')}
+                className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
+                  view === 'weeklySales' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <BarChart3 size={16} /> 新品周销
+              </button>
+              <button
                 onClick={() => setView('raw')}
                 className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
                   view === 'raw' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
@@ -2372,7 +2381,9 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-[1600px] space-y-6 p-6">
-        {isLoading ? (
+        {view === 'weeklySales' ? (
+          <WeeklySalesPanel />
+        ) : isLoading ? (
           <StatusPanel
             icon={<Database className="text-orange-600" size={20} />}
             title="正在读取 Excel 数据"

@@ -5,6 +5,7 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';
 import XLSX from 'xlsx';
+import { registerWeeklySalesRoutes } from './lib/weekly-sales.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,6 +44,8 @@ const marketTrendBrandGroups = new Map([
 ]);
 
 app.use(express.json({ limit: '10mb' }));
+
+const weeklySalesService = registerWeeklySalesRoutes(app, { dataDir });
 
 async function ensureDataDir() {
   await fs.mkdir(dataDir, { recursive: true });
@@ -916,6 +919,8 @@ app.get('/api/health', (_request, response) => {
     marketTrendDatabasePath,
     workbookPath,
     marketTrendWorkbookPath,
+    weeklySalesDatabasePath: weeklySalesService.databasePath,
+    weeklySalesWorkbookPath: weeklySalesService.workbookPath,
   });
 });
 
