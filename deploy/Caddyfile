@@ -1,3 +1,15 @@
+http://8.162.25.246 {
+  encode gzip zstd
+
+  handle /api/daily-price/* {
+    reverse_proxy host.docker.internal:8765
+  }
+
+  handle {
+    reverse_proxy app:8787
+  }
+}
+
 gtmdudu.xyz, www.gtmdudu.xyz {
   encode gzip zstd
 
