@@ -36,8 +36,15 @@ import { getNewMachinePpvMapping } from './ppvMapping';
 import { WeeklySalesPanel } from './WeeklySalesPanel';
 
 type ViewMode = 'dashboard' | 'summary' | 'risk' | 'marketTrend' | 'weeklySales' | 'table' | 'raw';
+type PositionPivotScope = 'all' | 'stable' | 'new526';
 
 const CHANGE_SUMMARY_MIN_AMOUNT = 11;
+const NEW_BATCH_START_DATE = '5.26';
+const POSITION_PIVOT_SCOPE_OPTIONS: Array<{ value: PositionPivotScope; label: string }> = [
+  { value: 'all', label: '全量' },
+  { value: 'stable', label: '老样本' },
+  { value: 'new526', label: '5.26新增' },
+];
 
 interface AnalysisSKU extends SKUData {
   totalChange: number;
@@ -835,6 +842,105 @@ function sortPositionPivotRows(items: PositionAnalysisItem[]) {
   });
 }
 
+function hasFinalPriceOnDate(sku: SKUData, date: string) {
+  return Boolean(sku.snapshots.find((snapshot) => snapshot.date === date && snapshot.finalPrice));
+}
+
+function getFirstFinalPriceDate(sku: SKUData) {
+  return sku.snapshots.find((snapshot) => snapshot.finalPrice)?.date ?? '';
+}
+
+function filterPositionPivotSkus(skuList: AnalysisSKU[], dates: string[], scope: PositionPivotScope) {
+  if (scope === 'stable') {
+    return skuList.filter((sku) => dates.every((date) => hasFinalPriceOnDate(sku, date)));
+  }
+
+  if (scope === 'new526') {
+    return skuList.filter((sku) => getFirstFinalPriceDate(sku) === NEW_BATCH_START_DATE);
+  }
+
+  return skuList;
+}
+
+function buildPositionAnalysisForSkus(skuList: AnalysisSKU[], dates: string[], includeLaunchTrendPoint = true) {
+  const positionMap = new Map<
+    string,
+    {
+      skuCount: number;
+      launchPrices: number[];
+      snapshotPrices: Record<string, number[]>;
+      directionSummary: {
+        up: number;
+        down: number;
+        flat: number;
+      };
+    }
+  >();
+
+  skuList.forEach((sku) => {
+    const positionName = sku.position || '未定位';
+    const positionCurrent = positionMap.get(positionName) ?? {
+      skuCount: 0,
+      launchPrices: [],
+      snapshotPrices: {},
+      directionSummary: {
+        up: 0,
+        down: 0,
+        flat: 0,
+      },
+    };
+
+    positionCurrent.skuCount += 1;
+    positionCurrent.launchPrices.push(sku.launchPrice);
+    sku.snapshots.forEach((snapshot) => {
+      if (!positionCurrent.snapshotPrices[snapshot.date]) {
+        positionCurrent.snapshotPrices[snapshot.date] = [];
+      }
+
+      positionCurrent.snapshotPrices[snapshot.date].push(snapshot.finalPrice);
+    });
+
+    if (sku.recentChange > 0) {
+      positionCurrent.directionSummary.up += 1;
+    } else if (sku.recentChange < 0) {
+      positionCurrent.directionSummary.down += 1;
+    } else {
+      positionCurrent.directionSummary.flat += 1;
+    }
+
+    positionMap.set(positionName, positionCurrent);
+  });
+
+  return sortPositionPivotRows(
+    Array.from(positionMap.entries()).map(([position, data]) => {
+      const avgLaunch = data.launchPrices.reduce((sum, value) => sum + value, 0) / data.launchPrices.length;
+      const snapshotAvgs = dates
+        .filter((date) => data.snapshotPrices[date]?.length)
+        .map((date) => ({
+          date,
+          avgPrice:
+            data.snapshotPrices[date].reduce((sum, value) => sum + value, 0) / data.snapshotPrices[date].length,
+        }));
+
+      const lastPoint = snapshotAvgs[snapshotAvgs.length - 1];
+      const prevPoint = snapshotAvgs[snapshotAvgs.length - 2] ?? lastPoint;
+      const diff = lastPoint ? lastPoint.avgPrice - prevPoint.avgPrice : 0;
+      const diffPct = prevPoint?.avgPrice ? (diff / prevPoint.avgPrice) * 100 : 0;
+
+      return {
+        position,
+        skuCount: data.skuCount,
+        avgLaunch,
+        snapshotAvgs,
+        diff,
+        diffPct,
+        trendData: includeLaunchTrendPoint ? [{ date: '发布', avgPrice: avgLaunch }, ...snapshotAvgs] : snapshotAvgs,
+        directionSummary: data.directionSummary,
+      };
+    }),
+  );
+}
+
 function compareText(left: string, right: string) {
   return left.localeCompare(right, 'zh-Hans-CN', { numeric: true, sensitivity: 'base' });
 }
@@ -1620,6 +1726,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [view, setView] = useState<ViewMode>('dashboard');
+  const [positionPivotScope, setPositionPivotScope] = useState<PositionPivotScope>('stable');
   const [attributionFilter, setAttributionFilter] = useState('all');
   const [rawEditorDates, setRawEditorDates] = useState<string[]>([]);
   const [rawEditorRows, setRawEditorRows] = useState<RawEditorRow[]>([]);
@@ -1805,8 +1912,13 @@ export default function App() {
     };
   }, [marketTrendPayload]);
   const dataset = sourceDataset;
+  const dates = dataset?.dates ?? [];
 
   const analysis = useMemo(() => buildAnalysis(dataset), [dataset]);
+  const scopedPositionAnalysis = useMemo(() => {
+    const selectedSkus = filterPositionPivotSkus(analysis.skuList, dates, positionPivotScope);
+    return buildPositionAnalysisForSkus(selectedSkus, dates, positionPivotScope !== 'new526');
+  }, [analysis.skuList, dates, positionPivotScope]);
   const attributionOptions = useMemo(() => {
     const optionMap = new Map<string, number>();
 
@@ -1928,7 +2040,6 @@ export default function App() {
   );
   const riskBiPriceCount = useMemo(() => riskRows.filter((row) => row.biPrice).length, [riskRows]);
 
-  const dates = dataset?.dates ?? [];
   const latestDate = dates.at(-1) ?? '--';
   const previousDate = dates.at(-2) ?? latestDate;
   const brandCount = dataset?.brands.length ?? 0;
@@ -2504,11 +2615,29 @@ export default function App() {
             </div>
 
             <div className="mb-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-              <div className="flex items-center justify-between border-b border-gray-100 p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-6">
                 <h2 className="text-lg font-bold">机型定位透视表 (汇总层)</h2>
-                <span className="rounded bg-orange-50 px-2 py-1 text-[10px] font-bold uppercase text-orange-600">
-                  {latestRangeLabel} Data
-                </span>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+                    {POSITION_PIVOT_SCOPE_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setPositionPivotScope(option.value)}
+                        className={`rounded-md px-3 py-1.5 text-xs font-bold transition-colors ${
+                          positionPivotScope === option.value
+                            ? 'bg-white text-orange-600 shadow-sm'
+                            : 'text-gray-500 hover:bg-white/70 hover:text-gray-900'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="rounded bg-orange-50 px-2 py-1 text-[10px] font-bold uppercase text-orange-600">
+                    {latestRangeLabel} Data
+                  </span>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="min-w-max border-collapse text-left">
@@ -2534,7 +2663,7 @@ export default function App() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {analysis.positionAnalysis.map((position) => {
+                    {scopedPositionAnalysis.map((position) => {
                       const displayChange = getPositionPivotDisplayChange(position);
                       const hasChange = isPositionPivotChanged(position);
                       const rowClassName = hasChange ? 'bg-orange-50/40 hover:bg-orange-50/70' : 'bg-white hover:bg-gray-50/50';
