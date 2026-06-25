@@ -7,6 +7,7 @@ export interface PriceSnapshot {
   coupon: number;
   finalPrice: number;
   biPrice?: number;
+  isDelisted?: boolean;
 }
 
 export interface SKUData {
@@ -67,6 +68,11 @@ function parseNumber(value: unknown) {
 function isExplicitZeroCell(value: unknown) {
   const normalized = String(value ?? '').replace(/\s+/g, '').trim();
   return normalized === '#VALUE!' || normalized === '已下架';
+}
+
+function isDelistedCell(value: unknown) {
+  const normalized = String(value ?? '').replace(/\s+/g, '').trim();
+  return normalized === '已下架';
 }
 
 function toDateLabel(header: string) {
@@ -236,6 +242,8 @@ function parseWorkbook(arrayBuffer: ArrayBuffer): WorkbookDataset {
           const listPrice = parseNumber(listPriceValue);
           const coupon = parseNumber(couponValue);
           const biPrice = parseNumber(biPriceValue);
+          const isDelisted =
+            isDelistedCell(finalPriceValue) || isDelistedCell(listPriceValue) || isDelistedCell(couponValue);
           const hasExplicitZeroCell =
             isExplicitZeroCell(finalPriceValue) || isExplicitZeroCell(listPriceValue) || isExplicitZeroCell(couponValue);
 
@@ -249,6 +257,7 @@ function parseWorkbook(arrayBuffer: ArrayBuffer): WorkbookDataset {
             listPrice,
             coupon,
             biPrice: biPrice || undefined,
+            isDelisted: isDelisted || undefined,
           };
 
           return snapshot;

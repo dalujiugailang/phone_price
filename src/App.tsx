@@ -307,6 +307,10 @@ function parseNumericInput(value: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function isDelistedInput(value: string) {
+  return value.replace(/\s+/g, '').trim() === '已下架';
+}
+
 function parseNumberValue(value: unknown) {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value;
@@ -842,17 +846,65 @@ function sortPositionPivotRows(items: PositionAnalysisItem[]) {
   });
 }
 
-function hasFinalPriceOnDate(sku: SKUData, date: string) {
-  return Boolean(sku.snapshots.find((snapshot) => snapshot.date === date && snapshot.finalPrice));
-}
-
 function getFirstFinalPriceDate(sku: SKUData) {
   return sku.snapshots.find((snapshot) => snapshot.finalPrice)?.date ?? '';
 }
 
+function isSkuDelistedOnLatestDate(sku: SKUData, dates: string[]) {
+  const latestDate = dates.at(-1);
+  return Boolean(latestDate && sku.snapshots.find((snapshot) => snapshot.date === latestDate)?.isDelisted);
+}
+
+function getPositionPivotSnapshots(sku: SKUData, dates: string[]) {
+  const snapshotByDate = new Map(sku.snapshots.map((snapshot) => [snapshot.date, snapshot]));
+  const normalizedSnapshots: PriceSnapshot[] = [];
+  let previousSnapshot: PriceSnapshot | null = null;
+
+  dates.forEach((date) => {
+    const snapshot = snapshotByDate.get(date);
+    if (!snapshot) {
+      return;
+    }
+
+    if (snapshot.isDelisted) {
+      if (!previousSnapshot) {
+        return;
+      }
+
+      const carriedSnapshot: PriceSnapshot = {
+        ...snapshot,
+        finalPrice: previousSnapshot.finalPrice,
+        listPrice: previousSnapshot.listPrice,
+        coupon: previousSnapshot.coupon,
+        biPrice: previousSnapshot.biPrice,
+      };
+      normalizedSnapshots.push(carriedSnapshot);
+      return;
+    }
+
+    normalizedSnapshots.push(snapshot);
+    previousSnapshot = snapshot;
+  });
+
+  return normalizedSnapshots;
+}
+
+function getSnapshotRecentChange(snapshots: PriceSnapshot[]) {
+  const last = snapshots[snapshots.length - 1];
+  const prev = snapshots[snapshots.length - 2] ?? last;
+  return last ? last.finalPrice - prev.finalPrice : 0;
+}
+
+function hasPositionPivotPriceOnEveryDate(sku: SKUData, dates: string[]) {
+  const normalizedSnapshots = getPositionPivotSnapshots(sku, dates);
+  return dates.every((date) =>
+    normalizedSnapshots.some((snapshot) => snapshot.date === date && snapshot.finalPrice),
+  );
+}
+
 function filterPositionPivotSkus(skuList: AnalysisSKU[], dates: string[], scope: PositionPivotScope) {
   if (scope === 'stable') {
-    return skuList.filter((sku) => dates.every((date) => hasFinalPriceOnDate(sku, date)));
+    return skuList.filter((sku) => hasPositionPivotPriceOnEveryDate(sku, dates));
   }
 
   if (scope === 'new526') {
@@ -877,7 +929,8 @@ function buildPositionAnalysisForSkus(skuList: AnalysisSKU[], dates: string[], i
     }
   >();
 
-  skuList.forEach((sku) => {
+  skuList.filter((sku) => !isSkuDelistedOnLatestDate(sku, dates)).forEach((sku) => {
+    const normalizedSnapshots = getPositionPivotSnapshots(sku, dates);
     const positionName = sku.position || '未定位';
     const positionCurrent = positionMap.get(positionName) ?? {
       skuCount: 0,
@@ -892,7 +945,7 @@ function buildPositionAnalysisForSkus(skuList: AnalysisSKU[], dates: string[], i
 
     positionCurrent.skuCount += 1;
     positionCurrent.launchPrices.push(sku.launchPrice);
-    sku.snapshots.forEach((snapshot) => {
+    normalizedSnapshots.forEach((snapshot) => {
       if (!positionCurrent.snapshotPrices[snapshot.date]) {
         positionCurrent.snapshotPrices[snapshot.date] = [];
       }
@@ -900,9 +953,10 @@ function buildPositionAnalysisForSkus(skuList: AnalysisSKU[], dates: string[], i
       positionCurrent.snapshotPrices[snapshot.date].push(snapshot.finalPrice);
     });
 
-    if (sku.recentChange > 0) {
+    const recentChange = getSnapshotRecentChange(normalizedSnapshots);
+    if (recentChange > 0) {
       positionCurrent.directionSummary.up += 1;
-    } else if (sku.recentChange < 0) {
+    } else if (recentChange < 0) {
       positionCurrent.directionSummary.down += 1;
     } else {
       positionCurrent.directionSummary.flat += 1;
@@ -1481,6 +1535,8 @@ function buildDatasetFromRawEditorRows(
           const listPrice = parseNumericInput(snapshot.listPrice);
           const coupon = parseNumericInput(snapshot.coupon);
           const biPrice = parseNumericInput(snapshot.biPrice ?? '');
+          const isDelisted =
+            isDelistedInput(snapshot.finalPrice) || isDelistedInput(snapshot.listPrice) || isDelistedInput(snapshot.coupon);
           const hasInputValue = Boolean(
             snapshot.finalPrice.trim() || snapshot.listPrice.trim() || snapshot.coupon.trim() || snapshot.biPrice?.trim(),
           );
@@ -1495,6 +1551,7 @@ function buildDatasetFromRawEditorRows(
             listPrice,
             coupon,
             biPrice: biPrice || undefined,
+            isDelisted: isDelisted || undefined,
           };
 
           return priceSnapshot;
