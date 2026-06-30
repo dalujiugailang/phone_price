@@ -312,6 +312,19 @@ function sortMarketTrendWeeks(weeks) {
   return [...weeks].sort((left, right) => parseWeekNumber(left) - parseWeekNumber(right));
 }
 
+function getMarketTrendDisplayYear(payload) {
+  const years = (payload.weeks ?? [])
+    .flatMap((item) => String(item.timeRange ?? '').match(/20\d{2}/g) ?? [])
+    .map(Number)
+    .filter((year) => Number.isFinite(year));
+
+  if (years.length > 0) {
+    return Math.max(...years);
+  }
+
+  return payload.year;
+}
+
 function parseMarketTrendSheetRows(rows) {
   const headerRow = rows[1] ?? [];
   const weekColumns = [];
@@ -409,10 +422,11 @@ function validateMarketTrendPayload(payload) {
 
 function buildMarketTrendOverview(payload) {
   const weeks = sortMarketTrendWeeks(payload.weeks.map((item) => item.week));
+  const displayYear = getMarketTrendDisplayYear(payload);
   const weeklyTotal = weeks.map((week) => {
     const item = payload.weeks.find((entry) => entry.week === week) ?? {};
     return {
-      year: payload.year,
+      year: displayYear,
       week,
       timeRange: item.timeRange ?? '',
       totalIndex: parseMarketTrendNumber(item.totalIndex) ?? 0,
@@ -428,7 +442,7 @@ function buildMarketTrendOverview(payload) {
         continue;
       }
       brandShare.push({
-        year: payload.year,
+        year: displayYear,
         week,
         brandName,
         brandGroup: marketTrendBrandGroups.get(brandName) ?? brandName.replace(/^-/, ''),
@@ -459,7 +473,7 @@ function buildMarketTrendOverview(payload) {
     source: 'excel-sheet',
     dataset: {
       sheetName: marketTrendSheetName,
-      year: payload.year,
+      year: displayYear,
       periodStartWeek: weeks[0] ?? '',
       periodEndWeek: latestWeek,
       marketScope: '全部市场',
@@ -470,7 +484,7 @@ function buildMarketTrendOverview(payload) {
     events: weeklyTotal
       .filter((item) => item.eventName)
       .map((item) => ({
-        year: payload.year,
+        year: displayYear,
         week: item.week,
         eventName: item.eventName,
         eventType: '新品发布',
