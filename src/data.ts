@@ -120,11 +120,16 @@ function sortDateLabels(left: string, right: string) {
 function inferBrand(modelName: string) {
   const matchedBrand = KNOWN_BRANDS.find((brand) => modelName.startsWith(brand));
   if (matchedBrand) {
-    return matchedBrand;
+    return normalizeBrand(matchedBrand);
   }
 
   const [firstToken] = modelName.split(/\s+/);
-  return firstToken || modelName;
+  return normalizeBrand(firstToken || modelName);
+}
+
+function normalizeBrand(value: string) {
+  const brand = value.trim();
+  return brand === '红米' || brand.toUpperCase() === 'REDMI' ? '小米' : brand;
 }
 
 function inferSeries(modelName: string, brand: string) {
@@ -222,7 +227,7 @@ function parseWorkbook(arrayBuffer: ArrayBuffer): WorkbookDataset {
         return null;
       }
 
-      const brand = String(brandIndex === -1 ? '' : row[brandIndex] ?? '').trim() || inferBrand(model);
+      const brand = normalizeBrand(String(brandIndex === -1 ? '' : row[brandIndex] ?? '')) || inferBrand(model);
       const series = String(seriesIndex === -1 ? '' : row[seriesIndex] ?? '').trim() || inferSeries(model, brand);
       const position = String(positionIndex === -1 ? '' : row[positionIndex] ?? '').trim();
       const ppv = String(ppvIndex === -1 ? '' : row[ppvIndex] ?? '').trim();

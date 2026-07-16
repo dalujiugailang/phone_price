@@ -16,6 +16,11 @@ function normalizeText(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
 }
 
+function normalizeBrand(value) {
+  const brand = normalizeText(value);
+  return brand === '红米' ? '小米' : brand;
+}
+
 function normalizeKey(value) {
   return normalizeText(value).replace(/\s+/g, '').toLowerCase();
 }
@@ -45,19 +50,6 @@ function parseNumberValue(value) {
 
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : null;
-}
-
-function excelDateToIso(value) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return normalizeText(value).slice(0, 10);
-  }
-
-  const parsed = XLSX.SSF.parse_date_code(value);
-  if (!parsed) {
-    return normalizeText(value).slice(0, 10);
-  }
-
-  return `${parsed.y}-${String(parsed.m).padStart(2, '0')}-${String(parsed.d).padStart(2, '0')}`;
 }
 
 function toId(prefix) {
@@ -97,8 +89,6 @@ function mapModelRow(row) {
     standardModelName: row.standard_model_name,
     brand: row.brand,
     seriesPosition: row.series_position,
-    priceBand: row.price_band,
-    launchDate: row.launch_date,
     isVisible: fromSqlBool(row.is_visible),
     sortOrder: row.sort_order ?? 0,
     remark: row.remark ?? '',
@@ -142,6 +132,15 @@ function createWeeklySalesService({ dataDir }) {
         raw_model_name TEXT NOT NULL UNIQUE,
         standard_model_name TEXT NOT NULL,
         created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS weekly_dimension_option (
+        option_type TEXT NOT NULL,
+        option_value TEXT NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (option_type, option_value)
       );
 
       CREATE TABLE IF NOT EXISTS weekly_cumulative_sales (
@@ -193,6 +192,122 @@ function createWeeklySalesService({ dataDir }) {
     return ensureDatabase().prepare('SELECT COUNT(*) AS count FROM weekly_model_dimension').get().count;
   }
 
+  function ensureConfigInitialized() {
+    const db = ensureDatabase();
+    const timestamp = nowIso();
+    const insertOption = db.prepare(`
+      INSERT OR IGNORE INTO weekly_dimension_option (
+        option_type, option_value, sort_order, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?)
+    `);
+    const redmiOption = db
+      .prepare("SELECT sort_order FROM weekly_dimension_option WHERE option_type = 'brand' AND option_value = '红米'")
+      .get();
+    db.prepare("UPDATE weekly_model_dimension SET brand = '小米', updated_at = ? WHERE brand = '红米'").run(timestamp);
+    db.prepare("DELETE FROM weekly_dimension_option WHERE option_type = 'brand' AND option_value = '红米'").run();
+    const brandCount = db.prepare("SELECT COUNT(*) AS count FROM weekly_dimension_option WHERE option_type = 'brand'").get().count;
+    if (brandCount === 0) {
+      const brands = db
+        .prepare("SELECT DISTINCT brand FROM weekly_model_dimension WHERE TRIM(brand) <> '' ORDER BY brand ASC")
+        .all()
+        .map((row) => row.brand);
+      brands.forEach((brand, index) => insertOption.run('brand', brand, index + 1, timestamp, timestamp));
+    } else if (redmiOption) {
+      insertOption.run('brand', '小米', redmiOption.sort_order, timestamp, timestamp);
+    }
+
+    const positionCount = db.prepare("SELECT COUNT(*) AS count FROM weekly_dimension_option WHERE option_type = 'series_position'").get().count;
+    if (positionCount === 0) {
+      DEFAULT_SERIES_POSITIONS.forEach((position, index) => insertOption.run('series_position', position, index + 1, timestamp, timestamp));
+    }
+  }
+
+  function getConfig() {
+    ensureConfigInitialized();
+    const rows = ensureDatabase()
+      .prepare('SELECT option_type, option_value FROM weekly_dimension_option ORDER BY option_type ASC, sort_order ASC, option_value ASC')
+      .all();
+    return {
+      brands: rows.filter((row) => row.option_type === 'brand').map((row) => row.option_value),
+      seriesPositions: rows.filter((row) => row.option_type === 'series_position').map((row) => row.option_value),
+    };
+  }
+
+  function normalizeOptions(values) {
+    return [...new Set((Array.isArray(values) ? values : []).map(normalizeText).filter(Boolean))];
+  }
+
+  async function updateConfig(payload) {
+    await seedFromWorkbookIfNeeded();
+    const brands = [...new Set(normalizeOptions(payload.brands).map(normalizeBrand))];
+    const seriesPositions = normalizeOptions(payload.seriesPositions);
+    if (brands.length === 0) {
+      throw new Error('至少保留一个品牌选项');
+    }
+    if (seriesPositions.length === 0) {
+      throw new Error('至少保留一个系列定位选项');
+    }
+
+    const db = ensureDatabase();
+    const usedBrands = db
+      .prepare("SELECT DISTINCT brand FROM weekly_model_dimension WHERE TRIM(brand) <> '' ORDER BY brand ASC")
+      .all()
+      .map((row) => row.brand);
+    const usedSeriesPositions = db
+      .prepare("SELECT DISTINCT series_position FROM weekly_model_dimension WHERE TRIM(series_position) <> '' ORDER BY series_position ASC")
+      .all()
+      .map((row) => row.series_position);
+    const removedUsedBrands = usedBrands.filter((brand) => !brands.includes(brand));
+    const removedUsedSeriesPositions = usedSeriesPositions.filter((position) => !seriesPositions.includes(position));
+    if (removedUsedBrands.length > 0 || removedUsedSeriesPositions.length > 0) {
+      const details = [];
+      if (removedUsedBrands.length > 0) {
+        details.push(`仍被型号使用的品牌：${removedUsedBrands.join('、')}`);
+      }
+      if (removedUsedSeriesPositions.length > 0) {
+        details.push(`仍被型号使用的系列定位：${removedUsedSeriesPositions.join('、')}`);
+      }
+      throw new Error(`无法删除在用配置，请先修改相关型号。${details.join('；')}`);
+    }
+
+    const timestamp = nowIso();
+    const insertOption = db.prepare(`
+      INSERT INTO weekly_dimension_option (
+        option_type, option_value, sort_order, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?)
+    `);
+    db.exec('BEGIN');
+    try {
+      db.prepare("DELETE FROM weekly_dimension_option WHERE option_type IN ('brand', 'series_position')").run();
+      brands.forEach((brand, index) => insertOption.run('brand', brand, index + 1, timestamp, timestamp));
+      seriesPositions.forEach((position, index) => insertOption.run('series_position', position, index + 1, timestamp, timestamp));
+      db.exec('COMMIT');
+    } catch (error) {
+      db.exec('ROLLBACK');
+      throw error;
+    }
+    return getConfig();
+  }
+
+  function validateConfiguredDimensions(payload) {
+    const brand = normalizeBrand(payload.brand);
+    const seriesPosition = normalizeText(payload.seriesPosition);
+    const config = getConfig();
+    if (!brand) {
+      throw new Error('品牌不能为空');
+    }
+    if (!config.brands.includes(brand)) {
+      throw new Error(`品牌“${brand}”不在可选配置中`);
+    }
+    if (!seriesPosition) {
+      throw new Error('系列定位不能为空');
+    }
+    if (!config.seriesPositions.includes(seriesPosition)) {
+      throw new Error(`系列定位“${seriesPosition}”不在可选配置中`);
+    }
+    return { brand, seriesPosition };
+  }
+
   function parseWorkbookRows(rows) {
     const cumulativeTitleRowIndex = rows.findIndex((row) => row.some((cell) => normalizeHeader(cell).includes('累计销量')));
     if (cumulativeTitleRowIndex === -1) {
@@ -210,9 +325,7 @@ function createWeeklySalesService({ dataDir }) {
     const resolvedWeekHeaderRowIndex = cumulativeTitleRowIndex + 1 + weekHeaderRowIndex;
     const weekHeaders = rows[resolvedWeekHeaderRowIndex];
     const modelIndex = dimensionHeaders.findIndex((header) => header.includes('型号/系列'));
-    const launchIndex = dimensionHeaders.findIndex((header) => header.includes('上市日期'));
     const positionIndex = dimensionHeaders.findIndex((header) => header.includes('系列定位'));
-    const priceBandIndex = dimensionHeaders.findIndex((header) => header.includes('价格带'));
     const brandIndex = dimensionHeaders.findIndex((header) => header.includes('品牌'));
     const weekColumns = weekHeaders
       .map((header, index) => ({ index, week: parseWeekLabel(header) }))
@@ -236,8 +349,6 @@ function createWeeklySalesService({ dataDir }) {
         standardModelName: modelName,
         brand: normalizeText(row[brandIndex]),
         seriesPosition,
-        priceBand: normalizeText(row[priceBandIndex]).replace(/^2k\+$/i, '2K+'),
-        launchDate: excelDateToIso(row[launchIndex]),
         isVisible,
       });
 
@@ -323,8 +434,8 @@ function createWeeklySalesService({ dataDir }) {
           model.standardModelName,
           model.brand,
           model.seriesPosition,
-          model.priceBand,
-          model.launchDate,
+          '',
+          '',
           toSqlBool(model.isVisible),
           index + 1,
           timestamp,
@@ -385,10 +496,6 @@ function createWeeklySalesService({ dataDir }) {
       clauses.push('series_position = ?');
       params.push(filters.seriesPosition);
     }
-    if (filters.priceBand) {
-      clauses.push('price_band = ?');
-      params.push(filters.priceBand);
-    }
     if (filters.isVisible !== undefined) {
       clauses.push('is_visible = ?');
       params.push(toSqlBool(filters.isVisible));
@@ -421,10 +528,6 @@ function createWeeklySalesService({ dataDir }) {
       clauses.push('m.series_position = ?');
       params.push(filters.seriesPosition);
     }
-    if (filters.priceBand) {
-      clauses.push('m.price_band = ?');
-      params.push(filters.priceBand);
-    }
     if (filters.visibleOnly !== false) {
       clauses.push('m.is_visible = 1');
     }
@@ -444,8 +547,6 @@ function createWeeklySalesService({ dataDir }) {
           m.standard_model_name,
           m.brand,
           m.series_position,
-          m.price_band,
-          m.launch_date,
           m.is_visible,
           m.sort_order,
           s.week_label,
@@ -482,8 +583,6 @@ function createWeeklySalesService({ dataDir }) {
           standardModelName: row.standard_model_name,
           brand: row.brand,
           seriesPosition: row.series_position,
-          priceBand: row.price_band,
-          launchDate: row.launch_date,
           isVisible: fromSqlBool(row.is_visible),
           weekLabel: row.week_label,
           weekIndex: row.week_index,
@@ -497,6 +596,7 @@ function createWeeklySalesService({ dataDir }) {
 
   async function getOverview(filters = {}) {
     await seedFromWorkbookIfNeeded();
+    const config = getConfig();
     const models = getModels({});
     const allRows = readSalesRows({ ...filters, startWeek: undefined, endWeek: undefined });
     const allWeeklyRows = buildWeeklyRows(allRows);
@@ -523,7 +623,7 @@ function createWeeklySalesService({ dataDir }) {
       .prepare('SELECT imported_at FROM weekly_import_batch ORDER BY imported_at DESC LIMIT 1')
       .get();
 
-    const charts = DEFAULT_SERIES_POSITIONS.map((seriesPosition) => {
+    const charts = config.seriesPositions.map((seriesPosition) => {
       const seriesModels = models.filter((model) => model.seriesPosition === seriesPosition && model.isVisible);
       return {
         seriesPosition,
@@ -552,9 +652,8 @@ function createWeeklySalesService({ dataDir }) {
         updatedAt: latestBatch?.imported_at ?? '',
       },
       filters: {
-        brands: [...new Set(models.map((model) => model.brand).filter(Boolean))],
-        seriesPositions: DEFAULT_SERIES_POSITIONS,
-        priceBands: [...new Set(models.map((model) => model.priceBand).filter(Boolean))],
+        brands: config.brands,
+        seriesPositions: config.seriesPositions,
         weeks: allWeeks,
       },
       charts,
@@ -563,8 +662,6 @@ function createWeeklySalesService({ dataDir }) {
         standardModelName: row.standard_model_name,
         brand: row.brand,
         seriesPosition: row.series_position,
-        priceBand: row.price_band,
-        launchDate: row.launch_date,
         weekLabel: row.week_label,
         weekIndex: row.week_index,
         cumulativeSales: row.cumulative_sales,
@@ -718,20 +815,19 @@ function createWeeklySalesService({ dataDir }) {
     }
 
     const payload = JSON.parse(preview.payload_json);
+    newModelMappings.forEach(validateConfiguredDimensions);
     const timestamp = nowIso();
     const batchId = toId('batch');
     const mappingByRawName = new Map(newModelMappings.map((item) => [normalizeKey(item.rawModelName), item]));
     const insertModel = db.prepare(`
       INSERT INTO weekly_model_dimension (
-        id, standard_model_name, brand, series_position, price_band, launch_date,
+        id, standard_model_name, brand, series_position,
         is_visible, sort_order, remark, created_at, updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(standard_model_name) DO UPDATE SET
         brand = excluded.brand,
         series_position = excluded.series_position,
-        price_band = excluded.price_band,
-        launch_date = excluded.launch_date,
         is_visible = excluded.is_visible,
         remark = excluded.remark,
         updated_at = excluded.updated_at
@@ -770,13 +866,12 @@ function createWeeklySalesService({ dataDir }) {
         if (!standardModelName) {
           continue;
         }
+        const dimensions = validateConfiguredDimensions(mapping);
         insertModel.run(
           toId('model'),
           standardModelName,
-          normalizeText(mapping.brand),
-          normalizeText(mapping.seriesPosition),
-          normalizeText(mapping.priceBand).replace(/^2k\+$/i, '2K+'),
-          normalizeText(mapping.launchDate),
+          dimensions.brand,
+          dimensions.seriesPosition,
           toSqlBool(mapping.isVisible),
           Number(mapping.sortOrder ?? 999),
           normalizeText(mapping.remark),
@@ -872,22 +967,18 @@ function createWeeklySalesService({ dataDir }) {
     if (!standardModelName) {
       throw new Error('标准型号/系列不能为空');
     }
-    if (!normalizeText(payload.seriesPosition)) {
-      throw new Error('系列定位不能为空');
-    }
+    const dimensions = validateConfiguredDimensions(payload);
 
     ensureDatabase()
       .prepare(`
         INSERT INTO weekly_model_dimension (
-          id, standard_model_name, brand, series_position, price_band, launch_date,
+          id, standard_model_name, brand, series_position,
           is_visible, sort_order, remark, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(standard_model_name) DO UPDATE SET
           brand = excluded.brand,
           series_position = excluded.series_position,
-          price_band = excluded.price_band,
-          launch_date = excluded.launch_date,
           is_visible = excluded.is_visible,
           sort_order = excluded.sort_order,
           remark = excluded.remark,
@@ -896,10 +987,8 @@ function createWeeklySalesService({ dataDir }) {
       .run(
         existingId || toId('model'),
         standardModelName,
-        normalizeText(payload.brand),
-        normalizeText(payload.seriesPosition),
-        normalizeText(payload.priceBand).replace(/^2k\+$/i, '2K+'),
-        normalizeText(payload.launchDate),
+        dimensions.brand,
+        dimensions.seriesPosition,
         toSqlBool(payload.isVisible),
         Number(payload.sortOrder ?? 999),
         normalizeText(payload.remark),
@@ -907,15 +996,6 @@ function createWeeklySalesService({ dataDir }) {
         timestamp,
       );
 
-    if (payload.rawModelAlias) {
-      ensureDatabase()
-        .prepare(`
-          INSERT INTO weekly_model_alias (id, raw_model_name, standard_model_name, created_at)
-          VALUES (?, ?, ?, ?)
-          ON CONFLICT(raw_model_name) DO UPDATE SET standard_model_name = excluded.standard_model_name
-        `)
-        .run(toId('alias'), normalizeText(payload.rawModelAlias), standardModelName, timestamp);
-    }
     return getModels({ keyword: standardModelName })[0];
   }
 
@@ -936,7 +1016,6 @@ function createWeeklySalesService({ dataDir }) {
       return getOverview({
         brand: query.brand,
         seriesPosition: query.seriesPosition,
-        priceBand: query.priceBand,
         startWeek: query.startWeek,
         endWeek: query.endWeek,
         visibleOnly: query.visibleOnly !== 'false',
@@ -962,8 +1041,6 @@ function createWeeklySalesService({ dataDir }) {
         standardModelName: row.standard_model_name,
         brand: row.brand,
         seriesPosition: row.series_position,
-        priceBand: row.price_band,
-        launchDate: row.launch_date,
         weekLabel: row.week_label,
         weekIndex: row.week_index,
         cumulativeSales: row.cumulative_sales,
@@ -976,23 +1053,19 @@ function createWeeklySalesService({ dataDir }) {
     const overview = await getOverview({ visibleOnly: false });
     const weeks = overview.filters.weeks;
     const models = overview.models;
-    const cumulativeRows = [['型号/系列', '上市日期间', '系列定位', '价格带', '品牌', ...weeks]];
-    const weeklyRows = [['型号/系列', '上市日期间', '系列定位', '价格带', '品牌', ...weeks]];
+    const cumulativeRows = [['型号/系列', '系列定位', '品牌', ...weeks]];
+    const weeklyRows = [['型号/系列', '系列定位', '品牌', ...weeks]];
 
     for (const model of models) {
       cumulativeRows.push([
         model.standardModelName,
-        model.launchDate,
         model.seriesPosition,
-        model.priceBand,
         model.brand,
         ...weeks.map((week) => overview.cumulativeRows.find((row) => row.standardModelName === model.standardModelName && row.weekLabel === week)?.cumulativeSales ?? ''),
       ]);
       weeklyRows.push([
         model.standardModelName,
-        model.launchDate,
         model.seriesPosition,
-        model.priceBand,
         model.brand,
         ...weeks.map((week) => overview.weeklyRows.find((row) => row.standardModelName === model.standardModelName && row.weekLabel === week)?.weeklySales ?? ''),
       ]);
@@ -1008,8 +1081,6 @@ function createWeeklySalesService({ dataDir }) {
           标准型号系列: model.standardModelName,
           品牌: model.brand,
           系列定位: model.seriesPosition,
-          价格带: model.priceBand,
-          上市日期: model.launchDate,
           是否展示: model.isVisible ? '是' : '否',
           排序: model.sortOrder,
           备注: model.remark,
@@ -1028,7 +1099,6 @@ function createWeeklySalesService({ dataDir }) {
       return getOverview({
         brand: query.brand,
         seriesPosition: query.seriesPosition,
-        priceBand: query.priceBand,
         startWeek: query.startWeek,
         endWeek: query.endWeek,
         visibleOnly: query.visibleOnly !== 'false',
@@ -1043,6 +1113,11 @@ function createWeeklySalesService({ dataDir }) {
       await seedFromWorkbookIfNeeded();
       return getModels(query);
     },
+    async getConfig() {
+      await seedFromWorkbookIfNeeded();
+      return getConfig();
+    },
+    updateConfig,
     upsertModel,
     updateModelById,
     exportWorkbook,
@@ -1089,6 +1164,22 @@ export function registerWeeklySalesRoutes(app, { dataDir }) {
       response.json(await service.getModels(request.query));
     } catch (error) {
       response.status(500).json({ message: error instanceof Error ? error.message : '型号列表读取失败' });
+    }
+  });
+
+  app.get('/api/weekly-sales/config', async (_request, response) => {
+    try {
+      response.json(await service.getConfig());
+    } catch (error) {
+      response.status(500).json({ message: error instanceof Error ? error.message : '新品周销配置读取失败' });
+    }
+  });
+
+  app.put('/api/weekly-sales/config', async (request, response) => {
+    try {
+      response.json(await service.updateConfig(request.body ?? {}));
+    } catch (error) {
+      response.status(400).json({ message: error instanceof Error ? error.message : '新品周销配置保存失败' });
     }
   });
 

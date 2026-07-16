@@ -31,6 +31,10 @@ function isExplicitZeroCell(value) {
   return normalized === '#VALUE!' || normalized === '已下架';
 }
 
+function isDelistedCell(value) {
+  return String(value ?? '').replace(/\s+/g, '').trim() === '已下架';
+}
+
 function toDateLabel(header) {
   const dottedMatch = String(header).match(/(\d{1,2})\.(\d{1,2})/);
   if (dottedMatch) {
@@ -71,11 +75,16 @@ function sortDateLabels(left, right) {
 function inferBrand(modelName) {
   const matchedBrand = KNOWN_BRANDS.find((brand) => modelName.startsWith(brand));
   if (matchedBrand) {
-    return matchedBrand;
+    return normalizeBrand(matchedBrand);
   }
 
   const [firstToken] = modelName.split(/\s+/);
-  return firstToken || modelName;
+  return normalizeBrand(firstToken || modelName);
+}
+
+function normalizeBrand(value) {
+  const brand = String(value ?? '').trim();
+  return brand === '红米' || brand.toUpperCase() === 'REDMI' ? '小米' : brand;
 }
 
 function inferSeries(modelName, brand) {
@@ -292,7 +301,7 @@ export function parseWorkbookFile(workbookPath, sourceName = DEFAULT_SOURCE_NAME
         return null;
       }
 
-      const brand = String(brandIndex === -1 ? '' : row[brandIndex] ?? '').trim() || inferBrand(model);
+      const brand = normalizeBrand(brandIndex === -1 ? '' : row[brandIndex]) || inferBrand(model);
       const series = String(seriesIndex === -1 ? '' : row[seriesIndex] ?? '').trim() || inferSeries(model, brand);
       const position = String(positionIndex === -1 ? '' : row[positionIndex] ?? '').trim();
       const ppv = String(ppvIndex === -1 ? '' : row[ppvIndex] ?? '').trim();
@@ -311,6 +320,8 @@ export function parseWorkbookFile(workbookPath, sourceName = DEFAULT_SOURCE_NAME
           const listPrice = parseNumber(listPriceValue);
           const coupon = parseNumber(couponValue);
           const biPrice = parseNumber(biPriceValue);
+          const isDelisted =
+            isDelistedCell(finalPriceValue) || isDelistedCell(listPriceValue) || isDelistedCell(couponValue);
           const hasExplicitZeroCell =
             isExplicitZeroCell(finalPriceValue) || isExplicitZeroCell(listPriceValue) || isExplicitZeroCell(couponValue);
 
@@ -324,6 +335,7 @@ export function parseWorkbookFile(workbookPath, sourceName = DEFAULT_SOURCE_NAME
             listPrice,
             coupon,
             biPrice: biPrice || undefined,
+            isDelisted: isDelisted || undefined,
           };
         })
         .filter(Boolean);
@@ -384,6 +396,39 @@ export function readRawEditorDraft(databasePath) {
   }
 }
 
+function getAggregationSnapshots(sku, dates) {
+  const snapshotByDate = new Map(sku.snapshots.map((snapshot) => [snapshot.date, snapshot]));
+  const normalizedSnapshots = [];
+  let previousSnapshot = null;
+
+  for (const date of dates) {
+    const snapshot = snapshotByDate.get(date);
+    if (snapshot?.isDelisted) {
+      previousSnapshot = null;
+      continue;
+    }
+    if (snapshot && snapshot.finalPrice > 0) {
+      normalizedSnapshots.push(snapshot);
+      previousSnapshot = snapshot;
+      continue;
+    }
+    if (previousSnapshot) {
+      normalizedSnapshots.push({ ...previousSnapshot, date });
+    }
+  }
+  return normalizedSnapshots;
+}
+
+function hasLatestAggregationPrice(snapshots, dates) {
+  return snapshots.at(-1)?.date === dates.at(-1);
+}
+
+function getSnapshotRecentChange(snapshots) {
+  const last = snapshots.at(-1);
+  const previous = snapshots.at(-2) ?? last;
+  return last ? last.finalPrice - previous.finalPrice : 0;
+}
+
 export function buildAnalysis(dataset) {
   if (!dataset || dataset.skus.length === 0) {
     return {
@@ -416,12 +461,18 @@ export function buildAnalysis(dataset) {
       reasonDetails: attribution.reasonDetails,
     };
   });
+  const aggregationSkus = processed
+    .map((sku) => ({ sku, snapshots: getAggregationSnapshots(sku, dataset.dates) }))
+    .filter((item) => hasLatestAggregationPrice(item.snapshots, dataset.dates));
 
   const brandMap = new Map();
-  processed.forEach((sku) => {
+  aggregationSkus.forEach(({ sku, snapshots }) => {
+    const recentChange = getSnapshotRecentChange(snapshots);
+    const previousPrice = snapshots.at(-2)?.finalPrice ?? snapshots.at(-1)?.finalPrice ?? 0;
+    const recentChangePct = previousPrice ? (recentChange / previousPrice) * 100 : 0;
     const current = brandMap.get(sku.brand) ?? { changePctTotal: 0, count: 0 };
     brandMap.set(sku.brand, {
-      changePctTotal: current.changePctTotal + sku.recentChangePct,
+      changePctTotal: current.changePctTotal + recentChangePct,
       count: current.count + 1,
     });
   });
@@ -436,7 +487,7 @@ export function buildAnalysis(dataset) {
   const positionMap = new Map();
   const seriesMap = new Map();
 
-  processed.forEach((sku) => {
+  aggregationSkus.forEach(({ sku, snapshots }) => {
     const positionName = sku.position || '未定位';
     const positionCurrent = positionMap.get(positionName) ?? {
       skuCount: 0,
@@ -455,7 +506,7 @@ export function buildAnalysis(dataset) {
     positionCurrent.launchPrices.push(sku.launchPrice);
     current.launchPrices.push(sku.launchPrice);
 
-    sku.snapshots.forEach((snapshot) => {
+    snapshots.forEach((snapshot) => {
       if (!positionCurrent.snapshotPrices[snapshot.date]) {
         positionCurrent.snapshotPrices[snapshot.date] = [];
       }
@@ -467,10 +518,11 @@ export function buildAnalysis(dataset) {
       current.snapshotPrices[snapshot.date].push(snapshot.finalPrice);
     });
 
-    if (sku.recentChange > 0) {
+    const recentChange = getSnapshotRecentChange(snapshots);
+    if (recentChange > 0) {
       positionCurrent.directionSummary.up += 1;
       current.directionSummary.up += 1;
-    } else if (sku.recentChange < 0) {
+    } else if (recentChange < 0) {
       positionCurrent.directionSummary.down += 1;
       current.directionSummary.down += 1;
     } else {

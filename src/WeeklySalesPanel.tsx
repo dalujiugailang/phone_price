@@ -38,8 +38,6 @@ interface WeeklySalesModel {
   standardModelName: string;
   brand: string;
   seriesPosition: string;
-  priceBand: string;
-  launchDate: string;
   isVisible: boolean;
   sortOrder: number;
   remark: string;
@@ -49,8 +47,6 @@ interface WeeklySalesPoint {
   standardModelName: string;
   brand: string;
   seriesPosition: string;
-  priceBand: string;
-  launchDate: string;
   weekLabel: string;
   weekIndex: number;
   cumulativeSales: number;
@@ -80,7 +76,6 @@ interface WeeklySalesOverview {
   filters: {
     brands: string[];
     seriesPositions: string[];
-    priceBands: string[];
     weeks: string[];
   };
   charts: WeeklySalesChart[];
@@ -126,9 +121,12 @@ interface UnknownModelMapping {
   standardModelName: string;
   brand: string;
   seriesPosition: string;
-  priceBand: string;
-  launchDate: string;
   isVisible: boolean;
+}
+
+interface WeeklySalesConfig {
+  brands: string[];
+  seriesPositions: string[];
 }
 
 const LINE_COLORS = ['#ea580c', '#2563eb', '#16a34a', '#dc2626', '#7c3aed', '#0891b2', '#ca8a04', '#db2777', '#475569'];
@@ -171,6 +169,15 @@ async function fetchOverview(filters: URLSearchParams) {
   return payload as WeeklySalesOverview;
 }
 
+async function fetchConfig() {
+  const response = await fetch('/api/weekly-sales/config');
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload?.message || '新品周销配置读取失败');
+  }
+  return payload as WeeklySalesConfig;
+}
+
 async function parseImport(rawText: string) {
   const response = await fetch('/api/weekly-sales/import/parse', {
     method: 'POST',
@@ -197,7 +204,7 @@ async function confirmImport(batchPreviewId: string, mappings: UnknownModelMappi
   return payload as { insertedPoints: number; updatedPoints: number; errorPoints: number };
 }
 
-async function createModel(payload: Partial<WeeklySalesModel> & { rawModelAlias?: string }) {
+async function createModel(payload: Partial<WeeklySalesModel>) {
   const response = await fetch('/api/weekly-sales/models', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -210,7 +217,7 @@ async function createModel(payload: Partial<WeeklySalesModel> & { rawModelAlias?
   return result;
 }
 
-async function updateModel(id: string, payload: Partial<WeeklySalesModel> & { rawModelAlias?: string }) {
+async function updateModel(id: string, payload: Partial<WeeklySalesModel>) {
   const response = await fetch(`/api/weekly-sales/models/${id}`, {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
@@ -268,25 +275,29 @@ export function WeeklySalesPanel() {
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [unknownMappings, setUnknownMappings] = useState<UnknownModelMapping[]>([]);
   const [editingModelId, setEditingModelId] = useState<string | null>(null);
+  const [config, setConfig] = useState<WeeklySalesConfig>({ brands: [], seriesPositions: [] });
   const [modelDraft, setModelDraft] = useState({
     standardModelName: '',
-    rawModelAlias: '',
     brand: '',
-    seriesPosition: '主品牌旗舰',
-    priceBand: '5K+',
-    launchDate: '',
+    seriesPosition: '',
     isVisible: true,
   });
   const incompleteUnknownMappings = unknownMappings.filter(
-    (mapping) => !mapping.seriesPosition.trim(),
+    (mapping) => !mapping.brand.trim() || !mapping.seriesPosition.trim(),
   );
 
   const loadOverview = async (nextFilters = filters) => {
     setIsLoading(true);
     setError(null);
     try {
-      const nextOverview = await fetchOverview(nextFilters);
+      const [nextOverview, nextConfig] = await Promise.all([fetchOverview(nextFilters), fetchConfig()]);
       setOverview(nextOverview);
+      setConfig(nextConfig);
+      setModelDraft((draft) => ({
+        ...draft,
+        brand: draft.brand || nextConfig.brands[0] || '',
+        seriesPosition: draft.seriesPosition || nextConfig.seriesPositions[0] || '',
+      }));
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : '新品周销数据读取失败');
     } finally {
@@ -321,8 +332,6 @@ export function WeeklySalesPanel() {
           standardModelName: item.rawModelName,
           brand: '',
           seriesPosition: '',
-          priceBand: '5K+',
-          launchDate: '',
           isVisible: true,
         })),
       );
@@ -358,11 +367,8 @@ export function WeeklySalesPanel() {
     setEditingModelId(null);
     setModelDraft({
       standardModelName: '',
-      rawModelAlias: '',
-      brand: '',
-      seriesPosition: '主品牌旗舰',
-      priceBand: '5K+',
-      launchDate: '',
+      brand: config.brands[0] ?? '',
+      seriesPosition: config.seriesPositions[0] ?? '',
       isVisible: true,
     });
   };
@@ -371,11 +377,8 @@ export function WeeklySalesPanel() {
     setEditingModelId(model.id);
     setModelDraft({
       standardModelName: model.standardModelName,
-      rawModelAlias: '',
       brand: model.brand,
-      seriesPosition: model.seriesPosition || '主品牌旗舰',
-      priceBand: model.priceBand || '5K+',
-      launchDate: model.launchDate,
+      seriesPosition: model.seriesPosition,
       isVisible: model.isVisible,
     });
     setMessage(`正在编辑：${model.standardModelName}`);
@@ -459,10 +462,9 @@ export function WeeklySalesPanel() {
         <EmptyPanel message="暂无新品周销数据" />
       ) : subView === 'dashboard' ? (
         <>
-          <div className="grid grid-cols-1 gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm md:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm md:grid-cols-4">
             <FilterSelect label="品牌" value={fieldValue(filters, 'brand')} options={overview.filters.brands} onChange={(value) => updateFilter('brand', value)} />
             <FilterSelect label="系列定位" value={fieldValue(filters, 'seriesPosition')} options={overview.filters.seriesPositions} onChange={(value) => updateFilter('seriesPosition', value)} />
-            <FilterSelect label="价格带" value={fieldValue(filters, 'priceBand')} options={overview.filters.priceBands} onChange={(value) => updateFilter('priceBand', value)} />
             <FilterSelect label="开始周" value={fieldValue(filters, 'startWeek')} options={overview.filters.weeks.map((week) => week.replace('W', ''))} onChange={(value) => updateFilter('startWeek', value)} />
             <FilterSelect label="结束周" value={fieldValue(filters, 'endWeek')} options={overview.filters.weeks.map((week) => week.replace('W', ''))} onChange={(value) => updateFilter('endWeek', value)} />
           </div>
@@ -586,7 +588,7 @@ export function WeeklySalesPanel() {
                     <Save size={16} /> 确认落库
                   </button>
                   {incompleteUnknownMappings.length > 0 ? (
-                    <p className="text-xs font-bold text-orange-700">先选择 {incompleteUnknownMappings.length} 个新型号/系列的系列定位</p>
+                    <p className="text-xs font-bold text-orange-700">先选择 {incompleteUnknownMappings.length} 个新型号/系列的品牌和系列定位</p>
                   ) : null}
                 </div>
               </div>
@@ -596,7 +598,7 @@ export function WeeklySalesPanel() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h4 className="text-base font-bold text-orange-900">发现新型号/系列，需先维护维度</h4>
-                      <p className="mt-1 text-sm font-semibold text-orange-800">这些型号/系列之前不在库里。系列定位必须选择，其他字段可按需要补充。</p>
+                      <p className="mt-1 text-sm font-semibold text-orange-800">这些型号/系列之前不在库里。品牌和系列定位必须从配置中选择。</p>
                     </div>
                     <span className="rounded-full bg-white px-3 py-1 text-sm font-bold text-orange-700 shadow-sm">
                       {unknownMappings.length} 个待处理
@@ -604,13 +606,11 @@ export function WeeklySalesPanel() {
                   </div>
                   <div className="mt-3 grid gap-3">
                     {unknownMappings.map((mapping, index) => (
-                      <div key={mapping.rawModelName} className="grid grid-cols-1 gap-2 md:grid-cols-6">
+                      <div key={mapping.rawModelName} className="grid grid-cols-1 gap-2 md:grid-cols-4">
                         <Input label="原始型号" value={mapping.rawModelName} readOnly />
                         <Input label="标准型号" value={mapping.standardModelName} onChange={(value) => updateUnknownMapping(index, 'standardModelName', value, setUnknownMappings)} />
-                        <Select label="品牌" value={mapping.brand} options={overview.filters.brands} allowEmpty onChange={(value) => updateUnknownMapping(index, 'brand', value, setUnknownMappings)} />
-                        <Select label="系列定位" value={mapping.seriesPosition} options={overview.filters.seriesPositions} allowEmpty onChange={(value) => updateUnknownMapping(index, 'seriesPosition', value, setUnknownMappings)} />
-                        <Input label="价格带" value={mapping.priceBand} onChange={(value) => updateUnknownMapping(index, 'priceBand', value, setUnknownMappings)} />
-                        <Input label="上市日期" value={mapping.launchDate} onChange={(value) => updateUnknownMapping(index, 'launchDate', value, setUnknownMappings)} />
+                        <Select label="品牌" value={mapping.brand} options={config.brands} allowEmpty onChange={(value) => updateUnknownMapping(index, 'brand', value, setUnknownMappings)} />
+                        <Select label="系列定位" value={mapping.seriesPosition} options={config.seriesPositions} allowEmpty onChange={(value) => updateUnknownMapping(index, 'seriesPosition', value, setUnknownMappings)} />
                       </div>
                     ))}
                   </div>
@@ -627,7 +627,7 @@ export function WeeklySalesPanel() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 className="font-bold text-gray-900">{editingModelId ? '编辑型号维度' : '新增型号'}</h3>
-                <p className="mt-1 text-sm font-medium text-gray-500">点击下方型号列表中的任意一行，可编辑该型号的品牌、系列定位、价格带、上市日期和展示状态。</p>
+                <p className="mt-1 text-sm font-medium text-gray-500">点击下方型号列表中的任意一行，可编辑该型号的品牌、系列定位和展示状态。</p>
               </div>
               {editingModelId ? (
                 <button
@@ -640,11 +640,8 @@ export function WeeklySalesPanel() {
             </div>
             <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
               <Input label="标准型号/系列" value={modelDraft.standardModelName} onChange={(value) => setModelDraft((draft) => ({ ...draft, standardModelName: value }))} />
-              <Input label="原始型号别名" value={modelDraft.rawModelAlias} onChange={(value) => setModelDraft((draft) => ({ ...draft, rawModelAlias: value }))} />
-              <Input label="品牌" value={modelDraft.brand} onChange={(value) => setModelDraft((draft) => ({ ...draft, brand: value }))} />
-              <Select label="系列定位" value={modelDraft.seriesPosition} options={overview.filters.seriesPositions} onChange={(value) => setModelDraft((draft) => ({ ...draft, seriesPosition: value }))} />
-              <Input label="价格带" value={modelDraft.priceBand} onChange={(value) => setModelDraft((draft) => ({ ...draft, priceBand: value }))} />
-              <Input label="上市日期" value={modelDraft.launchDate} onChange={(value) => setModelDraft((draft) => ({ ...draft, launchDate: value }))} />
+              <Select label="品牌" value={modelDraft.brand} options={config.brands} onChange={(value) => setModelDraft((draft) => ({ ...draft, brand: value }))} />
+              <Select label="系列定位" value={modelDraft.seriesPosition} options={config.seriesPositions} onChange={(value) => setModelDraft((draft) => ({ ...draft, seriesPosition: value }))} />
               <label className="flex items-end gap-2 pb-2 text-sm font-semibold text-gray-700">
                 <input
                   type="checkbox"
@@ -801,8 +798,6 @@ function ModelTable({
             <th className="px-4 py-3">型号/系列</th>
             <th className="px-4 py-3">品牌</th>
             <th className="px-4 py-3">系列定位</th>
-            <th className="px-4 py-3">价格带</th>
-            <th className="px-4 py-3">上市日期</th>
             <th className="px-4 py-3">展示</th>
           </tr>
         </thead>
@@ -820,8 +815,6 @@ function ModelTable({
               </td>
               <td className="px-4 py-3 text-gray-600">{model.brand || '--'}</td>
               <td className="px-4 py-3 text-gray-600">{model.seriesPosition || '未维护'}</td>
-              <td className="px-4 py-3 text-gray-600">{model.priceBand || '--'}</td>
-              <td className="px-4 py-3 text-gray-600">{model.launchDate || '--'}</td>
               <td className="px-4 py-3">
                 <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${model.isVisible ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
                   {model.isVisible ? '是' : '否'}
@@ -892,7 +885,6 @@ function DetailTable({ overview, detailType }: { overview: WeeklySalesOverview; 
             <th className="sticky left-0 z-20 min-w-[220px] border-b border-r border-gray-100 bg-gray-50 px-4 py-3">型号/系列</th>
             <th className="min-w-[90px] border-b border-gray-100 px-4 py-3">品牌</th>
             <th className="min-w-[120px] border-b border-gray-100 px-4 py-3">系列定位</th>
-            <th className="min-w-[90px] border-b border-gray-100 px-4 py-3">价格带</th>
             {weeks.map((week) => (
               <th key={week} className="min-w-[86px] border-b border-gray-100 px-4 py-3 text-right">
                 {week}
@@ -906,7 +898,6 @@ function DetailTable({ overview, detailType }: { overview: WeeklySalesOverview; 
               <td className="sticky left-0 z-10 border-r border-gray-100 bg-white px-4 py-3 font-semibold text-gray-900">{model.standardModelName}</td>
               <td className="px-4 py-3 text-gray-600">{model.brand || '--'}</td>
               <td className="px-4 py-3 text-gray-600">{model.seriesPosition || '--'}</td>
-              <td className="px-4 py-3 text-gray-600">{model.priceBand || '--'}</td>
               {values.map((value, index) => (
                 <td key={`${model.standardModelName}-${weeks[index]}`} className="px-4 py-3 text-right font-semibold text-gray-900">
                   {value === null || value === undefined ? '--' : formatNumber(value)}

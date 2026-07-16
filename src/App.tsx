@@ -153,6 +153,7 @@ interface ChangeSummaryReport {
 interface RawEditorRow {
   id: string;
   model: string;
+  brand: string;
   storage: string;
   position: string;
   ppv: string;
@@ -166,6 +167,12 @@ interface RawEditorRow {
       biPrice?: string;
     }
   >;
+}
+
+interface RawModelConfig {
+  model: string;
+  brand: string;
+  position: string;
 }
 
 interface RawEditorDraft {
@@ -716,11 +723,16 @@ async function persistRawEditorDraft(draft: RawEditorDraft, options: PersistRawE
 function inferBrand(modelName: string) {
   const matchedBrand = KNOWN_BRANDS.find((brand) => modelName.startsWith(brand));
   if (matchedBrand) {
-    return matchedBrand;
+    return normalizeConfiguredBrand(matchedBrand);
   }
 
   const [firstToken] = modelName.split(/\s+/);
-  return firstToken || modelName;
+  return normalizeConfiguredBrand(firstToken || modelName);
+}
+
+function normalizeConfiguredBrand(value: string) {
+  const brand = value.trim();
+  return brand === '红米' || brand.toUpperCase() === 'REDMI' ? '小米' : brand;
 }
 
 function inferSeries(modelName: string, brand: string) {
@@ -850,43 +862,34 @@ function getFirstFinalPriceDate(sku: SKUData) {
   return sku.snapshots.find((snapshot) => snapshot.finalPrice)?.date ?? '';
 }
 
-function isSkuDelistedOnLatestDate(sku: SKUData, dates: string[]) {
-  const latestDate = dates.at(-1);
-  return Boolean(latestDate && sku.snapshots.find((snapshot) => snapshot.date === latestDate)?.isDelisted);
-}
-
-function getPositionPivotSnapshots(sku: SKUData, dates: string[]) {
+function getAggregationSnapshots(sku: SKUData, dates: string[]) {
   const snapshotByDate = new Map(sku.snapshots.map((snapshot) => [snapshot.date, snapshot]));
   const normalizedSnapshots: PriceSnapshot[] = [];
   let previousSnapshot: PriceSnapshot | null = null;
 
   dates.forEach((date) => {
     const snapshot = snapshotByDate.get(date);
-    if (!snapshot) {
+    if (snapshot?.isDelisted) {
+      previousSnapshot = null;
       return;
     }
 
-    if (snapshot.isDelisted) {
-      if (!previousSnapshot) {
-        return;
-      }
-
-      const carriedSnapshot: PriceSnapshot = {
-        ...snapshot,
-        finalPrice: previousSnapshot.finalPrice,
-        listPrice: previousSnapshot.listPrice,
-        coupon: previousSnapshot.coupon,
-        biPrice: previousSnapshot.biPrice,
-      };
-      normalizedSnapshots.push(carriedSnapshot);
+    if (snapshot && snapshot.finalPrice > 0) {
+      normalizedSnapshots.push(snapshot);
+      previousSnapshot = snapshot;
       return;
     }
 
-    normalizedSnapshots.push(snapshot);
-    previousSnapshot = snapshot;
+    if (previousSnapshot) {
+      normalizedSnapshots.push({ ...previousSnapshot, date });
+    }
   });
 
   return normalizedSnapshots;
+}
+
+function hasLatestAggregationPrice(snapshots: PriceSnapshot[], dates: string[]) {
+  return snapshots.at(-1)?.date === dates.at(-1);
 }
 
 function getSnapshotRecentChange(snapshots: PriceSnapshot[]) {
@@ -896,7 +899,7 @@ function getSnapshotRecentChange(snapshots: PriceSnapshot[]) {
 }
 
 function hasPositionPivotPriceOnEveryDate(sku: SKUData, dates: string[]) {
-  const normalizedSnapshots = getPositionPivotSnapshots(sku, dates);
+  const normalizedSnapshots = getAggregationSnapshots(sku, dates);
   return dates.every((date) =>
     normalizedSnapshots.some((snapshot) => snapshot.date === date && snapshot.finalPrice),
   );
@@ -929,8 +932,11 @@ function buildPositionAnalysisForSkus(skuList: AnalysisSKU[], dates: string[], i
     }
   >();
 
-  skuList.filter((sku) => !isSkuDelistedOnLatestDate(sku, dates)).forEach((sku) => {
-    const normalizedSnapshots = getPositionPivotSnapshots(sku, dates);
+  skuList.forEach((sku) => {
+    const normalizedSnapshots = getAggregationSnapshots(sku, dates);
+    if (!hasLatestAggregationPrice(normalizedSnapshots, dates)) {
+      return;
+    }
     const positionName = sku.position || '未定位';
     const positionCurrent = positionMap.get(positionName) ?? {
       skuCount: 0,
@@ -1156,11 +1162,14 @@ function BrandBarValueLabel(props: {
   const y = Number(props.y ?? 0);
   const width = Number(props.width ?? 0);
   const height = Number(props.height ?? 0);
+  const isNegative = value < 0;
+  const labelX = isNegative ? Math.min(x, x + width) - 10 : Math.max(x, x + width) + 10;
 
   return (
     <text
-      x={x + width + 10}
+      x={labelX}
       y={y + height / 2}
+      textAnchor={isNegative ? 'end' : 'start'}
       dominantBaseline="middle"
       fill={isZeroChange(value) ? '#6B7280' : value > 0 ? '#C2410C' : '#1D4ED8'}
       fontSize={12}
@@ -1442,6 +1451,7 @@ function datasetToRawEditorRows(dataset: WorkbookDataset | null): RawEditorRow[]
     return {
       id: sku.id,
       model: sku.model,
+      brand: normalizeConfiguredBrand(sku.brand),
       storage: sku.storage,
       position: sku.position,
       ppv: sku.ppv,
@@ -1455,6 +1465,7 @@ function createEmptyRawEditorRow(dates: string[], index: number): RawEditorRow {
   return {
     id: `raw-${Date.now()}-${index}`,
     model: '',
+    brand: '',
     storage: '',
     position: '',
     ppv: '',
@@ -1519,7 +1530,7 @@ function buildDatasetFromRawEditorRows(
         return null;
       }
 
-      const brand = inferBrand(model);
+      const brand = normalizeConfiguredBrand(row.brand ?? '') || inferBrand(model);
       const series = inferSeries(model, brand);
       const ppvMapping = getNewMachinePpvMapping(model, storage);
       const position = (row.position ?? '').trim();
@@ -1612,12 +1623,18 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
       reasonDetails: attribution.reasonDetails,
     };
   });
+  const aggregationSkus = processed
+    .map((sku) => ({ sku, snapshots: getAggregationSnapshots(sku, dataset.dates) }))
+    .filter((item) => hasLatestAggregationPrice(item.snapshots, dataset.dates));
 
   const brandMap = new Map<string, { changePctTotal: number; count: number }>();
-  processed.forEach((sku) => {
+  aggregationSkus.forEach(({ sku, snapshots }) => {
+    const recentChange = getSnapshotRecentChange(snapshots);
+    const previousPrice = snapshots[snapshots.length - 2]?.finalPrice ?? snapshots.at(-1)?.finalPrice ?? 0;
+    const recentChangePct = previousPrice ? (recentChange / previousPrice) * 100 : 0;
     const current = brandMap.get(sku.brand) ?? { changePctTotal: 0, count: 0 };
     brandMap.set(sku.brand, {
-      changePctTotal: current.changePctTotal + sku.recentChangePct,
+      changePctTotal: current.changePctTotal + recentChangePct,
       count: current.count + 1,
     });
   });
@@ -1656,7 +1673,7 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
     }
   >();
 
-  processed.forEach((sku) => {
+  aggregationSkus.forEach(({ sku, snapshots }) => {
     const positionName = sku.position || '未定位';
     const positionCurrent = positionMap.get(positionName) ?? {
       skuCount: 0,
@@ -1682,7 +1699,7 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
     positionCurrent.skuCount += 1;
     positionCurrent.launchPrices.push(sku.launchPrice);
     current.launchPrices.push(sku.launchPrice);
-    sku.snapshots.forEach((snapshot) => {
+    snapshots.forEach((snapshot) => {
       if (!positionCurrent.snapshotPrices[snapshot.date]) {
         positionCurrent.snapshotPrices[snapshot.date] = [];
       }
@@ -1696,10 +1713,11 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
       current.snapshotPrices[snapshot.date].push(snapshot.finalPrice);
     });
 
-    if (sku.recentChange > 0) {
+    const recentChange = getSnapshotRecentChange(snapshots);
+    if (recentChange > 0) {
       positionCurrent.directionSummary.up += 1;
       current.directionSummary.up += 1;
-    } else if (sku.recentChange < 0) {
+    } else if (recentChange < 0) {
       positionCurrent.directionSummary.down += 1;
       current.directionSummary.down += 1;
     } else {
@@ -1822,19 +1840,30 @@ export default function App() {
           (!workbookLatestDate || !draftLatestDate || compareDateLabels(draftLatestDate, workbookLatestDate) >= 0);
 
         if (shouldRestorePersistedDraft && persistedDraft) {
+          const workbookBrandByModel = new Map(
+            nextDataset.skus.map((sku) => [sku.model.trim(), sku.brand.trim()] as const),
+          );
+          const restoredRows = persistedDraft.rows.map((row) => ({
+            ...row,
+            brand: normalizeConfiguredBrand(
+              (row.brand ?? '').trim() ||
+              workbookBrandByModel.get(String(row.model ?? '').trim()) ||
+              inferBrand(String(row.model ?? '').trim()),
+            ),
+          }));
           setRawEditorDates(persistedDraft.dates);
-          setRawEditorRows(persistedDraft.rows);
-          setSourceDataset(buildDatasetFromRawEditorRows(persistedDraft.rows, persistedDraft.dates, nextDataset.sourceName));
+          setRawEditorRows(restoredRows);
+          setSourceDataset(buildDatasetFromRawEditorRows(restoredRows, persistedDraft.dates, nextDataset.sourceName));
           setRawEditorMessage('已恢复上次保存的原始数据草稿');
           lastSavedRawDraftSignatureRef.current = JSON.stringify({
             dates: persistedDraft.dates,
-            rows: persistedDraft.rows,
+            rows: restoredRows,
           });
         } else {
           const workbookRows = datasetToRawEditorRows(nextDataset);
           setRawEditorDates(nextDataset.dates);
           setRawEditorRows(workbookRows);
-          setSourceDataset(nextDataset);
+          setSourceDataset(buildDatasetFromRawEditorRows(workbookRows, nextDataset.dates, nextDataset.sourceName));
           lastSavedRawDraftSignatureRef.current = JSON.stringify({
             dates: nextDataset.dates,
             rows: workbookRows,
@@ -2219,10 +2248,54 @@ export default function App() {
     }
   };
 
-  const handleResetRawEdits = () => {
-    setRawEditorDates(sourceDataset?.dates ?? []);
-    setRawEditorRows(datasetToRawEditorRows(sourceDataset));
-    setRawEditorMessage('已恢复为当前加载的数据版本');
+  const handleSaveRawModelConfigs = async (configs: RawModelConfig[]) => {
+    const invalidConfig = configs.find((config) => !config.brand.trim() || !config.position.trim());
+    if (invalidConfig) {
+      const missingFields = [
+        !invalidConfig.brand.trim() ? '品牌' : '',
+        !invalidConfig.position.trim() ? '机型定位' : '',
+      ].filter(Boolean);
+      setRawEditorMessage(`型号“${invalidConfig.model}”的${missingFields.join('、')}不能为空，请补充后再保存`);
+      return;
+    }
+
+    const configByModel = new Map(
+      configs.map((config) => [config.model.trim(), { ...config, brand: normalizeConfiguredBrand(config.brand) }] as const),
+    );
+    const nextRows = rawEditorRows.map((row) => {
+      const config = configByModel.get(row.model.trim());
+      return config
+        ? {
+            ...row,
+            brand: config.brand.trim(),
+            position: config.position.trim(),
+          }
+        : row;
+    });
+    const nextDraft: RawEditorDraft = {
+      dates: rawEditorDates,
+      rows: nextRows,
+      savedAt: new Date().toISOString(),
+    };
+    const nextDataset = buildDatasetFromRawEditorRows(
+      nextDraft.rows,
+      nextDraft.dates,
+      dataset?.sourceName ?? '新机售价监控.xlsx',
+    );
+
+    setRawEditorRows(nextRows);
+    setSourceDataset(nextDataset);
+    try {
+      const persisted = await persistRawEditorDraft(nextDraft, { syncWorkbook: true });
+      lastSavedRawDraftSignatureRef.current = JSON.stringify({
+        dates: nextDraft.dates,
+        rows: nextDraft.rows,
+      });
+      const workbookCellsWritten = Number(persisted?.workbook?.cellsWritten ?? persisted?.workbook?.rowsWritten ?? 0);
+      setRawEditorMessage(`已保存 ${configs.length} 个型号配置，并写回 Excel ${workbookCellsWritten} 格`);
+    } catch {
+      setRawEditorMessage('型号配置已应用并重算，但服务端保存或 Excel 写回失败');
+    }
   };
 
   const handleAddRawDateColumns = () => {
@@ -2486,63 +2559,67 @@ export default function App() {
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
             </div>
-            <div className="flex rounded-xl bg-gray-100 p-1">
-              <button
-                onClick={() => setView('dashboard')}
-                className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
-                  view === 'dashboard' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <LayoutDashboard size={16} /> 概览
-              </button>
-              <button
-                onClick={() => setView('summary')}
-                className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
-                  view === 'summary' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <FileText size={16} /> 汇总
-              </button>
-              <button
-                onClick={() => setView('risk')}
-                className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
-                  view === 'risk' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <Upload size={16} /> S等级风险
-              </button>
-              <button
-                onClick={() => setView('marketTrend')}
-                className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
-                  view === 'marketTrend' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <BarChart3 size={16} /> 市场趋势
-              </button>
-              <button
-                onClick={() => setView('weeklySales')}
-                className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
-                  view === 'weeklySales' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <BarChart3 size={16} /> 新品周销
-              </button>
-              <button
-                onClick={() => setView('raw')}
-                className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
-                  view === 'raw' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <Database size={16} /> 原始数据
-              </button>
-              <button
-                onClick={() => setView('table')}
-                className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
-                  view === 'table' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <TableIcon size={16} /> 明细
-              </button>
+            <div className="flex items-center gap-3">
+              <div className="flex rounded-xl bg-gray-100 p-1">
+                <button
+                  onClick={() => setView('dashboard')}
+                  className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
+                    view === 'dashboard' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <LayoutDashboard size={16} /> 概览
+                </button>
+                <button
+                  onClick={() => setView('summary')}
+                  className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
+                    view === 'summary' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <FileText size={16} /> 汇总
+                </button>
+                <button
+                  onClick={() => setView('risk')}
+                  className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
+                    view === 'risk' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Upload size={16} /> S等级风险
+                </button>
+                <button
+                  onClick={() => setView('raw')}
+                  className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
+                    view === 'raw' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Database size={16} /> 原始数据
+                </button>
+                <button
+                  onClick={() => setView('table')}
+                  className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
+                    view === 'table' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <TableIcon size={16} /> 明细
+                </button>
+              </div>
+              <div className="flex rounded-xl bg-gray-100 p-1">
+                <button
+                  onClick={() => setView('marketTrend')}
+                  className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
+                    view === 'marketTrend' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <BarChart3 size={16} /> 市场趋势
+                </button>
+                <button
+                  onClick={() => setView('weeklySales')}
+                  className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
+                    view === 'weeklySales' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <BarChart3 size={16} /> 新品周销
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2914,7 +2991,7 @@ export default function App() {
             rawEditorMessage={rawEditorMessage}
             rawEditorDateInput={rawEditorDateInput}
             onApply={handleApplyRawEdits}
-            onReset={handleResetRawEdits}
+            onSaveModelConfigs={handleSaveRawModelConfigs}
             onDateInputChange={setRawEditorDateInput}
             onAddDateColumns={handleAddRawDateColumns}
             onCellChange={handleRawCellChange}
@@ -4026,7 +4103,7 @@ function RawDataPanel({
   rawEditorMessage,
   rawEditorDateInput,
   onApply,
-  onReset,
+  onSaveModelConfigs,
   onDateInputChange,
   onAddDateColumns,
   onCellChange,
@@ -4039,7 +4116,7 @@ function RawDataPanel({
   rawEditorMessage: string | null;
   rawEditorDateInput: string;
   onApply: () => void;
-  onReset: () => void;
+  onSaveModelConfigs: (configs: RawModelConfig[]) => void;
   onDateInputChange: (value: string) => void;
   onAddDateColumns: () => void;
   onCellChange: (rowId: string, field: 'model' | 'storage' | 'launchPrice', value: string) => void;
@@ -4047,9 +4124,45 @@ function RawDataPanel({
   onBulkPaste: (rowId: string, columnKey: RawEditorColumnKey, pastedText: string) => void;
   onDownload: () => void;
 }) {
+  const [activeTab, setActiveTab] = useState<'data' | 'models'>('data');
   const [selectedCell, setSelectedCell] = useState<{ rowId: string; columnKey: RawEditorColumnKey } | null>(null);
+  const modelConfigsFromRows = useMemo(() => {
+    const configByModel = new Map<string, RawModelConfig>();
+    rawEditorRows.forEach((row) => {
+      const model = row.model.trim();
+      if (!model || configByModel.has(model)) {
+        return;
+      }
+      configByModel.set(model, {
+        model,
+        brand: normalizeConfiguredBrand(row.brand ?? '') || inferBrand(model),
+        position: (row.position ?? '').trim(),
+      });
+    });
+    return Array.from(configByModel.values()).sort((left, right) => compareText(left.model, right.model));
+  }, [rawEditorRows]);
+  const brandOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          rawEditorRows
+            .map((row) => normalizeConfiguredBrand((row.brand ?? '').trim() || inferBrand(row.model.trim())))
+            .filter(Boolean),
+        ),
+      ).sort(compareText),
+    [rawEditorRows],
+  );
+  const positionOptions = useMemo(
+    () => Array.from(new Set(rawEditorRows.map((row) => (row.position ?? '').trim()).filter(Boolean))).sort(compareText),
+    [rawEditorRows],
+  );
+  const [modelConfigs, setModelConfigs] = useState<RawModelConfig[]>(modelConfigsFromRows);
   const cellRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const columnKeys = useMemo(() => getRawEditorColumnKeys(dates), [dates]);
+
+  useEffect(() => {
+    setModelConfigs(modelConfigsFromRows);
+  }, [modelConfigsFromRows]);
 
   const setCellRef = (rowId: string, columnKey: RawEditorColumnKey, element: HTMLInputElement | null) => {
     cellRefs.current[`${rowId}::${columnKey}`] = element;
@@ -4134,6 +4247,96 @@ function RawDataPanel({
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div className="flex gap-2 border-b border-gray-100 bg-gray-50/60 px-6 pt-4">
+        {[
+          ['data', '数据编辑'],
+          ['models', '型号配置'],
+        ].map(([tab, label]) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab as 'data' | 'models')}
+            className={`rounded-t-xl px-5 py-3 text-sm font-semibold transition ${
+              activeTab === tab ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {activeTab === 'models' ? (
+        <div>
+          <div className="flex flex-col gap-4 border-b border-gray-100 p-6 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-lg font-bold">型号配置</h2>
+              <p className="mt-1 text-sm text-gray-500">按型号统一维护品牌和机型定位，保存后会同步该型号下全部存储版本。</p>
+            </div>
+            <div className="flex items-center gap-3">
+              {rawEditorMessage ? <span className="text-sm font-medium text-emerald-600">{rawEditorMessage}</span> : null}
+              <button
+                type="button"
+                onClick={() => onSaveModelConfigs(modelConfigs)}
+                className="rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-700"
+              >
+                保存配置
+              </button>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] border-collapse text-left">
+              <thead className="bg-gray-50/70 text-xs font-bold uppercase tracking-wider text-gray-500">
+                <tr>
+                  <th className="border-b border-gray-100 px-6 py-4">型号</th>
+                  <th className="border-b border-gray-100 px-6 py-4">品牌</th>
+                  <th className="border-b border-gray-100 px-6 py-4">机型定位</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {modelConfigs.map((config, index) => (
+                  <tr key={config.model} className="hover:bg-gray-50/50">
+                    <td className="px-6 py-4 text-sm font-semibold text-gray-800">{config.model}</td>
+                    <td className="px-6 py-3">
+                      <select
+                        value={config.brand}
+                        onChange={(event) =>
+                          setModelConfigs((current) =>
+                            current.map((item, itemIndex) =>
+                              itemIndex === index ? { ...item, brand: event.target.value } : item,
+                            ),
+                          )
+                        }
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                      >
+                        {brandOptions.map((brand) => (
+                          <option key={brand} value={brand}>{brand}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-6 py-3">
+                      <select
+                        value={config.position}
+                        onChange={(event) =>
+                          setModelConfigs((current) =>
+                            current.map((item, itemIndex) =>
+                              itemIndex === index ? { ...item, position: event.target.value } : item,
+                            ),
+                          )
+                        }
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                      >
+                        {positionOptions.map((position) => (
+                          <option key={position} value={position}>{position}</option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+      <>
       <div className="flex flex-col gap-4 border-b border-gray-100 p-6 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h2 className="text-lg font-bold">原始数据</h2>
@@ -4164,13 +4367,6 @@ function RawDataPanel({
             className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download size={16} /> 下载
-          </button>
-          <button
-            type="button"
-            onClick={onReset}
-            className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800"
-          >
-            恢复当前数据
           </button>
           <button
             type="button"
@@ -4401,6 +4597,8 @@ function RawDataPanel({
           </tbody>
         </table>
       </div>
+      </>
+      )}
     </div>
   );
 }

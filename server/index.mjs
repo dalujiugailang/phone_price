@@ -703,6 +703,7 @@ function writeDraftToWorkbook(payload) {
 
   const headers = rows[headerRowIndex].map(normalizeHeader);
   const modelIndex = findHeaderIndex(headers, ['型号名称']);
+  const brandIndex = findHeaderIndex(headers, ['所属品牌名称']);
   const storageIndex = findHeaderIndex(headers, ['存储版本']);
   const positionIndex = findHeaderIndex(headers, ['定位']);
   const ppvIndex = findHeaderIndex(headers, ['ppv']);
@@ -749,6 +750,7 @@ function writeDraftToWorkbook(payload) {
 
     const baseValues = [
       [modelIndex, model],
+      [brandIndex, String(draftRow.brand ?? '').trim()],
       [storageIndex, storage],
       [positionIndex, String(draftRow.position ?? '').trim()],
       [ppvIndex, String(draftRow.ppv ?? '').trim()],
