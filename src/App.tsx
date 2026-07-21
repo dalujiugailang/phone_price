@@ -2165,7 +2165,12 @@ export default function App() {
     setRawEditorMessage(null);
   };
 
-  const handleRawBulkPaste = (rowId: string, columnKey: RawEditorColumnKey, pastedText: string) => {
+  const handleRawBulkPaste = (
+    rowId: string,
+    columnKey: RawEditorColumnKey,
+    pastedText: string,
+    columnKeys: RawEditorColumnKey[],
+  ) => {
     const normalizedRows = pastedText
       .replace(/\r\n/g, '\n')
       .replace(/\r/g, '\n')
@@ -2183,7 +2188,6 @@ export default function App() {
       return;
     }
 
-    const columnKeys = getRawEditorColumnKeys(rawEditorDates);
     const columnStartIndex = columnKeys.indexOf(columnKey);
 
     if (columnStartIndex === -1) {
@@ -4121,10 +4125,16 @@ function RawDataPanel({
   onAddDateColumns: () => void;
   onCellChange: (rowId: string, field: 'model' | 'storage' | 'launchPrice', value: string) => void;
   onSnapshotChange: (rowId: string, date: string, metric: 'finalPrice' | 'listPrice' | 'coupon' | 'biPrice', value: string) => void;
-  onBulkPaste: (rowId: string, columnKey: RawEditorColumnKey, pastedText: string) => void;
+  onBulkPaste: (
+    rowId: string,
+    columnKey: RawEditorColumnKey,
+    pastedText: string,
+    columnKeys: RawEditorColumnKey[],
+  ) => void;
   onDownload: () => void;
 }) {
   const [activeTab, setActiveTab] = useState<'data' | 'models'>('data');
+  const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
   const [selectedCell, setSelectedCell] = useState<{ rowId: string; columnKey: RawEditorColumnKey } | null>(null);
   const modelConfigsFromRows = useMemo(() => {
     const configByModel = new Map<string, RawModelConfig>();
@@ -4158,7 +4168,12 @@ function RawDataPanel({
   );
   const [modelConfigs, setModelConfigs] = useState<RawModelConfig[]>(modelConfigsFromRows);
   const cellRefs = useRef<Record<string, HTMLInputElement | null>>({});
-  const columnKeys = useMemo(() => getRawEditorColumnKeys(dates), [dates]);
+  const hiddenDateCount = Math.max(0, dates.length - 4);
+  const visibleDates = useMemo(
+    () => (isHistoryExpanded ? dates : dates.slice(-4)),
+    [dates, isHistoryExpanded],
+  );
+  const columnKeys = useMemo(() => getRawEditorColumnKeys(visibleDates), [visibleDates]);
 
   useEffect(() => {
     setModelConfigs(modelConfigsFromRows);
@@ -4243,6 +4258,10 @@ function RawDataPanel({
       event.preventDefault();
       moveSelection(rowId, columnKey, 'right');
     }
+  };
+
+  const handleBulkPaste = (rowId: string, columnKey: RawEditorColumnKey, pastedText: string) => {
+    onBulkPaste(rowId, columnKey, pastedText, columnKeys);
   };
 
   return (
@@ -4359,6 +4378,15 @@ function RawDataPanel({
           >
             新增四列
           </button>
+          {hiddenDateCount > 0 ? (
+            <button
+              type="button"
+              onClick={() => setIsHistoryExpanded((expanded) => !expanded)}
+              className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 transition hover:border-orange-300 hover:text-orange-600"
+            >
+              {isHistoryExpanded ? '收起历史日期' : `展开历史日期（已隐藏 ${hiddenDateCount} 个）`}
+            </button>
+          ) : null}
           {rawEditorMessage ? <span className="text-sm font-medium text-emerald-600">{rawEditorMessage}</span> : null}
           <button
             type="button"
@@ -4400,7 +4428,7 @@ function RawDataPanel({
               >
                 发售价
               </th>
-              {dates.map((date) => (
+              {visibleDates.map((date) => (
                 <th
                   key={date}
                   colSpan={4}
@@ -4411,7 +4439,7 @@ function RawDataPanel({
               ))}
             </tr>
             <tr className="bg-gray-50/50">
-              {dates.map((date) => (
+              {visibleDates.map((date) => (
                 <React.Fragment key={`${date}-sub`}>
                   <th className="border-b border-gray-100 px-3 py-2 text-[10px] font-bold uppercase text-gray-400">国补后</th>
                   <th className="border-b border-gray-100 px-3 py-2 text-[10px] font-bold uppercase text-gray-400">挂牌价</th>
@@ -4436,7 +4464,7 @@ function RawDataPanel({
                       const text = event.clipboardData.getData('text');
                       if (text.includes('\t') || text.includes('\n')) {
                         event.preventDefault();
-                        onBulkPaste(row.id, 'model', text);
+                        handleBulkPaste(row.id, 'model', text);
                       }
                     }}
                     ref={(element) => setCellRef(row.id, 'model', element)}
@@ -4459,7 +4487,7 @@ function RawDataPanel({
                       const text = event.clipboardData.getData('text');
                       if (text.includes('\t') || text.includes('\n')) {
                         event.preventDefault();
-                        onBulkPaste(row.id, 'storage', text);
+                        handleBulkPaste(row.id, 'storage', text);
                       }
                     }}
                     ref={(element) => setCellRef(row.id, 'storage', element)}
@@ -4482,7 +4510,7 @@ function RawDataPanel({
                       const text = event.clipboardData.getData('text');
                       if (text.includes('\t') || text.includes('\n')) {
                         event.preventDefault();
-                        onBulkPaste(row.id, 'launchPrice', text);
+                        handleBulkPaste(row.id, 'launchPrice', text);
                       }
                     }}
                     ref={(element) => setCellRef(row.id, 'launchPrice', element)}
@@ -4493,7 +4521,7 @@ function RawDataPanel({
                     )}
                   />
                 </td>
-                {dates.map((date) => {
+                {visibleDates.map((date) => {
                   const snapshot = row.snapshots[date];
                   return (
                     <React.Fragment key={`${row.id}-${date}`}>
@@ -4509,7 +4537,7 @@ function RawDataPanel({
                             const text = event.clipboardData.getData('text');
                             if (text.includes('\t') || text.includes('\n')) {
                               event.preventDefault();
-                              onBulkPaste(row.id, `${date}::finalPrice`, text);
+                              handleBulkPaste(row.id, `${date}::finalPrice`, text);
                             }
                           }}
                           ref={(element) => setCellRef(row.id, `${date}::finalPrice`, element)}
@@ -4532,7 +4560,7 @@ function RawDataPanel({
                             const text = event.clipboardData.getData('text');
                             if (text.includes('\t') || text.includes('\n')) {
                               event.preventDefault();
-                              onBulkPaste(row.id, `${date}::listPrice`, text);
+                              handleBulkPaste(row.id, `${date}::listPrice`, text);
                             }
                           }}
                           ref={(element) => setCellRef(row.id, `${date}::listPrice`, element)}
@@ -4555,7 +4583,7 @@ function RawDataPanel({
                             const text = event.clipboardData.getData('text');
                             if (text.includes('\t') || text.includes('\n')) {
                               event.preventDefault();
-                              onBulkPaste(row.id, `${date}::coupon`, text);
+                              handleBulkPaste(row.id, `${date}::coupon`, text);
                             }
                           }}
                           ref={(element) => setCellRef(row.id, `${date}::coupon`, element)}
@@ -4578,7 +4606,7 @@ function RawDataPanel({
                             const text = event.clipboardData.getData('text');
                             if (text.includes('\t') || text.includes('\n')) {
                               event.preventDefault();
-                              onBulkPaste(row.id, `${date}::biPrice`, text);
+                              handleBulkPaste(row.id, `${date}::biPrice`, text);
                             }
                           }}
                           ref={(element) => setCellRef(row.id, `${date}::biPrice`, element)}
