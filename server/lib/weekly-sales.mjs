@@ -7,6 +7,41 @@ import XLSX from 'xlsx';
 const DEFAULT_SERIES_POSITIONS = ['主品牌旗舰', '子系旗舰', '主品牌中端', '中低端'];
 const SUMMARY_MODEL_PATTERN = /汇总|合计|总计|小计|总盘/;
 const SAMPLE_WORKBOOK_PATH = '/Users/dudu/Downloads/新机销量数据源.xlsx';
+const FIRECRAWL_SCRAPE_URL = 'https://api.firecrawl.dev/v2/scrape';
+const MAX_FIRECRAWL_URLS = 10;
+
+const FIRECRAWL_WEEKLY_SALES_SCHEMA = {
+  type: 'object',
+  properties: {
+    records: {
+      type: 'array',
+      description: '微博中明确披露的手机新品累计销量记录。不要推测、补全或计算缺失数据。',
+      items: {
+        type: 'object',
+        properties: {
+          rawModelName: {
+            type: 'string',
+            description: '微博原文中的手机型号或系列名称。',
+          },
+          weekLabel: {
+            type: 'string',
+            description: '周次，统一写成 W1、W2、W3 这样的格式。',
+          },
+          cumulativeSalesWan: {
+            type: 'number',
+            description: '累计销量，统一换算成万台。例如 229.3 万台写 229.3，2293000 台也写 229.3。',
+          },
+          evidenceText: {
+            type: 'string',
+            description: '支持该数字的微博原文短句。',
+          },
+        },
+        required: ['rawModelName', 'weekLabel', 'cumulativeSalesWan', 'evidenceText'],
+      },
+    },
+  },
+  required: ['records'],
+};
 
 function nowIso() {
   return new Date().toISOString();
@@ -81,6 +116,90 @@ function splitPastedRows(rawText) {
       const delimiter = line.includes('\t') ? '\t' : ',';
       return line.split(delimiter).map((cell) => cell.trim());
     });
+}
+
+function normalizeFirecrawlUrls(input) {
+  const values = Array.isArray(input)
+    ? input
+    : String(input ?? '')
+        .split(/\r?\n|,/)
+        .map((item) => item.trim());
+  const urls = [...new Set(values.map((item) => String(item ?? '').trim()).filter(Boolean))];
+  if (urls.length === 0) {
+    throw new Error('请至少填写一个公开微博链接');
+  }
+  if (urls.length > MAX_FIRECRAWL_URLS) {
+    throw new Error(`单次最多抓取 ${MAX_FIRECRAWL_URLS} 个微博链接`);
+  }
+
+  return urls.map((value) => {
+    let parsed;
+    try {
+      parsed = new URL(value);
+    } catch {
+      throw new Error(`微博链接格式不正确：${value}`);
+    }
+    const hostname = parsed.hostname.toLowerCase();
+    const isWeiboHost =
+      hostname === 'weibo.com' ||
+      hostname.endsWith('.weibo.com') ||
+      hostname === 'weibo.cn' ||
+      hostname.endsWith('.weibo.cn');
+    if (!['http:', 'https:'].includes(parsed.protocol) || !isWeiboHost) {
+      throw new Error(`目前只支持公开的 weibo.com 或 weibo.cn 链接：${value}`);
+    }
+    return parsed.toString();
+  });
+}
+
+function normalizeFirecrawlRecord(record, sourceUrl) {
+  const rawModelName = normalizeText(record?.rawModelName);
+  const week = parseWeekLabel(record?.weekLabel);
+  const cumulativeSales = Number(record?.cumulativeSalesWan);
+  const evidenceText = normalizeText(record?.evidenceText);
+  if (!rawModelName || !week || !Number.isFinite(cumulativeSales) || cumulativeSales < 0 || !evidenceText) {
+    return null;
+  }
+  return {
+    rawModelName,
+    weekLabel: week.weekLabel,
+    weekIndex: week.weekIndex,
+    cumulativeSales,
+    evidenceText,
+    sourceUrl,
+  };
+}
+
+function buildFirecrawlWideTable(records) {
+  const weeks = [...new Map(records.map((record) => [record.weekIndex, record.weekLabel])).entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([, weekLabel]) => weekLabel);
+  const byModel = new Map();
+  const warnings = [];
+
+  for (const record of records) {
+    const modelWeeks = byModel.get(record.rawModelName) ?? new Map();
+    const existing = modelWeeks.get(record.weekLabel);
+    if (existing && existing.cumulativeSales !== record.cumulativeSales) {
+      warnings.push(
+        `${record.rawModelName} ${record.weekLabel} 出现多个累计销量：${existing.cumulativeSales}、${record.cumulativeSales}，宽表暂采用首个值`,
+      );
+    } else if (!existing) {
+      modelWeeks.set(record.weekLabel, record);
+    }
+    byModel.set(record.rawModelName, modelWeeks);
+  }
+
+  const header = ['型号/系列', ...weeks].join('\t');
+  const rows = [...byModel.entries()].map(([modelName, modelWeeks]) =>
+    [modelName, ...weeks.map((weekLabel) => modelWeeks.get(weekLabel)?.cumulativeSales ?? '')].join('\t'),
+  );
+  return {
+    rawText: [header, ...rows].join('\n'),
+    weeks,
+    modelCount: byModel.size,
+    warnings,
+  };
 }
 
 function mapModelRow(row) {
@@ -230,6 +349,71 @@ function createWeeklySalesService({ dataDir }) {
     return {
       brands: rows.filter((row) => row.option_type === 'brand').map((row) => row.option_value),
       seriesPositions: rows.filter((row) => row.option_type === 'series_position').map((row) => row.option_value),
+    };
+  }
+
+  async function scrapeWeiboWideTable({ urls, sourceUrls, weiboUrls }) {
+    const apiKey = normalizeText(process.env.FIRECRAWL_API_KEY);
+    const normalizedUrls = normalizeFirecrawlUrls(urls ?? sourceUrls ?? weiboUrls);
+    const results = await Promise.all(
+      normalizedUrls.map(async (url) => {
+        let scrapeResponse;
+        try {
+          scrapeResponse = await fetch(FIRECRAWL_SCRAPE_URL, {
+            method: 'POST',
+            headers: {
+              ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              url,
+              formats: [
+                {
+                  type: 'json',
+                  schema: FIRECRAWL_WEEKLY_SALES_SCHEMA,
+                  prompt:
+                    '提取微博正文中明确披露的手机新品累计销量。只提取原文有证据的数据；不要把点赞、转发、评论数当成销量；不要推测缺失周次或销量；所有销量统一换算成万台。',
+                },
+              ],
+              onlyMainContent: false,
+              maxAge: 0,
+              proxy: 'auto',
+              timeout: 120000,
+            }),
+          });
+        } catch (error) {
+          throw new Error(`Firecrawl 连接失败：${error instanceof Error ? error.message : '网络异常'}`);
+        }
+        const payload = await scrapeResponse.json().catch(() => null);
+        if (!scrapeResponse.ok || payload?.success === false) {
+          throw new Error(payload?.error || payload?.message || `Firecrawl 抓取失败（HTTP ${scrapeResponse.status}）`);
+        }
+        const extracted = payload?.data?.json;
+        const records = Array.isArray(extracted?.records)
+          ? extracted.records.map((record) => normalizeFirecrawlRecord(record, url)).filter(Boolean)
+          : [];
+        return {
+          url,
+          title: normalizeText(payload?.data?.metadata?.title),
+          records,
+        };
+      }),
+    );
+
+    const records = results.flatMap((result) => result.records);
+    if (records.length === 0) {
+      throw new Error('Firecrawl 未从这些微博中提取到明确的“型号、周次、累计销量”，请检查链接或原文内容');
+    }
+    const table = buildFirecrawlWideTable(records);
+    return {
+      ...table,
+      sourceCount: results.length,
+      recordCount: records.length,
+      sources: results.map((result) => ({
+        url: result.url,
+        title: result.title,
+        recordCount: result.records.length,
+      })),
     };
   }
 
@@ -1108,6 +1292,7 @@ function createWeeklySalesService({ dataDir }) {
       return getModelDetail(query);
     },
     parseImport,
+    scrapeWeiboWideTable,
     confirmImport,
     async getModels(query) {
       await seedFromWorkbookIfNeeded();
@@ -1148,6 +1333,14 @@ export function registerWeeklySalesRoutes(app, { dataDir }) {
       response.json(await service.parseImport(request.body ?? {}));
     } catch (error) {
       response.status(400).json({ message: error instanceof Error ? error.message : '新品周销导入解析失败' });
+    }
+  });
+
+  app.post('/api/weekly-sales/import/firecrawl', async (request, response) => {
+    try {
+      response.json(await service.scrapeWeiboWideTable(request.body ?? {}));
+    } catch (error) {
+      response.status(400).json({ message: error instanceof Error ? error.message : '微博新品周销抓取失败' });
     }
   });
 

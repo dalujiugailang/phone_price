@@ -129,6 +129,15 @@ interface WeeklySalesConfig {
   seriesPositions: string[];
 }
 
+interface FirecrawlWideTableResult {
+  rawText: string;
+  sourceCount: number;
+  recordCount: number;
+  modelCount: number;
+  weeks: string[];
+  warnings: string[];
+}
+
 const LINE_COLORS = ['#ea580c', '#2563eb', '#16a34a', '#dc2626', '#7c3aed', '#0891b2', '#ca8a04', '#db2777', '#475569'];
 
 function formatNumber(value: number | null | undefined, digits = 1) {
@@ -176,6 +185,19 @@ async function fetchConfig() {
     throw new Error(payload?.message || '新品周销配置读取失败');
   }
   return payload as WeeklySalesConfig;
+}
+
+async function fetchWeiboWideTable(urls: string[]) {
+  const response = await fetch('/api/weekly-sales/import/firecrawl', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ urls }),
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(payload?.message || '微博新品周销抓取失败');
+  }
+  return payload as FirecrawlWideTableResult;
 }
 
 async function parseImport(rawText: string) {
@@ -271,6 +293,9 @@ export function WeeklySalesPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [weiboUrls, setWeiboUrls] = useState('');
+  const [isCrawling, setIsCrawling] = useState(false);
+  const [crawlResult, setCrawlResult] = useState<FirecrawlWideTableResult | null>(null);
   const [rawText, setRawText] = useState('');
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [unknownMappings, setUnknownMappings] = useState<UnknownModelMapping[]>([]);
@@ -338,6 +363,31 @@ export function WeeklySalesPanel() {
       setMessage(`解析完成：新增 ${nextPreview.summary.newPoints} 个数据点，已存在 ${nextPreview.summary.skippedPoints ?? 0} 个，未知型号 ${nextPreview.summary.unknownModelCount} 个`);
     } catch (parseError) {
       setError(parseError instanceof Error ? parseError.message : '导入解析失败');
+    }
+  };
+
+  const handleFirecrawl = async () => {
+    const urls = weiboUrls
+      .split(/\r?\n/)
+      .map((url) => url.trim())
+      .filter(Boolean);
+    setMessage(null);
+    setError(null);
+    setIsCrawling(true);
+    try {
+      const result = await fetchWeiboWideTable(urls);
+      setCrawlResult(result);
+      setRawText(result.rawText);
+      setPreview(null);
+      setUnknownMappings([]);
+      setMessage(
+        `抓取完成：${result.sourceCount} 个数据源，生成 ${result.modelCount} 个型号、${result.weeks.join('、')} 宽表。请检查后生成导入预览。`,
+      );
+    } catch (crawlError) {
+      setCrawlResult(null);
+      setError(crawlError instanceof Error ? crawlError.message : '微博新品周销抓取失败');
+    } finally {
+      setIsCrawling(false);
     }
   };
 
@@ -549,17 +599,51 @@ export function WeeklySalesPanel() {
       ) : subView === 'import' ? (
         <div className="space-y-6">
           <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="font-bold text-gray-900">1. 数据源</h3>
+                <p className="text-sm font-medium text-gray-500">粘贴公开微博文章链接，每行一个；Firecrawl 会直接提取型号、周次和累计销量。</p>
+              </div>
+              <button
+                onClick={handleFirecrawl}
+                disabled={!weiboUrls.trim() || isCrawling}
+                className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:bg-gray-300"
+              >
+                <RefreshCw size={16} className={isCrawling ? 'animate-spin' : ''} /> {isCrawling ? '正在抓取...' : '抓取并生成宽表'}
+              </button>
+            </div>
+            <textarea
+              value={weiboUrls}
+              onChange={(event) => setWeiboUrls(event.target.value)}
+              className="h-28 w-full rounded-xl border border-gray-200 bg-gray-50 p-4 font-mono text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+              placeholder={'https://weibo.com/用户ID/微博ID\nhttps://weibo.com/用户ID/另一条微博ID'}
+            />
+            {crawlResult ? (
+              <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+                已从 {crawlResult.sourceCount} 个数据源提取 {crawlResult.recordCount} 条记录，生成 {crawlResult.modelCount} 个型号、{crawlResult.weeks.join('、')} 宽表。
+                {crawlResult.warnings.length > 0 ? (
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-amber-800">
+                    {crawlResult.warnings.map((warning) => (
+                      <li key={warning}>{warning}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-gray-900">粘贴累计销量底表</h3>
-                <p className="text-sm font-medium text-gray-500">格式：第一列“型号/系列”，后续列为 W1、W2、W3。</p>
+                <h3 className="font-bold text-gray-900">2. 规范宽表</h3>
+                <p className="text-sm font-medium text-gray-500">可检查或修改 Firecrawl 结果，也可以直接手动粘贴；格式为第一列“型号/系列”，后续列为 W1、W2、W3。</p>
               </div>
               <button
                 onClick={handleParse}
                 disabled={!rawText.trim()}
                 className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:bg-gray-300"
               >
-                <Upload size={16} /> 解析数据
+                <Upload size={16} /> 生成导入预览
               </button>
             </div>
             <textarea
@@ -574,7 +658,7 @@ export function WeeklySalesPanel() {
             <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h3 className="font-bold text-gray-900">解析预览</h3>
+                  <h3 className="font-bold text-gray-900">3. 录入预览</h3>
                   <p className="text-sm font-medium text-gray-500">
                     型号 {preview.summary.modelCount} 个，周字段 {preview.summary.weekCount} 个，新增 {preview.summary.newPoints} 个，已存在 {preview.summary.skippedPoints ?? 0} 个，异常 {preview.summary.errorCount} 个
                   </p>

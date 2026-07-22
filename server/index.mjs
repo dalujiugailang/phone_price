@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
