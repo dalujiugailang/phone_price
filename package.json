@@ -9,10 +9,12 @@
     "mcp": "node server/mcp-server.mjs",
     "start": "node server/index.mjs",
     "build": "vite build",
+    "test": "node --test",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "mcp:verify-data": "node scripts/verify-mcp-data.mjs",
+    "weibo:worker": "node scripts/weibo-local-worker.mjs",
     "report": "node scripts/generate-price-report.mjs",
     "web-cache": "node scripts/generate-web-cache.mjs"
   },

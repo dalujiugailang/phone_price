@@ -1,50 +1,53 @@
 import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import path from 'node:path';
+import { timingSafeEqual } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import XLSX from 'xlsx';
+import { buildSalesWideTables, parseRdWeiboPosts } from './weibo-rd-automation.mjs';
 
 const DEFAULT_SERIES_POSITIONS = ['主品牌旗舰', '子系旗舰', '主品牌中端', '中低端'];
 const SUMMARY_MODEL_PATTERN = /汇总|合计|总计|小计|总盘/;
 const SAMPLE_WORKBOOK_PATH = '/Users/dudu/Downloads/新机销量数据源.xlsx';
-const FIRECRAWL_SCRAPE_URL = 'https://api.firecrawl.dev/v2/scrape';
-const MAX_FIRECRAWL_URLS = 10;
-
-const FIRECRAWL_WEEKLY_SALES_SCHEMA = {
-  type: 'object',
-  properties: {
-    records: {
-      type: 'array',
-      description: '微博中明确披露的手机新品累计销量记录。不要推测、补全或计算缺失数据。',
-      items: {
-        type: 'object',
-        properties: {
-          rawModelName: {
-            type: 'string',
-            description: '微博原文中的手机型号或系列名称。',
-          },
-          weekLabel: {
-            type: 'string',
-            description: '周次，统一写成 W1、W2、W3 这样的格式。',
-          },
-          cumulativeSalesWan: {
-            type: 'number',
-            description: '累计销量，统一换算成万台。例如 229.3 万台写 229.3，2293000 台也写 229.3。',
-          },
-          evidenceText: {
-            type: 'string',
-            description: '支持该数字的微博原文短句。',
-          },
-        },
-        required: ['rawModelName', 'weekLabel', 'cumulativeSalesWan', 'evidenceText'],
-      },
-    },
-  },
-  required: ['records'],
-};
+const DEFAULT_WEEKLY_SALES_YEAR = 2026;
+const AUTOMATION_SCHEDULE_KEY = 'rd-weibo-mon-fri-10';
+const AUTOMATION_SCHEDULE_HOUR = 10;
+const AUTOMATION_SCHEDULE_WEEKDAYS = new Set([1, 5]);
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+export function getWeeklySalesScheduleSlot(date = new Date(), timeZone = 'Asia/Shanghai') {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      hourCycle: 'h23',
+      weekday: 'short',
+    })
+      .formatToParts(date)
+      .filter((part) => part.type !== 'literal')
+      .map((part) => [part.type, part.value]),
+  );
+  const weekday = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[parts.weekday];
+  if (!AUTOMATION_SCHEDULE_WEEKDAYS.has(weekday) || Number(parts.hour) < AUTOMATION_SCHEDULE_HOUR) {
+    return null;
+  }
+  return `${parts.year}-${parts.month}-${parts.day}@10:00`;
+}
+
+function isTruthyEnvironmentValue(value) {
+  return ['1', 'true', 'yes', 'on'].includes(String(value ?? '').trim().toLowerCase());
+}
+
+function tokensMatch(actual, expected) {
+  const actualBuffer = Buffer.from(String(actual ?? ''));
+  const expectedBuffer = Buffer.from(String(expected ?? ''));
+  return actualBuffer.length === expectedBuffer.length && timingSafeEqual(actualBuffer, expectedBuffer);
 }
 
 function normalizeText(value) {
@@ -71,6 +74,9 @@ function parseWeekLabel(value) {
   }
 
   const weekIndex = Number(matched[1]);
+  if (weekIndex < 1 || weekIndex > 53) {
+    return null;
+  }
   return {
     weekLabel: `W${weekIndex}`,
     weekIndex,
@@ -118,90 +124,6 @@ function splitPastedRows(rawText) {
     });
 }
 
-function normalizeFirecrawlUrls(input) {
-  const values = Array.isArray(input)
-    ? input
-    : String(input ?? '')
-        .split(/\r?\n|,/)
-        .map((item) => item.trim());
-  const urls = [...new Set(values.map((item) => String(item ?? '').trim()).filter(Boolean))];
-  if (urls.length === 0) {
-    throw new Error('请至少填写一个公开微博链接');
-  }
-  if (urls.length > MAX_FIRECRAWL_URLS) {
-    throw new Error(`单次最多抓取 ${MAX_FIRECRAWL_URLS} 个微博链接`);
-  }
-
-  return urls.map((value) => {
-    let parsed;
-    try {
-      parsed = new URL(value);
-    } catch {
-      throw new Error(`微博链接格式不正确：${value}`);
-    }
-    const hostname = parsed.hostname.toLowerCase();
-    const isWeiboHost =
-      hostname === 'weibo.com' ||
-      hostname.endsWith('.weibo.com') ||
-      hostname === 'weibo.cn' ||
-      hostname.endsWith('.weibo.cn');
-    if (!['http:', 'https:'].includes(parsed.protocol) || !isWeiboHost) {
-      throw new Error(`目前只支持公开的 weibo.com 或 weibo.cn 链接：${value}`);
-    }
-    return parsed.toString();
-  });
-}
-
-function normalizeFirecrawlRecord(record, sourceUrl) {
-  const rawModelName = normalizeText(record?.rawModelName);
-  const week = parseWeekLabel(record?.weekLabel);
-  const cumulativeSales = Number(record?.cumulativeSalesWan);
-  const evidenceText = normalizeText(record?.evidenceText);
-  if (!rawModelName || !week || !Number.isFinite(cumulativeSales) || cumulativeSales < 0 || !evidenceText) {
-    return null;
-  }
-  return {
-    rawModelName,
-    weekLabel: week.weekLabel,
-    weekIndex: week.weekIndex,
-    cumulativeSales,
-    evidenceText,
-    sourceUrl,
-  };
-}
-
-function buildFirecrawlWideTable(records) {
-  const weeks = [...new Map(records.map((record) => [record.weekIndex, record.weekLabel])).entries()]
-    .sort(([left], [right]) => left - right)
-    .map(([, weekLabel]) => weekLabel);
-  const byModel = new Map();
-  const warnings = [];
-
-  for (const record of records) {
-    const modelWeeks = byModel.get(record.rawModelName) ?? new Map();
-    const existing = modelWeeks.get(record.weekLabel);
-    if (existing && existing.cumulativeSales !== record.cumulativeSales) {
-      warnings.push(
-        `${record.rawModelName} ${record.weekLabel} 出现多个累计销量：${existing.cumulativeSales}、${record.cumulativeSales}，宽表暂采用首个值`,
-      );
-    } else if (!existing) {
-      modelWeeks.set(record.weekLabel, record);
-    }
-    byModel.set(record.rawModelName, modelWeeks);
-  }
-
-  const header = ['型号/系列', ...weeks].join('\t');
-  const rows = [...byModel.entries()].map(([modelName, modelWeeks]) =>
-    [modelName, ...weeks.map((weekLabel) => modelWeeks.get(weekLabel)?.cumulativeSales ?? '')].join('\t'),
-  );
-  return {
-    rawText: [header, ...rows].join('\n'),
-    weeks,
-    modelCount: byModel.size,
-    warnings,
-  };
-}
-
 function mapModelRow(row) {
   return {
     id: row.id,
@@ -216,10 +138,70 @@ function mapModelRow(row) {
   };
 }
 
-function createWeeklySalesService({ dataDir }) {
+function migrateWeeklySalesSchema(database) {
+  const columns = database.prepare('PRAGMA table_info(weekly_cumulative_sales)').all();
+  if (!columns.some((column) => column.name === 'year')) {
+    database.exec(`
+      BEGIN;
+      ALTER TABLE weekly_cumulative_sales RENAME TO weekly_cumulative_sales_legacy;
+      CREATE TABLE weekly_cumulative_sales (
+        standard_model_name TEXT NOT NULL,
+        year INTEGER NOT NULL,
+        week_label TEXT NOT NULL,
+        week_index INTEGER NOT NULL,
+        cumulative_sales REAL NOT NULL,
+        import_batch_id TEXT NOT NULL DEFAULT '',
+        source_post_url TEXT NOT NULL DEFAULT '',
+        evidence_text TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (standard_model_name, year, week_index)
+      );
+      INSERT INTO weekly_cumulative_sales (
+        standard_model_name, year, week_label, week_index, cumulative_sales,
+        import_batch_id, source_post_url, evidence_text, created_at, updated_at
+      )
+      SELECT
+        standard_model_name, ${DEFAULT_WEEKLY_SALES_YEAR}, week_label, week_index, cumulative_sales,
+        import_batch_id, '', '', created_at, updated_at
+      FROM weekly_cumulative_sales_legacy;
+      DROP TABLE weekly_cumulative_sales_legacy;
+      COMMIT;
+    `);
+    return;
+  }
+
+  if (!columns.some((column) => column.name === 'source_post_url')) {
+    database.exec("ALTER TABLE weekly_cumulative_sales ADD COLUMN source_post_url TEXT NOT NULL DEFAULT ''");
+  }
+  if (!columns.some((column) => column.name === 'evidence_text')) {
+    database.exec("ALTER TABLE weekly_cumulative_sales ADD COLUMN evidence_text TEXT NOT NULL DEFAULT ''");
+  }
+}
+
+function migrateAutomationSchema(database) {
+  const columns = database.prepare('PRAGMA table_info(weibo_crawl_run)').all();
+  if (!columns.some((column) => column.name === 'trigger_source')) {
+    database.exec("ALTER TABLE weibo_crawl_run ADD COLUMN trigger_source TEXT NOT NULL DEFAULT 'manual'");
+  }
+  if (!columns.some((column) => column.name === 'worker_id')) {
+    database.exec("ALTER TABLE weibo_crawl_run ADD COLUMN worker_id TEXT NOT NULL DEFAULT ''");
+  }
+  if (!columns.some((column) => column.name === 'claimed_at')) {
+    database.exec("ALTER TABLE weibo_crawl_run ADD COLUMN claimed_at TEXT NOT NULL DEFAULT ''");
+  }
+}
+
+export function createWeeklySalesService({ dataDir, applyMarketWeeks }) {
   const databasePath = process.env.WEEKLY_SALES_DB_PATH || path.join(dataDir, 'weekly-sales.sqlite');
   const workbookPath = process.env.WEEKLY_SALES_WORKBOOK_PATH || path.join(dataDir, '新机销量数据源.xlsx');
+  const automationToken = String(process.env.WEEKLY_SALES_AUTOMATION_TOKEN ?? '').trim();
+  const workerToken = String(process.env.WEEKLY_SALES_WORKER_TOKEN ?? '').trim();
+  const scheduleEnabled = isTruthyEnvironmentValue(process.env.WEEKLY_SALES_SCHEDULE_ENABLED);
+  const scheduleTimeZone = String(process.env.WEEKLY_SALES_SCHEDULE_TIMEZONE ?? 'Asia/Shanghai').trim();
   let database;
+  let activeAutomationPromise = null;
+  let schedulerTimer = null;
 
   async function ensureDataDir() {
     await fs.mkdir(dataDir, { recursive: true });
@@ -231,6 +213,7 @@ function createWeeklySalesService({ dataDir }) {
     }
 
     database = new DatabaseSync(databasePath);
+    database.exec('PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;');
     database.exec(`
       CREATE TABLE IF NOT EXISTS weekly_model_dimension (
         id TEXT PRIMARY KEY,
@@ -264,13 +247,16 @@ function createWeeklySalesService({ dataDir }) {
 
       CREATE TABLE IF NOT EXISTS weekly_cumulative_sales (
         standard_model_name TEXT NOT NULL,
+        year INTEGER NOT NULL,
         week_label TEXT NOT NULL,
         week_index INTEGER NOT NULL,
         cumulative_sales REAL NOT NULL,
         import_batch_id TEXT NOT NULL DEFAULT '',
+        source_post_url TEXT NOT NULL DEFAULT '',
+        evidence_text TEXT NOT NULL DEFAULT '',
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
-        PRIMARY KEY (standard_model_name, week_index)
+        PRIMARY KEY (standard_model_name, year, week_index)
       );
 
       CREATE TABLE IF NOT EXISTS weekly_import_batch (
@@ -303,7 +289,43 @@ function createWeeklySalesService({ dataDir }) {
         payload_json TEXT NOT NULL,
         created_at TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS weibo_crawl_run (
+        id TEXT PRIMARY KEY,
+        status TEXT NOT NULL,
+        phase TEXT NOT NULL DEFAULT '',
+        mode TEXT NOT NULL DEFAULT '',
+        trigger_source TEXT NOT NULL DEFAULT 'manual',
+        worker_id TEXT NOT NULL DEFAULT '',
+        claimed_at TEXT NOT NULL DEFAULT '',
+        started_at TEXT NOT NULL,
+        finished_at TEXT NOT NULL DEFAULT '',
+        post_count INTEGER NOT NULL DEFAULT 0,
+        sales_record_count INTEGER NOT NULL DEFAULT 0,
+        market_week_count INTEGER NOT NULL DEFAULT 0,
+        inserted_points INTEGER NOT NULL DEFAULT 0,
+        skipped_points INTEGER NOT NULL DEFAULT 0,
+        new_model_count INTEGER NOT NULL DEFAULT 0,
+        raw_json_path TEXT NOT NULL DEFAULT '',
+        summary_json TEXT NOT NULL DEFAULT '{}',
+        error_message TEXT NOT NULL DEFAULT ''
+      );
+
+      CREATE TABLE IF NOT EXISTS weekly_automation_schedule_state (
+        schedule_key TEXT PRIMARY KEY,
+        last_attempt_slot TEXT NOT NULL DEFAULT '',
+        attempted_at TEXT NOT NULL DEFAULT '',
+        run_id TEXT NOT NULL DEFAULT ''
+      );
+
+      CREATE TABLE IF NOT EXISTS weekly_automation_worker (
+        worker_id TEXT PRIMARY KEY,
+        last_seen_at TEXT NOT NULL,
+        mode TEXT NOT NULL DEFAULT 'local-chrome'
+      );
     `);
+    migrateWeeklySalesSchema(database);
+    migrateAutomationSchema(database);
     return database;
   }
 
@@ -349,71 +371,6 @@ function createWeeklySalesService({ dataDir }) {
     return {
       brands: rows.filter((row) => row.option_type === 'brand').map((row) => row.option_value),
       seriesPositions: rows.filter((row) => row.option_type === 'series_position').map((row) => row.option_value),
-    };
-  }
-
-  async function scrapeWeiboWideTable({ urls, sourceUrls, weiboUrls }) {
-    const apiKey = normalizeText(process.env.FIRECRAWL_API_KEY);
-    const normalizedUrls = normalizeFirecrawlUrls(urls ?? sourceUrls ?? weiboUrls);
-    const results = await Promise.all(
-      normalizedUrls.map(async (url) => {
-        let scrapeResponse;
-        try {
-          scrapeResponse = await fetch(FIRECRAWL_SCRAPE_URL, {
-            method: 'POST',
-            headers: {
-              ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
-              'content-type': 'application/json',
-            },
-            body: JSON.stringify({
-              url,
-              formats: [
-                {
-                  type: 'json',
-                  schema: FIRECRAWL_WEEKLY_SALES_SCHEMA,
-                  prompt:
-                    '提取微博正文中明确披露的手机新品累计销量。只提取原文有证据的数据；不要把点赞、转发、评论数当成销量；不要推测缺失周次或销量；所有销量统一换算成万台。',
-                },
-              ],
-              onlyMainContent: false,
-              maxAge: 0,
-              proxy: 'auto',
-              timeout: 120000,
-            }),
-          });
-        } catch (error) {
-          throw new Error(`Firecrawl 连接失败：${error instanceof Error ? error.message : '网络异常'}`);
-        }
-        const payload = await scrapeResponse.json().catch(() => null);
-        if (!scrapeResponse.ok || payload?.success === false) {
-          throw new Error(payload?.error || payload?.message || `Firecrawl 抓取失败（HTTP ${scrapeResponse.status}）`);
-        }
-        const extracted = payload?.data?.json;
-        const records = Array.isArray(extracted?.records)
-          ? extracted.records.map((record) => normalizeFirecrawlRecord(record, url)).filter(Boolean)
-          : [];
-        return {
-          url,
-          title: normalizeText(payload?.data?.metadata?.title),
-          records,
-        };
-      }),
-    );
-
-    const records = results.flatMap((result) => result.records);
-    if (records.length === 0) {
-      throw new Error('Firecrawl 未从这些微博中提取到明确的“型号、周次、累计销量”，请检查链接或原文内容');
-    }
-    const table = buildFirecrawlWideTable(records);
-    return {
-      ...table,
-      sourceCount: results.length,
-      recordCount: records.length,
-      sources: results.map((result) => ({
-        url: result.url,
-        title: result.title,
-        recordCount: result.records.length,
-      })),
     };
   }
 
@@ -562,7 +519,7 @@ function createWeeklySalesService({ dataDir }) {
 
     const sourcePath = fsSync.existsSync(workbookPath)
       ? workbookPath
-      : fsSync.existsSync(SAMPLE_WORKBOOK_PATH)
+      : process.env.NODE_ENV !== 'test' && fsSync.existsSync(SAMPLE_WORKBOOK_PATH)
         ? SAMPLE_WORKBOOK_PATH
         : null;
     if (!sourcePath) {
@@ -600,10 +557,10 @@ function createWeeklySalesService({ dataDir }) {
     `);
     const insertPoint = db.prepare(`
       INSERT INTO weekly_cumulative_sales (
-        standard_model_name, week_label, week_index, cumulative_sales, import_batch_id, created_at, updated_at
+        standard_model_name, year, week_label, week_index, cumulative_sales, import_batch_id, created_at, updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(standard_model_name, week_index) DO UPDATE SET
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(standard_model_name, year, week_index) DO UPDATE SET
         week_label = excluded.week_label,
         cumulative_sales = excluded.cumulative_sales,
         import_batch_id = excluded.import_batch_id,
@@ -631,6 +588,7 @@ function createWeeklySalesService({ dataDir }) {
       parsed.points.forEach((point) => {
         insertPoint.run(
           point.standardModelName,
+          DEFAULT_WEEKLY_SALES_YEAR,
           point.weekLabel,
           point.weekIndex,
           point.cumulativeSales,
@@ -712,6 +670,10 @@ function createWeeklySalesService({ dataDir }) {
       clauses.push('m.series_position = ?');
       params.push(filters.seriesPosition);
     }
+    if (filters.year) {
+      clauses.push('s.year = ?');
+      params.push(Number(filters.year));
+    }
     if (filters.visibleOnly !== false) {
       clauses.push('m.is_visible = 1');
     }
@@ -733,6 +695,7 @@ function createWeeklySalesService({ dataDir }) {
           m.series_position,
           m.is_visible,
           m.sort_order,
+          s.year,
           s.week_label,
           s.week_index,
           s.cumulative_sales,
@@ -740,7 +703,7 @@ function createWeeklySalesService({ dataDir }) {
         FROM weekly_cumulative_sales s
         JOIN weekly_model_dimension m ON m.standard_model_name = s.standard_model_name
         ${where}
-        ORDER BY m.sort_order ASC, m.standard_model_name ASC, s.week_index ASC
+        ORDER BY m.sort_order ASC, m.standard_model_name ASC, s.year ASC, s.week_index ASC
       `)
       .all(...params);
   }
@@ -768,6 +731,7 @@ function createWeeklySalesService({ dataDir }) {
           brand: row.brand,
           seriesPosition: row.series_position,
           isVisible: fromSqlBool(row.is_visible),
+          year: row.year,
           weekLabel: row.week_label,
           weekIndex: row.week_index,
           cumulativeSales: row.cumulative_sales,
@@ -782,7 +746,12 @@ function createWeeklySalesService({ dataDir }) {
     await seedFromWorkbookIfNeeded();
     const config = getConfig();
     const models = getModels({});
-    const allRows = readSalesRows({ ...filters, startWeek: undefined, endWeek: undefined });
+    const years = ensureDatabase()
+      .prepare('SELECT DISTINCT year FROM weekly_cumulative_sales ORDER BY year ASC')
+      .all()
+      .map((row) => Number(row.year));
+    const selectedYear = Number(filters.year || years.at(-1) || DEFAULT_WEEKLY_SALES_YEAR);
+    const allRows = readSalesRows({ ...filters, year: selectedYear, startWeek: undefined, endWeek: undefined });
     const allWeeklyRows = buildWeeklyRows(allRows);
     const startWeek = filters.startWeek ? Number(filters.startWeek) : null;
     const endWeek = filters.endWeek ? Number(filters.endWeek) : null;
@@ -827,6 +796,7 @@ function createWeeklySalesService({ dataDir }) {
 
     return {
       summary: {
+        year: selectedYear,
         latestWeek,
         modelCount: models.filter((model) => model.isVisible).length,
         latestWeekSales: Number(latestWeekSales.toFixed(2)),
@@ -836,6 +806,8 @@ function createWeeklySalesService({ dataDir }) {
         updatedAt: latestBatch?.imported_at ?? '',
       },
       filters: {
+        years,
+        selectedYear,
         brands: config.brands,
         seriesPositions: config.seriesPositions,
         weeks: allWeeks,
@@ -846,6 +818,7 @@ function createWeeklySalesService({ dataDir }) {
         standardModelName: row.standard_model_name,
         brand: row.brand,
         seriesPosition: row.series_position,
+        year: row.year,
         weekLabel: row.week_label,
         weekIndex: row.week_index,
         cumulativeSales: row.cumulative_sales,
@@ -870,8 +843,12 @@ function createWeeklySalesService({ dataDir }) {
     };
   }
 
-  async function parseImport({ rawText, text, content, paste, importName }) {
+  async function parseImport({ rawText, text, content, paste, importName, year, recordMetadata = [], ignoreBlank = false }) {
     await seedFromWorkbookIfNeeded();
+    const selectedYear = Number(year || DEFAULT_WEEKLY_SALES_YEAR);
+    if (!Number.isInteger(selectedYear) || selectedYear < 2000 || selectedYear > 2100) {
+      throw new Error('导入年份无效');
+    }
     const rows = splitPastedRows(rawText ?? text ?? content ?? paste);
     if (rows.length < 2) {
       throw new Error('请粘贴至少一行表头和一行数据');
@@ -895,11 +872,17 @@ function createWeeklySalesService({ dataDir }) {
     }
 
     const lookup = getModelLookup();
+    const metadataByPoint = new Map(
+      recordMetadata.map((record) => [
+        `${normalizeKey(record.rawModelName)}::${Number(record.year || selectedYear)}::${Number(record.weekIndex)}`,
+        record,
+      ]),
+    );
     const existingPoints = new Map(
       ensureDatabase()
-        .prepare('SELECT standard_model_name, week_index, cumulative_sales FROM weekly_cumulative_sales')
-        .all()
-        .map((row) => [`${row.standard_model_name}::${row.week_index}`, row.cumulative_sales]),
+        .prepare('SELECT standard_model_name, year, week_index, cumulative_sales FROM weekly_cumulative_sales WHERE year = ?')
+        .all(selectedYear)
+        .map((row) => [`${row.standard_model_name}::${row.year}::${row.week_index}`, row.cumulative_sales]),
     );
 
     const previewRows = [];
@@ -923,12 +906,20 @@ function createWeeklySalesService({ dataDir }) {
         const baseRow = {
           rawModelName,
           standardModelName: standardModelName ?? '',
+          year: selectedYear,
           weekLabel: weekColumn.weekLabel,
           weekIndex: weekColumn.weekIndex,
           rawValue: String(rawValue ?? ''),
+          sourcePostUrl:
+            metadataByPoint.get(`${normalizeKey(rawModelName)}::${selectedYear}::${weekColumn.weekIndex}`)?.sourcePostUrl ?? '',
+          evidenceText:
+            metadataByPoint.get(`${normalizeKey(rawModelName)}::${selectedYear}::${weekColumn.weekIndex}`)?.evidenceText ?? '',
         };
 
         if (parsed === null) {
+          if (!String(rawValue ?? '').trim() && ignoreBlank) {
+            continue;
+          }
           if (String(rawValue ?? '').trim()) {
             errors.push({ ...baseRow, errorType: 'non_numeric', errorMessage: '累计销量不是可解析数字' });
           } else {
@@ -947,7 +938,7 @@ function createWeeklySalesService({ dataDir }) {
         }
         previousValue = parsed;
 
-        const existingValue = existingPoints.get(`${standardModelName}::${weekColumn.weekIndex}`);
+        const existingValue = existingPoints.get(`${standardModelName}::${selectedYear}::${weekColumn.weekIndex}`);
         const action = existingValue === undefined ? 'insert' : 'skip_existing';
         previewRows.push({
           ...baseRow,
@@ -963,6 +954,7 @@ function createWeeklySalesService({ dataDir }) {
     const previewId = toId('preview');
     const payload = {
       importName: normalizeText(importName) || `新品周销导入 ${new Date().toLocaleString('zh-CN', { hour12: false })}`,
+      year: selectedYear,
       previewRows,
       errors,
       unknownModels: Array.from(unknownModels).map((rawModelName) => ({ rawModelName })),
@@ -990,7 +982,13 @@ function createWeeklySalesService({ dataDir }) {
     };
   }
 
-  async function confirmImport({ batchPreviewId, newModelMappings = [], importedBy = '' }) {
+  async function confirmImport({
+    batchPreviewId,
+    newModelMappings = [],
+    importedBy = '',
+    allowPendingModels = false,
+    importType = 'paste',
+  }) {
     await seedFromWorkbookIfNeeded();
     const db = ensureDatabase();
     const preview = db.prepare('SELECT payload_json FROM weekly_import_preview WHERE id = ?').get(batchPreviewId);
@@ -999,7 +997,9 @@ function createWeeklySalesService({ dataDir }) {
     }
 
     const payload = JSON.parse(preview.payload_json);
-    newModelMappings.forEach(validateConfiguredDimensions);
+    if (!allowPendingModels) {
+      newModelMappings.forEach(validateConfiguredDimensions);
+    }
     const timestamp = nowIso();
     const batchId = toId('batch');
     const mappingByRawName = new Map(newModelMappings.map((item) => [normalizeKey(item.rawModelName), item]));
@@ -1023,13 +1023,16 @@ function createWeeklySalesService({ dataDir }) {
     `);
     const upsertPoint = db.prepare(`
       INSERT INTO weekly_cumulative_sales (
-        standard_model_name, week_label, week_index, cumulative_sales, import_batch_id, created_at, updated_at
+        standard_model_name, year, week_label, week_index, cumulative_sales, import_batch_id,
+        source_post_url, evidence_text, created_at, updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(standard_model_name, week_index) DO UPDATE SET
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(standard_model_name, year, week_index) DO UPDATE SET
         week_label = excluded.week_label,
         cumulative_sales = excluded.cumulative_sales,
         import_batch_id = excluded.import_batch_id,
+        source_post_url = excluded.source_post_url,
+        evidence_text = excluded.evidence_text,
         updated_at = excluded.updated_at
     `);
     const insertError = db.prepare(`
@@ -1050,7 +1053,9 @@ function createWeeklySalesService({ dataDir }) {
         if (!standardModelName) {
           continue;
         }
-        const dimensions = validateConfiguredDimensions(mapping);
+        const dimensions = allowPendingModels
+          ? { brand: normalizeBrand(mapping.brand), seriesPosition: normalizeText(mapping.seriesPosition) }
+          : validateConfiguredDimensions(mapping);
         insertModel.run(
           toId('model'),
           standardModelName,
@@ -1103,7 +1108,18 @@ function createWeeklySalesService({ dataDir }) {
           continue;
         }
 
-        upsertPoint.run(standardModelName, row.weekLabel, row.weekIndex, row.cumulativeSales, batchId, timestamp, timestamp);
+        upsertPoint.run(
+          standardModelName,
+          Number(row.year || payload.year || DEFAULT_WEEKLY_SALES_YEAR),
+          row.weekLabel,
+          row.weekIndex,
+          row.cumulativeSales,
+          batchId,
+          normalizeText(row.sourcePostUrl),
+          normalizeText(row.evidenceText),
+          timestamp,
+          timestamp,
+        );
         if (row.action === 'insert' || row.action === 'pending_model') {
           insertedPoints += 1;
         } else {
@@ -1117,10 +1133,11 @@ function createWeeklySalesService({ dataDir }) {
           id, import_name, import_type, imported_by, imported_at, total_rows, parsed_points,
           inserted_points, updated_points, error_points, status
         )
-        VALUES (?, ?, 'paste', ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         batchId,
         payload.importName,
+        normalizeText(importType) || 'paste',
         normalizeText(importedBy),
         timestamp,
         new Set(payload.previewRows.map((row) => row.rawModelName)).size,
@@ -1142,6 +1159,322 @@ function createWeeklySalesService({ dataDir }) {
       db.exec('ROLLBACK');
       throw error;
     }
+  }
+
+  function mapAutomationRun(row) {
+    if (!row) {
+      return null;
+    }
+    return {
+      id: row.id,
+      status: row.status,
+      phase: row.phase,
+      mode: row.mode,
+      triggerSource: row.trigger_source,
+      workerId: row.worker_id,
+      claimedAt: row.claimed_at,
+      startedAt: row.started_at,
+      finishedAt: row.finished_at,
+      postCount: row.post_count,
+      salesRecordCount: row.sales_record_count,
+      marketWeekCount: row.market_week_count,
+      insertedPoints: row.inserted_points,
+      skippedPoints: row.skipped_points,
+      newModelCount: row.new_model_count,
+      rawJsonPath: row.raw_json_path,
+      summary: JSON.parse(row.summary_json || '{}'),
+      errorMessage: row.error_message,
+    };
+  }
+
+  function updateAutomationPhase(runId, phase) {
+    ensureDatabase().prepare('UPDATE weibo_crawl_run SET phase = ? WHERE id = ?').run(phase, runId);
+  }
+
+  async function importAutomationRecords(records) {
+    const tables = buildSalesWideTables(records);
+    const results = [];
+    for (const table of tables) {
+      const yearRecords = records.filter((record) => record.year === table.year);
+      const preview = await parseImport({
+        rawText: table.rawText,
+        year: table.year,
+        recordMetadata: yearRecords,
+        ignoreBlank: true,
+        importName: `Browser Use CLI：RD观测 ${table.year} ${table.weeks.join('、')}`,
+      });
+      const newModelMappings = preview.unknownModels.map(({ rawModelName }) => ({
+        rawModelName,
+        standardModelName: rawModelName,
+        brand: '',
+        seriesPosition: '',
+        isVisible: false,
+        sortOrder: 999,
+        remark: 'Browser Use CLI 自动发现，待维护',
+      }));
+      const confirmed = await confirmImport({
+        batchPreviewId: preview.batchPreviewId,
+        newModelMappings,
+        importedBy: 'Browser Use CLI',
+        allowPendingModels: true,
+        importType: 'browser-use-cli',
+      });
+      results.push({ year: table.year, weeks: table.weeks, preview: preview.summary, confirmed });
+    }
+    return {
+      results,
+      insertedPoints: results.reduce((sum, result) => sum + result.confirmed.insertedPoints, 0),
+      skippedPoints: results.reduce((sum, result) => sum + result.preview.skippedPoints, 0),
+      newModelCount: results.reduce((sum, result) => sum + result.preview.unknownModelCount, 0),
+    };
+  }
+
+  async function processAutomationPosts(runId, posts) {
+    updateAutomationPhase(runId, 'parsing');
+    const parsed = parseRdWeiboPosts(posts);
+    if (parsed.salesRecords.length === 0) {
+      throw new Error('最近21天微博中未识别到新品累计周销量');
+    }
+
+    const runDir = path.join(dataDir, 'weibo-runs', runId);
+    const rawJsonPath = path.join(runDir, 'raw.json');
+    await fs.mkdir(runDir, { recursive: true });
+    await fs.writeFile(
+      rawJsonPath,
+      JSON.stringify(
+        {
+          metadata: { runId, fetchedAt: nowIso(), account: 'RD观测', uid: '7928198622', count: parsed.posts.length },
+          posts: parsed.posts,
+        },
+        null,
+        2,
+      ),
+      'utf8',
+    );
+
+    updateAutomationPhase(runId, 'importing_weekly_sales');
+    const salesImport = await importAutomationRecords(parsed.salesRecords);
+    updateAutomationPhase(runId, 'importing_market_share');
+    const marketImport = applyMarketWeeks ? await applyMarketWeeks(parsed.marketWeeks) : { skipped: parsed.marketWeeks.length };
+    return { parsed, salesImport, marketImport, rawJsonPath };
+  }
+
+  async function executeAutomationRun(runId, injectedPosts = null) {
+    const db = ensureDatabase();
+    try {
+      if (!Array.isArray(injectedPosts)) {
+        throw new Error('本机 Worker 未回传微博 posts 数组');
+      }
+      const result = await processAutomationPosts(runId, injectedPosts);
+      const summary = {
+        years: [...new Set(result.parsed.salesRecords.map((record) => record.year))],
+        weeks: [...new Set(result.parsed.salesRecords.map((record) => `${record.year} ${record.weekLabel}`))],
+        marketWeeks: result.parsed.marketWeeks.map((record) => `${record.year} ${record.weekLabel}`),
+        warnings: result.parsed.warnings,
+        salesImport: result.salesImport.results,
+        marketImport: result.marketImport,
+      };
+      db.prepare(`
+        UPDATE weibo_crawl_run
+        SET status = 'success', phase = 'completed', finished_at = ?, post_count = ?, sales_record_count = ?,
+            market_week_count = ?, inserted_points = ?, skipped_points = ?, new_model_count = ?,
+            raw_json_path = ?, summary_json = ?, error_message = ''
+        WHERE id = ?
+      `).run(
+        nowIso(),
+        result.parsed.posts.length,
+        result.parsed.salesRecords.length,
+        result.parsed.marketWeeks.length,
+        result.salesImport.insertedPoints,
+        result.salesImport.skippedPoints,
+        result.salesImport.newModelCount,
+        result.rawJsonPath,
+        JSON.stringify(summary),
+        runId,
+      );
+    } catch (error) {
+      db.prepare(`
+        UPDATE weibo_crawl_run
+        SET status = 'failed', phase = 'failed', finished_at = ?, error_message = ?
+        WHERE id = ?
+      `).run(nowIso(), error instanceof Error ? error.message : String(error), runId);
+    }
+    return mapAutomationRun(db.prepare('SELECT * FROM weibo_crawl_run WHERE id = ?').get(runId));
+  }
+
+  async function startAutomationRun({ posts, triggerSource = 'manual' } = {}) {
+    await seedFromWorkbookIfNeeded();
+    const db = ensureDatabase();
+    const active = db
+      .prepare("SELECT * FROM weibo_crawl_run WHERE status IN ('queued', 'running') ORDER BY started_at ASC LIMIT 1")
+      .get();
+    if (activeAutomationPromise || active) {
+      return { alreadyRunning: true, run: mapAutomationRun(active) };
+    }
+
+    const runId = toId('weibo_run');
+    const isInjected = Array.isArray(posts);
+    db.prepare(`
+      INSERT INTO weibo_crawl_run (id, status, phase, mode, trigger_source, started_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
+      runId,
+      isInjected ? 'running' : 'queued',
+      isInjected ? 'parsing' : 'waiting_for_local_worker',
+      isInjected ? 'injected' : 'local-worker',
+      triggerSource,
+      nowIso(),
+    );
+    if (isInjected) {
+      activeAutomationPromise = executeAutomationRun(runId, posts).finally(() => {
+        activeAutomationPromise = null;
+      });
+    }
+    return { alreadyRunning: false, run: mapAutomationRun(db.prepare('SELECT * FROM weibo_crawl_run WHERE id = ?').get(runId)) };
+  }
+
+  async function runAutomationFromPosts(posts) {
+    const started = await startAutomationRun({ posts });
+    if (started.alreadyRunning) {
+      throw new Error('已有微博抓取任务正在运行');
+    }
+    return activeAutomationPromise;
+  }
+
+  function getAutomationStatus() {
+    const db = ensureDatabase();
+    const latest = db.prepare('SELECT * FROM weibo_crawl_run ORDER BY started_at DESC LIMIT 1').get();
+    const scheduleState = db
+      .prepare('SELECT last_attempt_slot, attempted_at, run_id FROM weekly_automation_schedule_state WHERE schedule_key = ?')
+      .get(AUTOMATION_SCHEDULE_KEY);
+    const worker = db.prepare('SELECT * FROM weekly_automation_worker ORDER BY last_seen_at DESC LIMIT 1').get();
+    const workerOnline = Boolean(worker && Date.now() - Date.parse(worker.last_seen_at) < 120_000);
+    return {
+      configured: Boolean(workerToken),
+      configurationError: workerToken ? '' : '云端缺少 WEEKLY_SALES_WORKER_TOKEN',
+      mode: 'local-worker',
+      source: { account: 'RD观测', uid: '7928198622', lookbackDays: 21 },
+      schedule: '每周一、周五 10:00',
+      scheduler: {
+        enabled: scheduleEnabled,
+        timeZone: scheduleTimeZone,
+        lastAttemptSlot: scheduleState?.last_attempt_slot ?? '',
+        attemptedAt: scheduleState?.attempted_at ?? '',
+      },
+      worker: {
+        id: worker?.worker_id ?? '',
+        lastSeenAt: worker?.last_seen_at ?? '',
+        online: workerOnline,
+      },
+      latestRun: mapAutomationRun(latest),
+    };
+  }
+
+  async function runScheduledAutomationIfDue(date = new Date()) {
+    if (!scheduleEnabled || !workerToken) {
+      return null;
+    }
+    const slot = getWeeklySalesScheduleSlot(date, scheduleTimeZone);
+    if (!slot) {
+      return null;
+    }
+    const db = ensureDatabase();
+    const claim = db.prepare(`
+      INSERT INTO weekly_automation_schedule_state (schedule_key, last_attempt_slot, attempted_at, run_id)
+      VALUES (?, ?, ?, '')
+      ON CONFLICT(schedule_key) DO UPDATE SET
+        last_attempt_slot = excluded.last_attempt_slot,
+        attempted_at = excluded.attempted_at,
+        run_id = ''
+      WHERE weekly_automation_schedule_state.last_attempt_slot <> excluded.last_attempt_slot
+    `).run(AUTOMATION_SCHEDULE_KEY, slot, nowIso());
+    if (claim.changes === 0) {
+      return null;
+    }
+    const result = await startAutomationRun({ triggerSource: 'schedule' });
+    db.prepare('UPDATE weekly_automation_schedule_state SET run_id = ? WHERE schedule_key = ?').run(
+      result.run?.id ?? '',
+      AUTOMATION_SCHEDULE_KEY,
+    );
+    return result;
+  }
+
+  function startAutomationScheduler() {
+    if (!scheduleEnabled || schedulerTimer) {
+      return;
+    }
+    const tick = () => {
+      runScheduledAutomationIfDue().catch((error) => {
+        console.error('weekly-sales scheduler failed', error);
+      });
+    };
+    const initialTimer = setTimeout(tick, 5000);
+    initialTimer.unref?.();
+    schedulerTimer = setInterval(tick, 60_000);
+    schedulerTimer.unref?.();
+  }
+
+  function authorizeManualAutomation(token) {
+    return Boolean(automationToken) && tokensMatch(token, automationToken);
+  }
+
+  function authorizeWorker(token) {
+    return Boolean(workerToken) && tokensMatch(token, workerToken);
+  }
+
+  function touchAutomationWorker(workerId) {
+    const db = ensureDatabase();
+    const normalizedWorkerId = normalizeText(workerId) || 'local-worker';
+    const timestamp = nowIso();
+    db.prepare(`
+      INSERT INTO weekly_automation_worker (worker_id, last_seen_at, mode)
+      VALUES (?, ?, 'local-chrome')
+      ON CONFLICT(worker_id) DO UPDATE SET last_seen_at = excluded.last_seen_at
+    `).run(normalizedWorkerId, timestamp);
+    return { workerId: normalizedWorkerId, lastSeenAt: timestamp };
+  }
+
+  async function claimAutomationRun(workerId) {
+    await seedFromWorkbookIfNeeded();
+    const db = ensureDatabase();
+    const heartbeat = touchAutomationWorker(workerId);
+    const normalizedWorkerId = heartbeat.workerId;
+    const timestamp = heartbeat.lastSeenAt;
+    db.prepare(`
+      UPDATE weibo_crawl_run
+      SET status = 'queued', phase = 'waiting_for_local_worker', worker_id = '', claimed_at = ''
+      WHERE status = 'running' AND claimed_at <> '' AND claimed_at < ?
+    `).run(new Date(Date.now() - 15 * 60_000).toISOString());
+    const queued = db.prepare("SELECT * FROM weibo_crawl_run WHERE status = 'queued' ORDER BY started_at ASC LIMIT 1").get();
+    if (!queued) {
+      return null;
+    }
+    const claimed = db.prepare(`
+      UPDATE weibo_crawl_run
+      SET status = 'running', phase = 'scraping_weibo', worker_id = ?, claimed_at = ?
+      WHERE id = ? AND status = 'queued'
+    `).run(normalizedWorkerId, timestamp, queued.id);
+    return claimed.changes ? mapAutomationRun(db.prepare('SELECT * FROM weibo_crawl_run WHERE id = ?').get(queued.id)) : null;
+  }
+
+  async function completeAutomationRun(runId, workerId, posts) {
+    const row = ensureDatabase().prepare('SELECT * FROM weibo_crawl_run WHERE id = ?').get(runId);
+    if (!row || row.status !== 'running' || row.worker_id !== normalizeText(workerId)) {
+      throw new Error('任务不存在、状态已变化或不属于当前 Worker');
+    }
+    return executeAutomationRun(runId, posts);
+  }
+
+  function failAutomationRun(runId, workerId, message) {
+    const result = ensureDatabase().prepare(`
+      UPDATE weibo_crawl_run
+      SET status = 'failed', phase = 'failed', finished_at = ?, error_message = ?
+      WHERE id = ? AND status = 'running' AND worker_id = ?
+    `).run(nowIso(), normalizeText(message) || '本机 Worker 执行失败', runId, normalizeText(workerId));
+    if (!result.changes) {
+      throw new Error('任务不存在、状态已变化或不属于当前 Worker');
+    }
+    return mapAutomationRun(ensureDatabase().prepare('SELECT * FROM weibo_crawl_run WHERE id = ?').get(runId));
   }
 
   async function upsertModel(payload, existingId = null) {
@@ -1215,6 +1548,7 @@ function createWeeklySalesService({ dataDir }) {
 
     const rows = readSalesRows({
       visibleOnly: false,
+      year: query.year,
       startWeek: query.startWeek,
       endWeek: query.endWeek,
     }).filter((row) => row.standard_model_name === model.standard_model_name);
@@ -1225,6 +1559,7 @@ function createWeeklySalesService({ dataDir }) {
         standardModelName: row.standard_model_name,
         brand: row.brand,
         seriesPosition: row.series_position,
+        year: row.year,
         weekLabel: row.week_label,
         weekIndex: row.week_index,
         cumulativeSales: row.cumulative_sales,
@@ -1283,6 +1618,7 @@ function createWeeklySalesService({ dataDir }) {
       return getOverview({
         brand: query.brand,
         seriesPosition: query.seriesPosition,
+        year: query.year,
         startWeek: query.startWeek,
         endWeek: query.endWeek,
         visibleOnly: query.visibleOnly !== 'false',
@@ -1292,8 +1628,20 @@ function createWeeklySalesService({ dataDir }) {
       return getModelDetail(query);
     },
     parseImport,
-    scrapeWeiboWideTable,
     confirmImport,
+    startAutomationRun,
+    runAutomationFromPosts,
+    getAutomationStatus,
+    runScheduledAutomationIfDue,
+    startAutomationScheduler,
+    authorizeManualAutomation,
+    manualAutomationTokenConfigured: Boolean(automationToken),
+    authorizeWorker,
+    workerTokenConfigured: Boolean(workerToken),
+    touchAutomationWorker,
+    claimAutomationRun,
+    completeAutomationRun,
+    failAutomationRun,
     async getModels(query) {
       await seedFromWorkbookIfNeeded();
       return getModels(query);
@@ -1309,8 +1657,8 @@ function createWeeklySalesService({ dataDir }) {
   };
 }
 
-export function registerWeeklySalesRoutes(app, { dataDir }) {
-  const service = createWeeklySalesService({ dataDir });
+export function registerWeeklySalesRoutes(app, { dataDir, applyMarketWeeks }) {
+  const service = createWeeklySalesService({ dataDir, applyMarketWeeks });
 
   app.get('/api/weekly-sales/overview', async (request, response) => {
     try {
@@ -1336,11 +1684,79 @@ export function registerWeeklySalesRoutes(app, { dataDir }) {
     }
   });
 
-  app.post('/api/weekly-sales/import/firecrawl', async (request, response) => {
+  app.get('/api/weekly-sales/automation/status', async (_request, response) => {
     try {
-      response.json(await service.scrapeWeiboWideTable(request.body ?? {}));
+      response.json(service.getAutomationStatus());
     } catch (error) {
-      response.status(400).json({ message: error instanceof Error ? error.message : '微博新品周销抓取失败' });
+      response.status(500).json({ message: error instanceof Error ? error.message : '微博自动化状态读取失败' });
+    }
+  });
+
+  app.post('/api/weekly-sales/automation/run', async (_request, response) => {
+    const token = _request.get('x-automation-token') ?? '';
+    if (!service.authorizeManualAutomation(token)) {
+      const status = service.manualAutomationTokenConfigured ? 401 : 503;
+      response.status(status).json({
+        message:
+          status === 401
+            ? '自动抓取运行口令不正确'
+            : '远程手动触发尚未配置 WEEKLY_SALES_AUTOMATION_TOKEN',
+      });
+      return;
+    }
+    try {
+      const result = await service.startAutomationRun({ triggerSource: 'manual' });
+      response.status(result.alreadyRunning ? 200 : 202).json(result);
+    } catch (error) {
+      response.status(400).json({ message: error instanceof Error ? error.message : '云端抓取任务创建失败' });
+    }
+  });
+
+  app.post('/api/weekly-sales/automation/jobs/claim', async (request, response) => {
+    const token = String(request.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
+    if (!service.authorizeWorker(token)) {
+      response.status(service.workerTokenConfigured ? 401 : 503).json({ message: '本机 Worker 鉴权失败或云端未配置 Worker Token' });
+      return;
+    }
+    try {
+      response.json({ job: await service.claimAutomationRun(request.body?.workerId) });
+    } catch (error) {
+      response.status(500).json({ message: error instanceof Error ? error.message : 'Worker 领取任务失败' });
+    }
+  });
+
+  app.post('/api/weekly-sales/automation/jobs/heartbeat', (request, response) => {
+    const token = String(request.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
+    if (!service.authorizeWorker(token)) {
+      response.status(401).json({ message: '本机 Worker 鉴权失败' });
+      return;
+    }
+    response.json(service.touchAutomationWorker(request.body?.workerId));
+  });
+
+  app.post('/api/weekly-sales/automation/jobs/:id/complete', async (request, response) => {
+    const token = String(request.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
+    if (!service.authorizeWorker(token)) {
+      response.status(401).json({ message: '本机 Worker 鉴权失败' });
+      return;
+    }
+    try {
+      response.json(await service.completeAutomationRun(request.params.id, request.body?.workerId, request.body?.posts));
+    } catch (error) {
+      response.status(400).json({ message: error instanceof Error ? error.message : 'Worker 结果回传失败' });
+    }
+  });
+
+  app.post('/api/weekly-sales/automation/jobs/:id/fail', async (request, response) => {
+    const token = String(request.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
+    if (!service.authorizeWorker(token)) {
+      response.status(401).json({ message: '本机 Worker 鉴权失败' });
+      return;
+    }
+    try {
+      response.json(service.failAutomationRun(request.params.id, request.body?.workerId, request.body?.message));
+    } catch (error) {
+      response.status(400).json({ message: error instanceof Error ? error.message : 'Worker 失败状态回传失败' });
     }
   });
 

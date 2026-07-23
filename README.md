@@ -69,3 +69,36 @@ Docker Compose 部署时需要配置：
 MCP_API_TOKENS=replace-with-strong-token
 MCP_ALLOWED_ORIGINS=https://mcp.gtmdudu.xyz
 ```
+
+## 新品周销微博自动更新
+
+执行链路固定为：云端创建任务 → 本机 Worker 领取 → 本机 Browser Use CLI + 已登录 Chrome 抓取 → JSON 回传云端解析入库。Browser Use Cloud 不参与。
+
+云端 `.env`：
+
+```text
+WEEKLY_SALES_AUTOMATION_TOKEN=replace-with-strong-token
+WEEKLY_SALES_WORKER_TOKEN=replace-with-a-different-strong-token
+WEEKLY_SALES_SCHEDULE_ENABLED=true
+WEEKLY_SALES_SCHEDULE_TIMEZONE=Asia/Shanghai
+```
+
+本机 Worker `.env` 使用相同的 `WEEKLY_SALES_WORKER_TOKEN`：
+
+```text
+BROWSER_USE_MODE=local
+WEEKLY_SALES_WORKER_TOKEN=replace-with-a-different-strong-token
+GTM_SERVER_URL=https://www.gtmdudu.xyz
+GTM_WORKER_ID=dudu-mac
+GTM_WORKER_POLL_MS=15000
+```
+
+保持 Chrome 已登录微博并开启远程调试，然后启动 Worker：
+
+```bash
+npm run weibo:worker
+```
+
+确认云端地址和 Token 已写入本机 `.env` 后，可将 [deploy/com.dudu.gtm-weibo-worker.plist.example](deploy/com.dudu.gtm-weibo-worker.plist.example) 复制到 `~/Library/LaunchAgents/com.dudu.gtm-weibo-worker.plist`，让 Worker 登录后自动启动并常驻。
+
+生产服务会在每周一、周五 10:00（Asia/Shanghai）创建任务。同一日程槽位只创建一次；Worker 离线时任务保留在队列，恢复在线后继续执行。页面手动创建任务需要运行口令。

@@ -46,7 +46,7 @@ const marketTrendBrandGroups = new Map([
 
 app.use(express.json({ limit: '10mb' }));
 
-const weeklySalesService = registerWeeklySalesRoutes(app, { dataDir });
+const weeklySalesService = registerWeeklySalesRoutes(app, { dataDir, applyMarketWeeks: applyAutomatedMarketWeeks });
 
 async function ensureDataDir() {
   await fs.mkdir(dataDir, { recursive: true });
@@ -577,6 +577,7 @@ function mergeMarketTrendWeek(payload, weekPayload, allowUpdate) {
     totalIndex: weekPayload.totalIndex,
     marketNote: String(weekPayload.marketNote ?? '').trim(),
     eventName: String(weekPayload.eventName ?? '').trim(),
+    sourcePostUrl: String(weekPayload.sourcePostUrl ?? '').trim(),
   };
 
   if (existingIndex >= 0) {
@@ -596,6 +597,55 @@ function mergeMarketTrendWeek(payload, weekPayload, allowUpdate) {
 
   nextPayload.weeks = nextPayload.weeks.sort((left, right) => parseWeekNumber(left.week) - parseWeekNumber(right.week));
   return nextPayload;
+}
+
+async function applyAutomatedMarketWeeks(marketWeeks) {
+  if (!Array.isArray(marketWeeks) || marketWeeks.length === 0) {
+    return { insertedWeeks: 0, skippedWeeks: 0, weeks: [] };
+  }
+
+  let payload = readMarketTrendDraftFromDatabase() ?? readMarketTrendFromWorkbook();
+  let insertedWeeks = 0;
+  let skippedWeeks = 0;
+  const insertedLabels = [];
+  for (const record of marketWeeks) {
+    const displayYear = getMarketTrendDisplayYear(payload);
+    if (displayYear !== Number(record.year)) {
+      throw new Error(`市场趋势当前年份为 ${displayYear}，不能自动写入 ${record.year} ${record.weekLabel}`);
+    }
+    if (payload.weeks.some((item) => item.week === record.weekLabel)) {
+      skippedWeeks += 1;
+      continue;
+    }
+    payload = mergeMarketTrendWeek(
+      payload,
+      {
+        week: record.weekLabel,
+        timeRange: String(record.publishedAt ?? '').slice(0, 10),
+        totalIndex: record.totalIndex,
+        marketNote: record.marketNote,
+        eventName: '',
+        sourcePostUrl: record.sourcePostUrl,
+        brandShares: marketTrendCoreBrands.map((brandName) => ({
+          brandName,
+          sharePct: record.brandShares[brandName],
+        })),
+      },
+      false,
+    );
+    insertedWeeks += 1;
+    insertedLabels.push(`${record.year} ${record.weekLabel}`);
+  }
+
+  if (insertedWeeks > 0) {
+    const validation = validateMarketTrendPayload(payload);
+    if (validation.errors.length > 0) {
+      throw new Error(validation.errors.join('；'));
+    }
+    const nextDraft = writeMarketTrendDraftToDatabase(payload);
+    writeMarketTrendToWorkbook(nextDraft);
+  }
+  return { insertedWeeks, skippedWeeks, weeks: insertedLabels };
 }
 
 function normalizeStorage(value) {
@@ -1107,6 +1157,7 @@ ensureDataDir()
   .then(() => migrateLegacyDraftIfNeeded())
   .then(() => migrateLegacyMarketTrendDraftIfNeeded())
   .then(() => {
+    weeklySalesService.startAutomationScheduler();
     app.listen(port, () => {
       console.log(`price-monitor-api listening on http://localhost:${port}`);
     });

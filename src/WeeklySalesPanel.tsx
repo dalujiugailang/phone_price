@@ -65,6 +65,7 @@ interface WeeklySalesError {
 
 interface WeeklySalesOverview {
   summary: {
+    year: number;
     latestWeek: string;
     modelCount: number;
     latestWeekSales: number;
@@ -74,6 +75,8 @@ interface WeeklySalesOverview {
     updatedAt: string;
   };
   filters: {
+    years: number[];
+    selectedYear: number;
     brands: string[];
     seriesPositions: string[];
     weeks: string[];
@@ -129,13 +132,47 @@ interface WeeklySalesConfig {
   seriesPositions: string[];
 }
 
-interface FirecrawlWideTableResult {
-  rawText: string;
-  sourceCount: number;
-  recordCount: number;
-  modelCount: number;
-  weeks: string[];
-  warnings: string[];
+interface WeiboAutomationRun {
+  id: string;
+  status: 'queued' | 'running' | 'success' | 'failed';
+  phase: string;
+  mode: string;
+  triggerSource: 'manual' | 'schedule';
+  startedAt: string;
+  finishedAt: string;
+  postCount: number;
+  salesRecordCount: number;
+  marketWeekCount: number;
+  insertedPoints: number;
+  skippedPoints: number;
+  newModelCount: number;
+  rawJsonPath: string;
+  errorMessage: string;
+  summary: {
+    weeks?: string[];
+    marketWeeks?: string[];
+    warnings?: string[];
+  };
+}
+
+interface WeiboAutomationStatus {
+  configured: boolean;
+  configurationError: string;
+  mode: string;
+  source: { account: string; uid: string; lookbackDays: number };
+  schedule: string;
+  scheduler: {
+    enabled: boolean;
+    timeZone: string;
+    lastAttemptSlot: string;
+    attemptedAt: string;
+  };
+  worker: {
+    id: string;
+    lastSeenAt: string;
+    online: boolean;
+  };
+  latestRun: WeiboAutomationRun | null;
 }
 
 const LINE_COLORS = ['#ea580c', '#2563eb', '#16a34a', '#dc2626', '#7c3aed', '#0891b2', '#ca8a04', '#db2777', '#475569'];
@@ -187,24 +224,49 @@ async function fetchConfig() {
   return payload as WeeklySalesConfig;
 }
 
-async function fetchWeiboWideTable(urls: string[]) {
-  const response = await fetch('/api/weekly-sales/import/firecrawl', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ urls }),
-  });
+async function fetchAutomationStatus() {
+  const response = await fetch('/api/weekly-sales/automation/status');
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new Error(payload?.message || '微博新品周销抓取失败');
+    throw new Error(payload?.message || '微博自动化状态读取失败');
   }
-  return payload as FirecrawlWideTableResult;
+  return payload as WeiboAutomationStatus;
 }
 
-async function parseImport(rawText: string) {
+async function startWeiboAutomation() {
+  const requestRun = (token: string) =>
+    fetch('/api/weekly-sales/automation/run', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(token ? { 'x-automation-token': token } : {}),
+      },
+    });
+  let token = window.sessionStorage.getItem('weekly-sales-automation-token') ?? '';
+  let response = await requestRun(token);
+  if (response.status === 401) {
+    window.sessionStorage.removeItem('weekly-sales-automation-token');
+    token = window.prompt('请输入新品周销自动抓取运行口令')?.trim() ?? '';
+    if (!token) {
+      throw new Error('已取消自动抓取');
+    }
+    response = await requestRun(token);
+    if (response.ok) {
+      window.sessionStorage.setItem('weekly-sales-automation-token', token);
+    }
+  }
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(payload?.message || '云端抓取任务创建失败');
+  }
+  return payload as { alreadyRunning: boolean; run: WeiboAutomationRun };
+}
+
+async function parseImport(rawText: string, year?: number) {
   const response = await fetch('/api/weekly-sales/import/parse', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ rawText }),
+    body: JSON.stringify({ rawText, year }),
   });
   const payload = await response.json();
   if (!response.ok) {
@@ -293,9 +355,8 @@ export function WeeklySalesPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [weiboUrls, setWeiboUrls] = useState('');
   const [isCrawling, setIsCrawling] = useState(false);
-  const [crawlResult, setCrawlResult] = useState<FirecrawlWideTableResult | null>(null);
+  const [automationStatus, setAutomationStatus] = useState<WeiboAutomationStatus | null>(null);
   const [rawText, setRawText] = useState('');
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [unknownMappings, setUnknownMappings] = useState<UnknownModelMapping[]>([]);
@@ -315,9 +376,14 @@ export function WeeklySalesPanel() {
     setIsLoading(true);
     setError(null);
     try {
-      const [nextOverview, nextConfig] = await Promise.all([fetchOverview(nextFilters), fetchConfig()]);
+      const [nextOverview, nextConfig, nextAutomationStatus] = await Promise.all([
+        fetchOverview(nextFilters),
+        fetchConfig(),
+        fetchAutomationStatus(),
+      ]);
       setOverview(nextOverview);
       setConfig(nextConfig);
+      setAutomationStatus(nextAutomationStatus);
       setModelDraft((draft) => ({
         ...draft,
         brand: draft.brand || nextConfig.brands[0] || '',
@@ -334,6 +400,32 @@ export function WeeklySalesPanel() {
     loadOverview();
   }, []);
 
+  useEffect(() => {
+    if (!['queued', 'running'].includes(automationStatus?.latestRun?.status ?? '')) {
+      return undefined;
+    }
+    const timer = window.setInterval(async () => {
+      try {
+        const nextStatus = await fetchAutomationStatus();
+        setAutomationStatus(nextStatus);
+        if (nextStatus.latestRun?.status === 'success') {
+          setIsCrawling(false);
+          setMessage(
+            `自动更新完成：抓取 ${nextStatus.latestRun.postCount} 条微博，新增 ${nextStatus.latestRun.insertedPoints} 个数据点，跳过历史值 ${nextStatus.latestRun.skippedPoints} 个。`,
+          );
+          await loadOverview();
+        } else if (nextStatus.latestRun?.status === 'failed') {
+          setIsCrawling(false);
+          setError(nextStatus.latestRun.errorMessage || '本机 Worker 抓取失败');
+        }
+      } catch (statusError) {
+        setIsCrawling(false);
+        setError(statusError instanceof Error ? statusError.message : '微博自动化状态读取失败');
+      }
+    }, 2500);
+    return () => window.clearInterval(timer);
+  }, [automationStatus?.latestRun?.id, automationStatus?.latestRun?.status]);
+
   const updateFilter = (key: string, value: string) => {
     const nextFilters = new URLSearchParams(filters);
     if (value) {
@@ -349,7 +441,7 @@ export function WeeklySalesPanel() {
     setMessage(null);
     setError(null);
     try {
-      const nextPreview = await parseImport(rawText);
+      const nextPreview = await parseImport(rawText, overview?.filters.selectedYear);
       setPreview(nextPreview);
       setUnknownMappings(
         nextPreview.unknownModels.map((item) => ({
@@ -366,28 +458,19 @@ export function WeeklySalesPanel() {
     }
   };
 
-  const handleFirecrawl = async () => {
-    const urls = weiboUrls
-      .split(/\r?\n/)
-      .map((url) => url.trim())
-      .filter(Boolean);
+  const handleAutomationRun = async () => {
     setMessage(null);
     setError(null);
     setIsCrawling(true);
     try {
-      const result = await fetchWeiboWideTable(urls);
-      setCrawlResult(result);
-      setRawText(result.rawText);
-      setPreview(null);
-      setUnknownMappings([]);
-      setMessage(
-        `抓取完成：${result.sourceCount} 个数据源，生成 ${result.modelCount} 个型号、${result.weeks.join('、')} 宽表。请检查后生成导入预览。`,
+      const result = await startWeiboAutomation();
+      setAutomationStatus((current) =>
+        current ? { ...current, latestRun: result.run } : current,
       );
+      setMessage(result.alreadyRunning ? '已有任务正在排队或运行，正在继续查看进度。' : '云端任务已创建，等待本机 Worker 使用 Chrome 执行。');
     } catch (crawlError) {
-      setCrawlResult(null);
-      setError(crawlError instanceof Error ? crawlError.message : '微博新品周销抓取失败');
-    } finally {
       setIsCrawling(false);
+      setError(crawlError instanceof Error ? crawlError.message : '云端抓取任务创建失败');
     }
   };
 
@@ -512,7 +595,8 @@ export function WeeklySalesPanel() {
         <EmptyPanel message="暂无新品周销数据" />
       ) : subView === 'dashboard' ? (
         <>
-          <div className="grid grid-cols-1 gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm md:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm md:grid-cols-5">
+            <FilterSelect label="年份" value={fieldValue(filters, 'year') || String(overview.filters.selectedYear)} options={overview.filters.years.map(String)} onChange={(value) => updateFilter('year', value)} />
             <FilterSelect label="品牌" value={fieldValue(filters, 'brand')} options={overview.filters.brands} onChange={(value) => updateFilter('brand', value)} />
             <FilterSelect label="系列定位" value={fieldValue(filters, 'seriesPosition')} options={overview.filters.seriesPositions} onChange={(value) => updateFilter('seriesPosition', value)} />
             <FilterSelect label="开始周" value={fieldValue(filters, 'startWeek')} options={overview.filters.weeks.map((week) => week.replace('W', ''))} onChange={(value) => updateFilter('startWeek', value)} />
@@ -601,33 +685,35 @@ export function WeeklySalesPanel() {
           <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h3 className="font-bold text-gray-900">1. 数据源</h3>
-                <p className="text-sm font-medium text-gray-500">粘贴公开微博文章链接，每行一个；Firecrawl 会直接提取型号、周次和累计销量。</p>
+                <h3 className="font-bold text-gray-900">1. RD观测自动数据源</h3>
+                <p className="text-sm font-medium text-gray-500">
+                  云端创建任务，本机 Worker 使用 Browser Use CLI + 已登录 Chrome 抓取，再回传更新新品周销和品牌份额。
+                </p>
               </div>
               <button
-                onClick={handleFirecrawl}
-                disabled={!weiboUrls.trim() || isCrawling}
+                onClick={handleAutomationRun}
+                disabled={!automationStatus?.configured || isCrawling || ['queued', 'running'].includes(automationStatus?.latestRun?.status ?? '')}
                 className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:bg-gray-300"
               >
-                <RefreshCw size={16} className={isCrawling ? 'animate-spin' : ''} /> {isCrawling ? '正在抓取...' : '抓取并生成宽表'}
+                <RefreshCw size={16} className={isCrawling || ['queued', 'running'].includes(automationStatus?.latestRun?.status ?? '') ? 'animate-spin' : ''} />
+                {isCrawling || ['queued', 'running'].includes(automationStatus?.latestRun?.status ?? '') ? '等待或正在执行...' : '立即抓取并更新'}
               </button>
             </div>
-            <textarea
-              value={weiboUrls}
-              onChange={(event) => setWeiboUrls(event.target.value)}
-              className="h-28 w-full rounded-xl border border-gray-200 bg-gray-50 p-4 font-mono text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
-              placeholder={'https://weibo.com/用户ID/微博ID\nhttps://weibo.com/用户ID/另一条微博ID'}
-            />
-            {crawlResult ? (
-              <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
-                已从 {crawlResult.sourceCount} 个数据源提取 {crawlResult.recordCount} 条记录，生成 {crawlResult.modelCount} 个型号、{crawlResult.weeks.join('、')} 宽表。
-                {crawlResult.warnings.length > 0 ? (
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-amber-800">
-                    {crawlResult.warnings.map((warning) => (
-                      <li key={warning}>{warning}</li>
-                    ))}
-                  </ul>
-                ) : null}
+            {!automationStatus?.configured ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                {automationStatus?.configurationError || '本机 Worker 尚未配置。'}
+              </div>
+            ) : (
+              <div className="grid gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm md:grid-cols-4">
+                <div><p className="text-xs font-bold text-gray-500">运行方式</p><p className="mt-1 font-bold text-gray-900">云端任务 → 本机 Chrome</p></div>
+                <div><p className="text-xs font-bold text-gray-500">定时计划</p><p className="mt-1 font-bold text-gray-900">{automationStatus.schedule} · {automationStatus.scheduler.enabled ? '已启用' : '未启用'}</p></div>
+                <div><p className="text-xs font-bold text-gray-500">本机 Worker</p><p className="mt-1 font-bold text-gray-900">{automationStatus.worker.online ? `在线 · ${automationStatus.worker.id}` : '离线'}</p></div>
+                <div><p className="text-xs font-bold text-gray-500">最近结果</p><p className="mt-1 font-bold text-gray-900">{automationStatus.latestRun ? `${automationStatus.latestRun.postCount} 条微博 / ${automationStatus.latestRun.insertedPoints} 个新增` : '--'}</p></div>
+              </div>
+            )}
+            {automationStatus?.latestRun?.errorMessage ? (
+              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                {automationStatus.latestRun.errorMessage}
               </div>
             ) : null}
           </div>
@@ -635,8 +721,8 @@ export function WeeklySalesPanel() {
           <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-gray-900">2. 规范宽表</h3>
-                <p className="text-sm font-medium text-gray-500">可检查或修改 Firecrawl 结果，也可以直接手动粘贴；格式为第一列“型号/系列”，后续列为 W1、W2、W3。</p>
+                <h3 className="font-bold text-gray-900">2. 应急宽表导入</h3>
+                <p className="text-sm font-medium text-gray-500">自动抓取异常时仍可手动粘贴；第一列为“型号/系列”，后续列为 W1、W2、W3。</p>
               </div>
               <button
                 onClick={handleParse}

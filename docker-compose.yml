@@ -4,8 +4,10 @@ services:
       context: .
     container_name: gtm-price-monitor-app
     restart: unless-stopped
+    init: true
     environment:
       NODE_ENV: production
+      TZ: Asia/Shanghai
       PORT: 8787
       DAILY_PRICE_LOOKUP_URL: ${DAILY_PRICE_LOOKUP_URL:-http://host.docker.internal:8765/api/lookup}
       DAILY_PRICE_TOKEN_PATH: /app/data/api_token.txt
@@ -14,12 +16,24 @@ services:
       PRICE_MONITOR_DRAFT_DB_PATH: /app/data/raw-editor-draft.sqlite
       MARKET_TREND_WORKBOOK_PATH: /app/data/市场总量份额趋势.xlsx
       MARKET_TREND_DRAFT_DB_PATH: /app/data/market-trend.sqlite
+      WEIBO_SOURCE_UID: ${WEIBO_SOURCE_UID:-7928198622}
+      WEIBO_LOOKBACK_DAYS: ${WEIBO_LOOKBACK_DAYS:-21}
+      WEEKLY_SALES_AUTOMATION_TOKEN: ${WEEKLY_SALES_AUTOMATION_TOKEN:-}
+      WEEKLY_SALES_WORKER_TOKEN: ${WEEKLY_SALES_WORKER_TOKEN:-}
+      WEEKLY_SALES_SCHEDULE_ENABLED: ${WEEKLY_SALES_SCHEDULE_ENABLED:-true}
+      WEEKLY_SALES_SCHEDULE_TIMEZONE: ${WEEKLY_SALES_SCHEDULE_TIMEZONE:-Asia/Shanghai}
     volumes:
       - ./data:/app/data
     extra_hosts:
       - "host.docker.internal:host-gateway"
     expose:
       - "8787"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8787/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   mcp:
     build:
