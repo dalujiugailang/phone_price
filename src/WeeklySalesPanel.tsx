@@ -999,6 +999,9 @@ function ModelTable({
 }
 
 function DetailTable({ overview, detailType }: { overview: WeeklySalesOverview; detailType: DetailType }) {
+  const [showAllWeeks, setShowAllWeeks] = useState(false);
+  const [selectedCell, setSelectedCell] = useState<{ modelName: string; week: string } | null>(null);
+
   if (detailType === 'errors') {
     return (
       <div className="overflow-x-auto">
@@ -1029,7 +1032,8 @@ function DetailTable({ overview, detailType }: { overview: WeeklySalesOverview; 
   }
 
   const rows = detailType === 'weekly' ? overview.weeklyRows : overview.cumulativeRows;
-  const weeks = Array.from(new Set(rows.map((row) => row.weekLabel))).sort((left, right) => Number(left.replace('W', '')) - Number(right.replace('W', '')));
+  const allWeeks = Array.from(new Set(rows.map((row) => row.weekLabel))).sort((left, right) => Number(left.replace('W', '')) - Number(right.replace('W', '')));
+  const weeks = showAllWeeks ? allWeeks : allWeeks.slice(-15);
   const modelRows = overview.models
     .map((model) => {
       const modelPoints = rows.filter((row) => row.standardModelName === model.standardModelName);
@@ -1046,37 +1050,89 @@ function DetailTable({ overview, detailType }: { overview: WeeklySalesOverview; 
       };
     })
     .filter((row): row is { model: WeeklySalesModel; values: Array<number | null | undefined> } => row !== null);
+  const visibleValues = modelRows.flatMap((row) => row.values).filter((value): value is number => value !== null && value !== undefined);
+  const sortedValues = [...visibleValues].sort((left, right) => left - right);
+  const percentile = (ratio: number) => sortedValues[Math.floor((sortedValues.length - 1) * ratio)] ?? 0;
+  const heatThresholds = [percentile(0.25), percentile(0.5), percentile(0.75), percentile(0.9)];
+
+  const getHeatColor = (value: number | null | undefined) => {
+    if (value === null || value === undefined) {
+      return undefined;
+    }
+    if (value <= heatThresholds[0]) return '#fff7ed';
+    if (value <= heatThresholds[1]) return '#ffedd5';
+    if (value <= heatThresholds[2]) return '#fed7aa';
+    if (value <= heatThresholds[3]) return '#fdba74';
+    return '#fb923c';
+  };
 
   return (
-    <div className="max-h-[620px] overflow-auto">
+    <div>
+      <div className="flex items-center justify-between border-b border-gray-100 bg-white px-4 py-3">
+        <div className="flex items-center gap-3">
+          <p className="text-xs font-semibold text-gray-500">默认展示最新 15 周 · 点击数值可十字定位</p>
+          <div className="flex items-center gap-1 text-[11px] font-semibold text-gray-400">
+            <span>低</span>
+            {['#fff7ed', '#ffedd5', '#fed7aa', '#fdba74', '#fb923c'].map((color) => (
+              <span key={color} className="h-3.5 w-5 rounded-sm border border-white" style={{ backgroundColor: color }} />
+            ))}
+            <span>高</span>
+          </div>
+        </div>
+        {allWeeks.length > 15 ? (
+          <button
+            type="button"
+            onClick={() => setShowAllWeeks((current) => !current)}
+            className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-700 transition-colors hover:bg-orange-100"
+          >
+            {showAllWeeks ? '仅看近15周' : `展开全部${allWeeks.length}周`}
+          </button>
+        ) : null}
+      </div>
+      <div className="overflow-x-auto">
       <table className="min-w-max border-separate border-spacing-0 text-left text-sm">
-        <thead className="sticky top-0 bg-gray-50 text-xs font-bold uppercase text-gray-500">
+        <thead className="text-xs font-bold uppercase text-gray-500">
           <tr>
-            <th className="sticky left-0 z-20 min-w-[220px] border-b border-r border-gray-100 bg-gray-50 px-4 py-3">型号/系列</th>
-            <th className="min-w-[90px] border-b border-gray-100 px-4 py-3">品牌</th>
-            <th className="min-w-[120px] border-b border-gray-100 px-4 py-3">系列定位</th>
+            <th className="sticky left-0 top-0 z-30 min-w-[220px] whitespace-nowrap border-b border-r border-gray-100 bg-gray-50 px-4 py-3">型号/系列</th>
+            <th className="sticky top-0 z-20 min-w-[90px] border-b border-gray-100 bg-gray-50 px-4 py-3">品牌</th>
+            <th className="sticky top-0 z-20 min-w-[120px] border-b border-gray-100 bg-gray-50 px-4 py-3">系列定位</th>
             {weeks.map((week) => (
-              <th key={week} className="min-w-[86px] border-b border-gray-100 px-4 py-3 text-right">
+              <th
+                key={week}
+                className={`sticky top-0 z-20 min-w-[86px] border-b px-4 py-3 text-right ${
+                  selectedCell?.week === week ? 'border-orange-200 bg-orange-50 text-orange-700' : 'border-gray-100 bg-gray-50'
+                }`}
+              >
                 {week}
               </th>
             ))}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {modelRows.map(({ model, values }) => (
+          {modelRows.map(({ model, values }) => {
+            const isSelectedRow = selectedCell?.modelName === model.standardModelName;
+            return (
             <tr key={model.standardModelName} className="bg-white">
-              <td className="sticky left-0 z-10 border-r border-gray-100 bg-white px-4 py-3 font-semibold text-gray-900">{model.standardModelName}</td>
-              <td className="px-4 py-3 text-gray-600">{model.brand || '--'}</td>
-              <td className="px-4 py-3 text-gray-600">{model.seriesPosition || '--'}</td>
+              <td className={`sticky left-0 z-10 whitespace-nowrap border-r px-4 py-3 font-semibold text-gray-900 ${isSelectedRow ? 'border-orange-200 bg-orange-50' : 'border-gray-100 bg-white'}`}>{model.standardModelName}</td>
+              <td className={`px-4 py-3 text-gray-600 ${isSelectedRow ? 'bg-orange-50/70' : ''}`}>{model.brand || '--'}</td>
+              <td className={`px-4 py-3 text-gray-600 ${isSelectedRow ? 'bg-orange-50/70' : ''}`}>{model.seriesPosition || '--'}</td>
               {values.map((value, index) => (
-                <td key={`${model.standardModelName}-${weeks[index]}`} className="px-4 py-3 text-right font-semibold text-gray-900">
+                <td
+                  key={`${model.standardModelName}-${weeks[index]}`}
+                  onClick={() => setSelectedCell({ modelName: model.standardModelName, week: weeks[index] })}
+                  className={`cursor-pointer border-b border-r border-white/70 px-4 py-3 text-right font-semibold text-gray-900 transition-shadow ${
+                    isSelectedRow || selectedCell?.week === weeks[index] ? 'shadow-[inset_0_0_0_9999px_rgba(255,247,237,0.52)]' : ''
+                  } ${isSelectedRow && selectedCell?.week === weeks[index] ? 'relative z-[1] ring-2 ring-inset ring-orange-300' : ''}`}
+                  style={{ backgroundColor: getHeatColor(value) }}
+                >
                   {value === null || value === undefined ? '--' : formatNumber(value)}
                 </td>
               ))}
             </tr>
-          ))}
+          )})}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
