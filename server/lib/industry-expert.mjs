@@ -1,49 +1,41 @@
 import fsSync from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
-import { Agent, run, tool } from '@openai/agents';
+import { Agent, run, tool, webSearchTool } from '@openai/agents';
 import { z } from 'zod';
 import { buildAnalysis, parseWorkbookFile, readRawEditorDraft } from './price-data.mjs';
 
 const DEFAULT_MODEL_LABEL = 'Agents SDK默认模型';
 
-export const EXPERT_OUTPUT_SCHEMA = z.object({
-  title: z.string().describe('本次分析的简短标题'),
-  conclusion: z.string().describe('直接回答用户问题的一段结论'),
-  facts: z
+export const CHART_SPEC_SCHEMA = z.object({
+  type: z.enum(['bar', 'line', 'pie']).describe('柱状图、折线图或饼图'),
+  title: z.string().min(1).max(80),
+  subtitle: z.string().max(160).optional(),
+  categories: z.array(z.string()).min(1).max(20),
+  series: z
     .array(
       z.object({
-        label: z.string().describe('事实名称'),
-        value: z.string().describe('事实数字或内容'),
-        dataDate: z.string().describe('数据日期、周次或暂无'),
-        source: z.string().describe('数据来源'),
+        name: z.string().min(1).max(40),
+        values: z.array(z.number()).min(1).max(20),
       }),
     )
-    .max(8),
-  inferences: z.array(z.string()).max(6).describe('明确标注为分析推断的判断'),
-  actions: z
-    .array(
-      z.object({
-        priority: z.enum(['高', '中', '低']),
-        action: z.string(),
-        reason: z.string(),
-      }),
-    )
-    .max(6),
-  evidenceSummary: z.array(z.string()).max(6).describe('本次实际调用的数据和证据摘要'),
-  caveats: z.array(z.string()).max(6).describe('口径限制、风险和缺失数据'),
+    .min(1)
+    .max(5),
+  unit: z.string().max(16).optional(),
 });
 
 const SYSTEM_INSTRUCTION = `你是“3C行业专家agent”，服务于回收业务的价格和市场判断。
 
 工作规则：
-1. 回答前必须先调用工具，数字只能来自工具结果，禁止自行计算或补全。
-2. 明确区分“事实”“推断”“建议”，每条重要判断写明数据日期或周次。
-3. 当前系统的 latestPrice 是“国补后价格试算”口径，尚未确认等同JD自营实际成交价，必须如实说明。
-4. 没有旧机回收量、库存、销量和毛利数据时，只能给机会方向，不能给预算或投入强度结论。
-5. 市场零件、供应链等外部情报若工具没有返回，必须明确说当前没有已确认数据，不得编造。
-6. 回答使用简洁中文，并严格按结构化输出字段填写：结论、关键事实、分析推断、建议动作、数据与证据、口径与风险。
-7. facts只放工具返回的可验证事实；inferences只放推断；actions必须说明优先级和原因；不能确认的内容放入caveats。`;
+1. 先理解用户真正要做的判断，再自行决定是否调用工具、调用哪些工具以及调用顺序。简单问题可以直接回答，不要为了展示能力而滥用工具。
+2. 涉及内部价格、残值、销量或市场数据时，使用对应业务工具；涉及近期新闻、零件涨价、供应链、品牌发布或外部市场变化时，使用实时 Web Search。
+3. 回答结构由问题决定，不使用固定六段式模板。可以是一段结论、要点、对比表或短报告，优先直接、具体、有数字。
+4. 业务数字只能来自工具结果；重要数字写明日期、周次或来源。把已确认事实和分析判断区分清楚，但不必机械地使用固定标题。
+5. 当前系统的 latestPrice 是“国补后价格试算”口径，尚未确认等同JD自营实际成交价，相关判断必须如实说明。
+6. 没有旧机回收量、库存、销量和毛利数据时，只能给机会方向，不能给预算或投入强度结论。
+7. Web Search 信息必须带可点击来源；优先品牌官网、监管机构、研究机构和可信媒体，不要把搜索摘要当成内部事实。
+8. 当趋势、品牌对比、排名或时间序列用图形更容易理解时，调用 create_chart；简单问答不要强行生成图表。
+9. 最终回答使用自然、简洁的中文 Markdown。不要复述工具执行过程，界面会单独展示。`;
 
 function numberValue(value) {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -389,6 +381,31 @@ function toolSummary(name, result) {
   return '工具调用完成';
 }
 
+function toolActivityLabel(name, args = {}) {
+  if (name === 'check_data_freshness') {
+    return '读取价格、周销与市场数据日期';
+  }
+  if (name === 'get_price_summary') {
+    return '读取价格与残值数据';
+  }
+  if (name === 'get_sales_summary') {
+    return '读取新品周销数据';
+  }
+  if (name === 'get_market_trend') {
+    return '读取市场趋势数据';
+  }
+  if (name === 'drilldown_sku') {
+    return `查找 SKU：${String(args.keyword ?? '').trim() || '未指定'}`;
+  }
+  if (name === 'create_chart') {
+    return `生成图表：${String(args.title ?? '').trim() || '数据图表'}`;
+  }
+  if (name === 'web_search') {
+    return '搜索实时市场信息';
+  }
+  return name;
+}
+
 function ensureRunDatabase(databasePath) {
   const database = new DatabaseSync(databasePath);
   database.exec(`
@@ -415,12 +432,15 @@ function outputToText(output) {
   if (!output || typeof output !== 'object') {
     return '';
   }
+  if (typeof output.markdown === 'string') {
+    return output.markdown;
+  }
   return [
-    `结论：${output.conclusion || ''}`,
-    ...(output.facts ?? []).map((item) => `事实：${item.label} ${item.value}（${item.dataDate}，${item.source}）`),
-    ...(output.inferences ?? []).map((item) => `推断：${item}`),
-    ...(output.actions ?? []).map((item) => `建议：${item.action}（${item.priority}，${item.reason}）`),
-    ...(output.caveats ?? []).map((item) => `口径：${item}`),
+    output.conclusion || '',
+    ...(output.facts ?? []).map((item) => `- ${item.label}：${item.value}（${item.dataDate}，${item.source}）`),
+    ...(output.inferences ?? []).map((item) => `- ${item}`),
+    ...(output.actions ?? []).map((item) => `- ${item.action}（${item.priority}，${item.reason}）`),
+    ...(output.caveats ?? []).map((item) => `- ${item}`),
   ]
     .filter(Boolean)
     .join('\n');
@@ -428,17 +448,80 @@ function outputToText(output) {
 
 function parseStoredOutput(value) {
   try {
-    return JSON.parse(value);
+    const parsed = JSON.parse(value);
+    if (parsed?.version === 2 && typeof parsed.markdown === 'string') {
+      return {
+        ...parsed,
+        charts: Array.isArray(parsed.charts) ? parsed.charts : [],
+        sources: Array.isArray(parsed.sources) ? parsed.sources : [],
+      };
+    }
+    return {
+      version: 2,
+      title: parsed?.title || '历史分析',
+      markdown: outputToText(parsed),
+      charts: [],
+      sources: [],
+    };
   } catch {
     return {
+      version: 2,
       title: '历史分析',
-      conclusion: String(value ?? ''),
-      facts: [],
-      inferences: [],
-      actions: [],
-      evidenceSummary: [],
-      caveats: [],
+      markdown: String(value ?? ''),
+      charts: [],
+      sources: [],
     };
+  }
+}
+
+function deriveTitle(question, answer) {
+  const heading = String(answer)
+    .split('\n')
+    .map((line) => line.trim())
+    .find((line) => /^#{1,3}\s+\S/.test(line));
+  const candidate = heading ? heading.replace(/^#{1,3}\s+/, '') : String(question);
+  return candidate.replace(/\s+/g, ' ').trim().slice(0, 40) || '3C行业分析';
+}
+
+function normalizeChart(chart) {
+  const categoryCount = chart.categories.length;
+  for (const series of chart.series) {
+    if (series.values.length !== categoryCount) {
+      throw new Error(`图表“${series.name}”的数据数量与分类数量不一致`);
+    }
+  }
+  if (chart.type === 'pie' && chart.series.length !== 1) {
+    throw new Error('饼图只支持一个数据系列');
+  }
+  return {
+    id: randomUUID(),
+    type: chart.type,
+    title: chart.title,
+    subtitle: chart.subtitle || '',
+    categories: chart.categories,
+    series: chart.series,
+    unit: chart.unit || '',
+  };
+}
+
+function uniqueSource(sources, source) {
+  const url = String(source?.url ?? '').trim();
+  if (!url || sources.some((item) => item.url === url)) {
+    return;
+  }
+  sources.push({
+    title: String(source?.title ?? '').trim() || url,
+    url,
+  });
+}
+
+function collectMessageSources(item, sources) {
+  for (const content of item?.rawItem?.content ?? []) {
+    for (const annotation of content?.providerData?.annotations ?? []) {
+      if (annotation?.type === 'url_citation') {
+        uniqueSource(sources, annotation);
+      }
+    }
   }
 }
 
@@ -594,18 +677,25 @@ export function createIndustryExpertService({
       : normalizedQuestion;
     const toolCalls = [];
     const evidence = [];
-    onEvent({ type: 'status', label: '正在理解任务并选择数据工具' });
+    const charts = [];
+    const sources = [];
+    const recordedToolCallIds = new Set();
+    const webSearchStates = new Map();
+    onEvent({ type: 'status', label: '正在理解问题' });
 
     const executeRecordedTool = async (name, args = {}) => {
       const callId = randomUUID();
-      onEvent({ type: 'tool_started', callId, name, args });
+      const label = toolActivityLabel(name, args);
+      onEvent({ type: 'tool_started', callId, name, label, args });
       const result = await executeTool(name, args, context);
       const recordedCall = {
         callId,
         name,
+        label,
         summary: toolSummary(name, result),
       };
       toolCalls.push(recordedCall);
+      recordedToolCallIds.add(callId);
       for (const item of result.evidence ?? []) {
         if (!evidence.some((existing) => existing.label === item.label && existing.dataDate === item.dataDate)) {
           evidence.push(item);
@@ -652,34 +742,150 @@ export function createIndustryExpertService({
         }),
         execute: (args) => executeRecordedTool('drilldown_sku', args),
       }),
+      tool({
+        name: 'create_chart',
+        description:
+          '当趋势、品牌对比、排名或时间序列用图形更易理解时，创建一个柱状图、折线图或饼图。简单问答不要调用。',
+        parameters: CHART_SPEC_SCHEMA,
+        execute: async (args) => {
+          const callId = randomUUID();
+          const label = toolActivityLabel('create_chart', args);
+          onEvent({ type: 'tool_started', callId, name: 'create_chart', label, args });
+          const chart = normalizeChart(args);
+          charts.push(chart);
+          const recordedCall = {
+            callId,
+            name: 'create_chart',
+            label,
+            summary: `${chart.type === 'line' ? '折线图' : chart.type === 'pie' ? '饼图' : '柱状图'}，${chart.categories.length} 个分类`,
+          };
+          toolCalls.push(recordedCall);
+          recordedToolCallIds.add(callId);
+          onEvent({ type: 'tool_completed', ...recordedCall });
+          return {
+            created: true,
+            chartId: chart.id,
+            title: chart.title,
+            categoryCount: chart.categories.length,
+          };
+        },
+      }),
+      webSearchTool({
+        searchContextSize: 'medium',
+        externalWebAccess: true,
+        userLocation: {
+          type: 'approximate',
+          country: 'CN',
+          timezone: 'Asia/Shanghai',
+        },
+      }),
     ];
     const agentOptions = {
       name: '3C行业专家agent',
       instructions: SYSTEM_INSTRUCTION,
       tools: agentTools,
-      outputType: EXPERT_OUTPUT_SCHEMA,
-      modelSettings: { toolChoice: 'required' },
-      resetToolChoice: true,
     };
     if (process.env.OPENAI_MODEL) {
       agentOptions.model = process.env.OPENAI_MODEL;
     }
     const agent = new Agent(agentOptions);
     const result = await run(agent, prompt, {
-      maxTurns: 6,
+      maxTurns: 8,
       toolNotFoundBehavior: 'return_error_to_model',
       stream: true,
     });
     for await (const event of result) {
       if (event.type === 'agent_updated_stream_event') {
-        onEvent({ type: 'status', label: `${event.agent.name} 正在分析工具结果` });
+        onEvent({ type: 'status', label: `${event.agent.name} 正在继续分析` });
+        continue;
+      }
+      if (event.type === 'raw_model_stream_event') {
+        if (event.data?.type === 'output_text_delta' && event.data.delta) {
+          onEvent({ type: 'text_delta', delta: event.data.delta });
+          continue;
+        }
+        if (event.data?.type !== 'model') {
+          continue;
+        }
+        const rawEvent = event.data.event;
+        const rawType = rawEvent?.type;
+        const callId = rawEvent?.item_id || rawEvent?.item?.id;
+        if (
+          callId &&
+          (rawType === 'response.web_search_call.in_progress' || rawType === 'response.web_search_call.searching') &&
+          !webSearchStates.has(callId)
+        ) {
+          const label = toolActivityLabel('web_search');
+          webSearchStates.set(callId, { callId, label, completed: false });
+          onEvent({ type: 'tool_started', callId, name: 'web_search', label });
+        }
+        if (callId && rawType === 'response.web_search_call.completed') {
+          const current = webSearchStates.get(callId) ?? {
+            callId,
+            label: toolActivityLabel('web_search'),
+          };
+          current.completed = true;
+          webSearchStates.set(callId, current);
+          onEvent({
+            type: 'tool_completed',
+            callId,
+            name: 'web_search',
+            label: current.label,
+            summary: '已完成实时 Web 搜索',
+          });
+        }
+        continue;
+      }
+      if (event.type === 'run_item_stream_event' && event.name === 'message_output_created') {
+        collectMessageSources(event.item, sources);
+        continue;
+      }
+      if (event.type === 'run_item_stream_event' && event.name === 'tool_called') {
+        const rawItem = event.item?.rawItem;
+        if (rawItem?.type !== 'hosted_tool_call' || rawItem?.providerData?.type !== 'web_search_call') {
+          continue;
+        }
+        const callId = event.item.callId || rawItem.id || randomUUID();
+        const action = rawItem.providerData.action ?? {};
+        const query = String(action.query ?? action.queries?.[0] ?? '').trim();
+        for (const source of action.sources ?? []) {
+          uniqueSource(sources, source);
+        }
+        const label = query ? `搜索：${query}` : toolActivityLabel('web_search');
+        const summary = sources.length > 0 ? `搜索完成，引用 ${sources.length} 个来源` : '搜索完成';
+        const recordedCall = { callId, name: 'web_search', label, summary };
+        const existingIndex = toolCalls.findIndex((item) => item.callId === callId);
+        if (existingIndex >= 0) {
+          toolCalls[existingIndex] = recordedCall;
+        } else {
+          toolCalls.push(recordedCall);
+        }
+        recordedToolCallIds.add(callId);
+        onEvent({ type: 'tool_completed', ...recordedCall });
       }
     }
     await result.completed;
-    const output = result.finalOutput;
-    if (!output) {
+    const answer = String(result.finalOutput ?? '').trim();
+    if (!answer) {
       throw new Error('Agent没有生成有效回答，请重试');
     }
+    for (const [callId, state] of webSearchStates) {
+      if (!recordedToolCallIds.has(callId)) {
+        toolCalls.push({
+          callId,
+          name: 'web_search',
+          label: state.label,
+          summary: state.completed ? '已完成实时 Web 搜索' : '实时 Web 搜索已结束',
+        });
+      }
+    }
+    const output = {
+      version: 2,
+      title: deriveTitle(normalizedQuestion, answer),
+      markdown: answer,
+      charts,
+      sources,
+    };
 
     const runId = randomUUID();
     const normalizedSessionId = String(sessionId || randomUUID());

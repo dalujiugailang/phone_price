@@ -2,20 +2,23 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   AlertCircle,
+  BarChart3,
   Bot,
   BrainCircuit,
   Check,
   ChevronDown,
   ChevronRight,
-  Circle,
   Clock3,
   Database,
+  ExternalLink,
   FileOutput,
+  Globe2,
   Loader2,
   MessageSquareText,
   PanelLeft,
   Plus,
   Send,
+  Search,
   ShieldAlert,
   Sparkles,
   TrendingUp,
@@ -23,6 +26,21 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 interface ExpertFreshness {
   priceDate: string | null;
@@ -42,32 +60,38 @@ interface ExpertBrief {
   caveats: string[];
 }
 
-interface ExpertFact {
-  label: string;
-  value: string;
-  dataDate: string;
-  source: string;
+interface ChartSeries {
+  name: string;
+  values: number[];
 }
 
-interface ExpertAction {
-  priority: '高' | '中' | '低';
-  action: string;
-  reason: string;
+interface ChartSpec {
+  id: string;
+  type: 'bar' | 'line' | 'pie';
+  title: string;
+  subtitle?: string;
+  categories: string[];
+  series: ChartSeries[];
+  unit?: string;
+}
+
+interface WebSource {
+  title: string;
+  url: string;
 }
 
 interface ExpertOutput {
+  version: 2;
   title: string;
-  conclusion: string;
-  facts: ExpertFact[];
-  inferences: string[];
-  actions: ExpertAction[];
-  evidenceSummary: string[];
-  caveats: string[];
+  markdown: string;
+  charts: ChartSpec[];
+  sources: WebSource[];
 }
 
 interface ToolCall {
   callId?: string;
   name: string;
+  label?: string;
   summary: string;
 }
 
@@ -125,8 +149,9 @@ interface AgentResponse {
 
 type StreamEvent =
   | { type: 'status'; label: string }
-  | { type: 'tool_started'; callId: string; name: string; args?: unknown }
-  | { type: 'tool_completed'; callId: string; name: string; summary: string }
+  | { type: 'tool_started'; callId: string; name: string; label?: string; args?: unknown }
+  | { type: 'tool_completed'; callId: string; name: string; label?: string; summary: string }
+  | { type: 'text_delta'; delta: string }
   | { type: 'final'; payload: AgentResponse }
   | { type: 'error'; message: string };
 
@@ -134,7 +159,7 @@ const SUGGESTED_QUESTIONS = [
   '哪些SKU的防高收风险最高？给出数字和原因。',
   '按T-2近四周看，哪些新品系列销量表现较好？',
   '结合当前价格和销量，旧机应该优先关注什么方向？',
-  '当前市场趋势有什么值得关注的变化？',
+  '搜索近期手机行业信息，结合内部数据判断换机机会，并用图表展示。',
 ];
 
 const TOOL_LABELS: Record<string, string> = {
@@ -143,6 +168,8 @@ const TOOL_LABELS: Record<string, string> = {
   get_sales_summary: '分析新品周销',
   get_market_trend: '读取市场趋势',
   drilldown_sku: '下钻SKU证据',
+  web_search: '搜索实时市场信息',
+  create_chart: '生成图表',
 };
 
 const EXPERT_ROLES = [
@@ -180,13 +207,13 @@ const EXPERT_ROLES = [
   },
 ];
 
-const OUTPUT_SECTIONS = [
-  ['01', '结论', '直接回答业务问题'],
-  ['02', '关键事实', '数字、日期和数据来源'],
-  ['03', '分析推断', '与事实严格分开'],
-  ['04', '建议动作', '优先级、动作和原因'],
-  ['05', '数据与证据', '本次实际调用的工具'],
-  ['06', '口径与风险', '缺失数据和适用边界'],
+const ANSWER_PRINCIPLES = [
+  ['01', '结构不固定', '由模型根据问题选择短答、要点、表格或分析'],
+  ['02', '工具按需调用', '不再强制每次读取相同数据'],
+  ['03', '实时市场信息', '需要近期信息时自动 Web Search，并展示来源'],
+  ['04', '图表按需生成', '趋势和对比适合可视化时输出图表'],
+  ['05', '事实可追溯', '内部数字标日期，网页事实带可点击引用'],
+  ['06', '不确定性透明', '缺少数据时说明边界，不机械填充模板'],
 ];
 
 function createId() {
@@ -218,7 +245,7 @@ async function askAgentStream(
       sessionId: request.sessionId,
       history: request.history.map((message) => ({
         role: message.role,
-        content: message.output?.conclusion || message.content,
+        content: message.output?.markdown || message.content,
       })),
     }),
   });
@@ -265,15 +292,15 @@ function OutputSpecification({ onClose }: { onClose: () => void }) {
     <div className="absolute right-5 top-14 z-30 w-[360px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
       <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4">
         <div>
-          <h3 className="font-black text-slate-900">最终输出规范</h3>
-          <p className="mt-1 text-xs text-slate-500">每次回答固定遵循六段式结构</p>
+          <h3 className="font-black text-slate-900">回答方式</h3>
+          <p className="mt-1 text-xs text-slate-500">模型自主组织，不套固定报告模板</p>
         </div>
         <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100">
           <X size={16} />
         </button>
       </div>
       <div className="space-y-1 p-3">
-        {OUTPUT_SECTIONS.map(([number, label, detail]) => (
+        {ANSWER_PRINCIPLES.map(([number, label, detail]) => (
           <div key={number} className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-slate-50">
             <span className="font-mono text-[11px] font-bold text-orange-600">{number}</span>
             <div>
@@ -294,12 +321,26 @@ function ToolTrace({ steps = [] }: { steps?: RunStep[] }) {
   }
   const isRunning = steps.some((step) => step.status === 'running');
 
+  const operationCount = steps.filter((step) => step.type === 'tool').length;
+  const stepIcon = (step: RunStep) => {
+    if (step.name === 'web_search') {
+      return <Search size={14} />;
+    }
+    if (step.name === 'create_chart') {
+      return <BarChart3 size={14} />;
+    }
+    if (step.type === 'tool') {
+      return <Database size={14} />;
+    }
+    return <BrainCircuit size={14} />;
+  };
+
   return (
-    <div className="mb-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80">
+    <div className="mb-5 border-l-2 border-slate-200 pl-4">
       <button
         type="button"
         onClick={() => setExpanded((value) => !value)}
-        className="flex w-full items-center justify-between px-4 py-3 text-left"
+        className="flex w-full items-center justify-between py-1 text-left"
       >
         <div className="flex items-center gap-2">
           {isRunning ? (
@@ -308,31 +349,28 @@ function ToolTrace({ steps = [] }: { steps?: RunStep[] }) {
             <Check className="text-emerald-600" size={15} />
           )}
           <span className="text-xs font-bold text-slate-700">
-            {isRunning ? 'Agent 正在执行' : `已完成 ${steps.filter((step) => step.type === 'tool').length} 个工具调用`}
+            {isRunning ? '正在处理' : operationCount > 0 ? `完成了 ${operationCount} 项操作` : '分析完成'}
           </span>
         </div>
         {expanded ? <ChevronDown size={15} className="text-slate-400" /> : <ChevronRight size={15} className="text-slate-400" />}
       </button>
       {expanded ? (
-        <div className="space-y-3 border-t border-slate-200 px-4 py-3">
+        <div className="mt-2 space-y-2">
           {steps.map((step, index) => (
             <div key={step.id} className="relative flex gap-3">
               {index < steps.length - 1 ? (
-                <span className="absolute left-[7px] top-4 h-[calc(100%+8px)] w-px bg-slate-200" />
+                <span className="absolute left-[9px] top-5 h-[calc(100%+4px)] w-px bg-slate-200" />
               ) : null}
-              <span className="relative mt-1">
+              <span className="relative mt-0.5 flex h-5 w-5 items-center justify-center rounded-md bg-white text-slate-500 ring-1 ring-slate-200">
                 {step.status === 'running' ? (
-                  <Loader2 size={15} className="animate-spin text-orange-600" />
+                  <Loader2 size={13} className="animate-spin text-orange-600" />
                 ) : (
-                  <span className="flex h-[15px] w-[15px] items-center justify-center rounded-full bg-emerald-100">
-                    <Check size={10} className="text-emerald-700" />
-                  </span>
+                  stepIcon(step)
                 )}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-slate-700">{step.label}</p>
-                {step.name ? <p className="mt-0.5 font-mono text-[10px] text-slate-400">{step.name}</p> : null}
-                {step.summary ? <p className="mt-1 text-xs leading-5 text-slate-500">{step.summary}</p> : null}
+                <p className="text-xs font-semibold leading-5 text-slate-700">{step.label}</p>
+                {step.summary ? <p className="text-[11px] leading-5 text-slate-400">{step.summary}</p> : null}
               </div>
             </div>
           ))}
@@ -342,104 +380,178 @@ function ToolTrace({ steps = [] }: { steps?: RunStep[] }) {
   );
 }
 
+function renderInlineMarkdown(text: string) {
+  const tokens = text.split(/(\[[^\]]+\]\(https?:\/\/[^)]+\)|\*\*[^*]+\*\*)/g).filter(Boolean);
+  return tokens.map((token, index) => {
+    const link = token.match(/^\[([^\]]+)\]\((https?:\/\/[^)]+)\)$/);
+    if (link) {
+      return (
+        <a
+          key={`${token}-${index}`}
+          href={link[2]}
+          target="_blank"
+          rel="noreferrer"
+          className="font-semibold text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-900"
+        >
+          {link[1]}
+        </a>
+      );
+    }
+    if (token.startsWith('**') && token.endsWith('**')) {
+      return <strong key={`${token}-${index}`} className="font-black text-slate-900">{token.slice(2, -2)}</strong>;
+    }
+    return <React.Fragment key={`${token}-${index}`}>{token}</React.Fragment>;
+  });
+}
+
+function MarkdownMessage({ content }: { content: string }) {
+  return (
+    <div className="space-y-2 text-sm leading-7 text-slate-700">
+      {String(content)
+        .split('\n')
+        .map((rawLine, index) => {
+          const line = rawLine.trim();
+          if (!line) {
+            return <div key={`space-${index}`} className="h-1" />;
+          }
+          const heading = line.match(/^(#{1,3})\s+(.+)$/);
+          if (heading) {
+            const Tag = heading[1].length === 1 ? 'h3' : 'h4';
+            return <Tag key={`${line}-${index}`} className="pt-2 text-base font-black text-slate-900">{renderInlineMarkdown(heading[2])}</Tag>;
+          }
+          const bullet = line.match(/^[-*]\s+(.+)$/);
+          if (bullet) {
+            return (
+              <div key={`${line}-${index}`} className="flex gap-2 pl-1">
+                <span className="mt-[11px] h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
+                <p>{renderInlineMarkdown(bullet[1])}</p>
+              </div>
+            );
+          }
+          const ordered = line.match(/^(\d+)[.)]\s+(.+)$/);
+          if (ordered) {
+            return (
+              <div key={`${line}-${index}`} className="flex gap-2">
+                <span className="min-w-5 font-mono text-xs font-bold text-slate-400">{ordered[1]}.</span>
+                <p>{renderInlineMarkdown(ordered[2])}</p>
+              </div>
+            );
+          }
+          if (line.startsWith('> ')) {
+            return (
+              <blockquote key={`${line}-${index}`} className="border-l-2 border-slate-300 pl-3 text-slate-500">
+                {renderInlineMarkdown(line.slice(2))}
+              </blockquote>
+            );
+          }
+          return <p key={`${line}-${index}`} className="whitespace-pre-wrap">{renderInlineMarkdown(line)}</p>;
+        })}
+    </div>
+  );
+}
+
+const CHART_COLORS = ['#f97316', '#2563eb', '#7c3aed', '#059669', '#e11d48'];
+
+function AgentChart({ chart }: { chart: ChartSpec }) {
+  const rows = chart.categories.map((category, index) => ({
+    category,
+    ...Object.fromEntries(chart.series.map((series) => [series.name, series.values[index]])),
+  }));
+  const tooltipFormatter = (value: number | string) => [`${value}${chart.unit || ''}`, ''];
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-4">
+        <h4 className="text-sm font-black text-slate-900">{chart.title}</h4>
+        {chart.subtitle ? <p className="mt-1 text-xs leading-5 text-slate-500">{chart.subtitle}</p> : null}
+      </div>
+      <div className="h-[280px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          {chart.type === 'line' ? (
+            <LineChart data={rows} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="category" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} unit={chart.unit} />
+              <Tooltip formatter={tooltipFormatter} />
+              <Legend />
+              {chart.series.map((series, index) => (
+                <Line key={series.name} dataKey={series.name} stroke={CHART_COLORS[index % CHART_COLORS.length]} strokeWidth={2.5} dot={{ r: 3 }} />
+              ))}
+            </LineChart>
+          ) : chart.type === 'pie' ? (
+            <PieChart>
+              <Pie
+                data={rows.map((row) => ({ name: row.category, value: row[chart.series[0].name] }))}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={54}
+                outerRadius={92}
+                paddingAngle={2}
+                label
+              >
+                {rows.map((row, index) => <Cell key={row.category} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
+              </Pie>
+              <Tooltip formatter={tooltipFormatter} />
+              <Legend />
+            </PieChart>
+          ) : (
+            <BarChart data={rows} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="category" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} unit={chart.unit} />
+              <Tooltip formatter={tooltipFormatter} />
+              <Legend />
+              {chart.series.map((series, index) => (
+                <Bar key={series.name} dataKey={series.name} fill={CHART_COLORS[index % CHART_COLORS.length]} radius={[5, 5, 0, 0]} />
+              ))}
+            </BarChart>
+          )}
+        </ResponsiveContainer>
+      </div>
+    </section>
+  );
+}
+
 function StructuredOutput({ output, evidence = [] }: { output: ExpertOutput; evidence?: Evidence[] }) {
   return (
     <div className="space-y-5">
-      <section>
-        <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-orange-600">
-          <Circle size={7} fill="currentColor" />
-          结论
-        </div>
-        <h3 className="text-lg font-black text-slate-900">{output.title}</h3>
-        <p className="mt-2 text-sm font-medium leading-7 text-slate-700">{output.conclusion}</p>
-      </section>
-
-      {output.facts.length > 0 ? (
-        <section>
-          <h4 className="mb-2 text-xs font-black uppercase tracking-wider text-slate-400">关键事实</h4>
-          <div className="overflow-hidden rounded-xl border border-slate-200">
-            {output.facts.map((fact, index) => (
-              <div
-                key={`${fact.label}-${index}`}
-                className="grid grid-cols-[minmax(110px,0.8fr)_minmax(120px,1fr)_minmax(100px,0.8fr)] gap-3 border-b border-slate-100 px-4 py-3 text-xs last:border-b-0"
+      <MarkdownMessage content={output.markdown} />
+      {output.charts?.map((chart) => (
+        <React.Fragment key={chart.id}>
+          <AgentChart chart={chart} />
+        </React.Fragment>
+      ))}
+      {output.sources?.length > 0 ? (
+        <section className="rounded-xl border border-blue-100 bg-blue-50/50 px-4 py-3">
+          <h4 className="mb-2 flex items-center gap-2 text-xs font-black text-blue-900">
+            <Globe2 size={14} />
+            Web 来源
+          </h4>
+          <div className="space-y-2">
+            {output.sources.map((source) => (
+              <a
+                key={source.url}
+                href={source.url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-start gap-2 text-xs leading-5 text-blue-700 hover:text-blue-950"
               >
-                <span className="font-bold text-slate-700">{fact.label}</span>
-                <span className="font-black text-slate-900">{fact.value}</span>
-                <span className="text-right text-slate-400">{fact.dataDate} · {fact.source}</span>
-              </div>
+                <ExternalLink size={12} className="mt-1 shrink-0" />
+                <span>{source.title}</span>
+              </a>
             ))}
           </div>
         </section>
       ) : null}
-
-      {output.inferences.length > 0 ? (
-        <section>
-          <h4 className="mb-2 text-xs font-black uppercase tracking-wider text-slate-400">分析推断</h4>
-          <div className="space-y-2">
-            {output.inferences.map((item, index) => (
-              <div key={`${item}-${index}`} className="flex gap-3 rounded-xl bg-violet-50/70 px-4 py-3 text-sm leading-6 text-violet-950">
-                <span className="font-mono text-xs font-bold text-violet-500">{String(index + 1).padStart(2, '0')}</span>
-                <span>{item}</span>
-              </div>
+      {evidence.length > 0 ? (
+        <details className="rounded-xl bg-slate-50 px-4 py-3 text-xs text-slate-500">
+          <summary className="cursor-pointer font-bold text-slate-600">查看内部数据证据（{evidence.length}）</summary>
+          <div className="mt-2 space-y-1">
+            {evidence.map((item) => (
+              <p key={`${item.label}-${item.dataDate}`}>· {item.label} · {item.dataDate || '暂无日期'} · {item.note}</p>
             ))}
           </div>
-        </section>
-      ) : null}
-
-      {output.actions.length > 0 ? (
-        <section>
-          <h4 className="mb-2 text-xs font-black uppercase tracking-wider text-slate-400">建议动作</h4>
-          <div className="space-y-2">
-            {output.actions.map((item, index) => (
-              <div key={`${item.action}-${index}`} className="flex items-start gap-3 rounded-xl border border-slate-200 px-4 py-3">
-                <span
-                  className={`mt-0.5 rounded-md px-2 py-1 text-[10px] font-black ${
-                    item.priority === '高'
-                      ? 'bg-rose-100 text-rose-700'
-                      : item.priority === '中'
-                        ? 'bg-amber-100 text-amber-700'
-                        : 'bg-slate-100 text-slate-600'
-                  }`}
-                >
-                  {item.priority}
-                </span>
-                <div>
-                  <p className="text-sm font-bold text-slate-800">{item.action}</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">{item.reason}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {output.evidenceSummary.length > 0 || evidence.length > 0 ? (
-        <section className="rounded-xl bg-slate-50 px-4 py-3">
-          <h4 className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400">
-            <Database size={13} />
-            数据与证据
-          </h4>
-          {output.evidenceSummary.map((item, index) => (
-            <p key={`${item}-${index}`} className="text-xs leading-6 text-slate-600">· {item}</p>
-          ))}
-          {evidence.map((item) => (
-            <p key={`${item.label}-${item.dataDate}`} className="text-xs leading-6 text-slate-500">
-              · {item.label} · {item.dataDate || '暂无日期'} · {item.note}
-            </p>
-          ))}
-        </section>
-      ) : null}
-
-      {output.caveats.length > 0 ? (
-        <section className="rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3">
-          <h4 className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-amber-700">
-            <AlertCircle size={13} />
-            口径与风险
-          </h4>
-          {output.caveats.map((item, index) => (
-            <p key={`${item}-${index}`} className="text-xs leading-6 text-amber-900">· {item}</p>
-          ))}
-        </section>
+        </details>
       ) : null}
     </div>
   );
@@ -525,14 +637,14 @@ export function IndustryExpertPanel() {
           {
             id: `${run.runId}-assistant`,
             role: 'assistant' as const,
-            content: run.output.conclusion,
+            content: run.output.markdown,
             output: run.output,
             toolCalls: run.toolCalls,
             evidence: run.evidence,
             steps: run.toolCalls.map((item, index) => ({
               id: item.callId || `${run.runId}-tool-${index}`,
               type: 'tool' as const,
-              label: TOOL_LABELS[item.name] || item.name,
+              label: item.label || TOOL_LABELS[item.name] || item.name,
               name: item.name,
               summary: item.summary,
               status: 'completed' as const,
@@ -604,7 +716,7 @@ export function IndustryExpertPanel() {
                 {
                   id: event.callId,
                   type: 'tool',
-                  label: TOOL_LABELS[event.name] || event.name,
+                  label: event.label || TOOL_LABELS[event.name] || event.name,
                   name: event.name,
                   args: event.args,
                   status: 'running',
@@ -613,17 +725,48 @@ export function IndustryExpertPanel() {
             }));
           }
           if (event.type === 'tool_completed') {
+            updateAssistant(assistantMessageId, (message) => {
+              const steps = message.steps ?? [];
+              const exists = steps.some((step) => step.id === event.callId);
+              return {
+                ...message,
+                steps: exists
+                  ? steps.map((step) =>
+                      step.id === event.callId
+                        ? {
+                            ...step,
+                            label: event.label || step.label,
+                            summary: event.summary,
+                            status: 'completed' as const,
+                          }
+                        : step,
+                    )
+                  : [
+                      ...steps.map((step) =>
+                        step.status === 'running' ? { ...step, status: 'completed' as const } : step,
+                      ),
+                      {
+                        id: event.callId,
+                        type: 'tool' as const,
+                        label: event.label || TOOL_LABELS[event.name] || event.name,
+                        name: event.name,
+                        summary: event.summary,
+                        status: 'completed' as const,
+                      },
+                    ],
+              };
+            });
+          }
+          if (event.type === 'text_delta') {
             updateAssistant(assistantMessageId, (message) => ({
               ...message,
-              steps: (message.steps ?? []).map((step) =>
-                step.id === event.callId ? { ...step, summary: event.summary, status: 'completed' } : step,
-              ),
+              content: `${message.content}${event.delta}`,
             }));
           }
           if (event.type === 'final') {
             updateAssistant(assistantMessageId, (message) => ({
               ...message,
-              content: event.payload.answer,
+              content: event.payload.output.markdown,
               output: event.payload.output,
               toolCalls: event.payload.toolCalls,
               evidence: event.payload.evidence,
@@ -750,7 +893,7 @@ export function IndustryExpertPanel() {
               <div className="flex items-center gap-2">
                 <span className={`h-2 w-2 rounded-full ${brief.configured ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                 <span className={`text-[11px] font-bold ${brief.configured ? 'text-emerald-800' : 'text-amber-800'}`}>
-                  {brief.configured ? '真实 Agent 已连接' : '等待 OPENAI_API_KEY'}
+                  {brief.configured ? 'Agent + 实时搜索已连接' : '等待 OPENAI_API_KEY'}
                 </span>
               </div>
               <p className="mt-1 truncate pl-4 text-[10px] text-slate-500">{brief.model}</p>
@@ -781,7 +924,7 @@ export function IndustryExpertPanel() {
             className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
           >
             <FileOutput size={14} />
-            输出规范
+            回答方式
           </button>
           {showOutputSpec ? <OutputSpecification onClose={() => setShowOutputSpec(false)} /> : null}
         </header>
@@ -795,7 +938,7 @@ export function IndustryExpertPanel() {
                 </div>
                 <h3 className="mt-5 text-xl font-black text-slate-900">今天想判断什么？</h3>
                 <p className="mt-2 max-w-lg text-sm leading-6 text-slate-500">
-                  我会自主调用价格、周销和市场工具，并把事实、推断与建议分开输出。
+                  模型会按问题自主读取内部数据、搜索实时市场信息，并在适合时生成图表。
                 </p>
                 <div className="mt-7 grid w-full max-w-2xl grid-cols-1 gap-2 sm:grid-cols-2">
                   {SUGGESTED_QUESTIONS.map((question) => (
@@ -847,10 +990,18 @@ export function IndustryExpertPanel() {
                             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                               {message.content}
                             </div>
+                          ) : message.content ? (
+                            <div>
+                              <MarkdownMessage content={message.content} />
+                              <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-400">
+                                <Loader2 size={13} className="animate-spin text-orange-600" />
+                                正在继续生成
+                              </div>
+                            </div>
                           ) : (
                             <div className="flex items-center gap-2 text-sm font-semibold text-slate-400">
                               <Loader2 size={15} className="animate-spin text-orange-600" />
-                              正在生成结构化结论
+                              正在思考并选择工具
                             </div>
                           )}
                         </div>
@@ -885,13 +1036,13 @@ export function IndustryExpertPanel() {
                 }}
                 disabled={isAsking}
                 rows={2}
-                placeholder={brief.configured ? '输入消息，询问价格、销量或市场趋势…' : '输入消息（发送前需配置 OPENAI_API_KEY）'}
+                placeholder={brief.configured ? '输入消息，询问价格、销量、市场趋势或实时行业信息…' : '输入消息（发送前需配置 OPENAI_API_KEY）'}
                 className="max-h-32 min-h-[54px] w-full resize-none bg-transparent px-3 py-2 text-sm leading-6 text-slate-800 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
               />
               <div className="flex items-center justify-between px-2 pb-1">
                 <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400">
                   <Wrench size={12} />
-                  可调用 5 个只读工具 · Enter 发送 · Shift+Enter 换行
+                  5 个内部数据工具 · 实时 Web Search · 图表输出
                 </div>
                 <button
                   type="submit"

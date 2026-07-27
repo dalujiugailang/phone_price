@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildPriceSummary, buildSalesSummary, EXPERT_OUTPUT_SCHEMA } from './industry-expert.mjs';
+import { buildPriceSummary, buildSalesSummary, CHART_SPEC_SCHEMA } from './industry-expert.mjs';
 
 test('price summary keeps the existing high-risk and 95% risk thresholds', () => {
   const dataset = {
@@ -70,17 +70,15 @@ test('sales summary uses the latest four available weeks and ranks within positi
   assert.equal(summary.topModels[0].positionRank, 1);
 });
 
-test('expert output keeps facts, inferences, actions and caveats separated', () => {
-  const output = EXPERT_OUTPUT_SCHEMA.parse({
-    title: '防高收分析',
-    conclusion: '先核查高风险SKU。',
-    facts: [{ label: '高风险SKU', value: '2个', dataDate: '7.24', source: '价格底表' }],
-    inferences: ['风险主要集中在高残值型号。'],
-    actions: [{ priority: '高', action: '复核BI价', reason: 'BI价接近新品价' }],
-    evidenceSummary: ['调用价格与残值工具'],
-    caveats: ['新品价仍是国补后价格试算口径'],
+test('chart schema accepts a compact chart returned by the agent', () => {
+  const chart = CHART_SPEC_SCHEMA.parse({
+    type: 'bar',
+    title: '品牌新品残值率',
+    categories: ['品牌A', '品牌B'],
+    series: [{ name: '残值率', values: [92.3, 88.7] }],
+    unit: '%',
   });
 
-  assert.equal(output.actions[0].priority, '高');
-  assert.equal(output.facts[0].source, '价格底表');
+  assert.equal(chart.type, 'bar');
+  assert.deepEqual(chart.series[0].values, [92.3, 88.7]);
 });
