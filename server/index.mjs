@@ -6,6 +6,7 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';
 import XLSX from 'xlsx';
+import { registerIndustryExpertRoutes } from './lib/industry-expert.mjs';
 import { registerWeeklySalesRoutes } from './lib/weekly-sales.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -47,6 +48,14 @@ const marketTrendBrandGroups = new Map([
 app.use(express.json({ limit: '10mb' }));
 
 const weeklySalesService = registerWeeklySalesRoutes(app, { dataDir, applyMarketWeeks: applyAutomatedMarketWeeks });
+registerIndustryExpertRoutes(app, {
+  dataDir,
+  workbookPath,
+  databasePath,
+  getWeeklySalesOverview: (query) => weeklySalesService.getOverview(query),
+  getMarketTrendOverview: () =>
+    buildMarketTrendOverview(readMarketTrendDraftFromDatabase() ?? readMarketTrendFromWorkbook()),
+});
 
 async function ensureDataDir() {
   await fs.mkdir(dataDir, { recursive: true });

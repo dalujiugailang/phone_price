@@ -70,6 +70,30 @@ MCP_API_TOKENS=replace-with-strong-token
 MCP_ALLOWED_ORIGINS=https://mcp.gtmdudu.xyz
 ```
 
+## 3C行业专家agent
+
+网站内置一个只读的 OpenAI Agents SDK Agent。确定性代码负责价格、残值率和周销计算，Agent负责选择工具、解释和给出建议。
+
+服务端配置：
+
+```text
+OPENAI_API_KEY=sk-...
+OPENAI_BASE_URL=http://cli-proxy-api:8317/v1
+OPENAI_MODEL=
+OPENAI_AGENTS_DISABLE_TRACING=1
+```
+
+`OPENAI_BASE_URL` 可指向同一私有 Docker 网络中的 CPA；`OPENAI_MODEL` 可留空以使用 Agents SDK 默认模型。接口：
+
+- `GET /api/expert/brief`：不依赖模型的确定性简报
+- `GET /api/expert/status`：模型配置和数据新鲜度
+- `GET /api/expert/sessions`：左侧历史任务列表
+- `GET /api/expert/sessions/:sessionId`：读取一项历史对话
+- `POST /api/expert/ask`：运行只读行业专家 Agent
+- `POST /api/expert/ask/stream`：以 NDJSON 实时返回状态、工具调用和最终回答
+
+最终回答由结构化 Schema 固定为：结论、关键事实、分析推断、建议动作、数据与证据、口径与风险。
+
 ## 新品周销微博自动更新
 
 执行链路固定为：云端创建任务 → 本机 Worker 领取 → 本机 Browser Use CLI + 已登录 Chrome 抓取 → JSON 回传云端解析入库。Browser Use Cloud 不参与。

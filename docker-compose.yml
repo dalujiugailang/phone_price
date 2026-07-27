@@ -9,6 +9,10 @@ services:
       NODE_ENV: production
       TZ: Asia/Shanghai
       PORT: 8787
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      OPENAI_AGENTS_DISABLE_TRACING: ${OPENAI_AGENTS_DISABLE_TRACING:-1}
       DAILY_PRICE_LOOKUP_URL: ${DAILY_PRICE_LOOKUP_URL:-http://host.docker.internal:8765/api/lookup}
       DAILY_PRICE_TOKEN_PATH: /app/data/api_token.txt
       PRICE_MONITOR_DATA_DIR: /app/data
@@ -26,6 +30,9 @@ services:
       - ./data:/app/data
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - personal_ai_gateway
     expose:
       - "8787"
     healthcheck:
@@ -70,7 +77,15 @@ services:
       - caddy_config:/config
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - personal_ai_gateway
 
 volumes:
   caddy_data:
   caddy_config:
+
+networks:
+  personal_ai_gateway:
+    external: true
+    name: personal-ai-gateway

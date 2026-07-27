@@ -4,6 +4,7 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   BarChart3,
+  BrainCircuit,
   Database,
   Download,
   FileText,
@@ -32,10 +33,11 @@ import {
   YAxis,
 } from 'recharts';
 import { loadWorkbookData, PriceSnapshot, SKUData, WorkbookDataset } from './data';
+import { IndustryExpertPanel } from './IndustryExpertPanel';
 import { getNewMachinePpvMapping } from './ppvMapping';
 import { WeeklySalesPanel } from './WeeklySalesPanel';
 
-type ViewMode = 'dashboard' | 'summary' | 'risk' | 'marketTrend' | 'weeklySales' | 'table' | 'raw';
+type ViewMode = 'dashboard' | 'summary' | 'risk' | 'marketTrend' | 'weeklySales' | 'industryExpert' | 'table' | 'raw';
 type PositionPivotScope = 'all' | 'stable' | 'new526';
 
 const CHANGE_SUMMARY_MIN_AMOUNT = 11;
@@ -2623,6 +2625,14 @@ export default function App() {
                 >
                   <BarChart3 size={16} /> 新品周销
                 </button>
+                <button
+                  onClick={() => setView('industryExpert')}
+                  className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
+                    view === 'industryExpert' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <BrainCircuit size={16} /> 3C行业专家agent
+                </button>
               </div>
             </div>
           </div>
@@ -2632,6 +2642,8 @@ export default function App() {
       <main className="mx-auto max-w-[1600px] space-y-6 p-6">
         {view === 'weeklySales' ? (
           <WeeklySalesPanel />
+        ) : view === 'industryExpert' ? (
+          <IndustryExpertPanel />
         ) : isLoading ? (
           <StatusPanel
             icon={<Database className="text-orange-600" size={20} />}

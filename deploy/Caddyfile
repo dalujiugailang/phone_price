@@ -13,6 +13,17 @@ http://8.162.25.246 {
 gtmdudu.xyz, www.gtmdudu.xyz {
   encode gzip zstd
 
+  @personal_ai_api path /ai/v1 /ai/v1/*
+  handle @personal_ai_api {
+    uri strip_prefix /ai
+    reverse_proxy cli-proxy-api:8317 {
+      flush_interval -1
+      transport http {
+        read_timeout 10m
+      }
+    }
+  }
+
   handle /api/daily-price/* {
     reverse_proxy host.docker.internal:8765
   }
