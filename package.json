@@ -16,9 +16,12 @@
     "mcp:verify-data": "node scripts/verify-mcp-data.mjs",
     "weibo:worker": "node scripts/weibo-local-worker.mjs",
     "report": "node scripts/generate-price-report.mjs",
-    "web-cache": "node scripts/generate-web-cache.mjs"
+    "web-cache": "node scripts/generate-web-cache.mjs",
+    "warehouse:build": "node scripts/build-warehouse.mjs",
+    "warehouse:verify": "node scripts/verify-warehouse.mjs"
   },
   "dependencies": {
+    "@duckdb/node-api": "^1.5.5-r.2",
     "@google/genai": "^1.29.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@openai/agents": "^0.13.5",

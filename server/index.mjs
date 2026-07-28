@@ -7,6 +7,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';
 import XLSX from 'xlsx';
 import { registerIndustryExpertRoutes } from './lib/industry-expert.mjs';
+import { createWarehouseRefreshManager } from './lib/warehouse-refresh.mjs';
 import { registerWeeklySalesRoutes } from './lib/weekly-sales.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -47,14 +48,16 @@ const marketTrendBrandGroups = new Map([
 
 app.use(express.json({ limit: '10mb' }));
 
-const weeklySalesService = registerWeeklySalesRoutes(app, { dataDir, applyMarketWeeks: applyAutomatedMarketWeeks });
+const warehouseRefresh = createWarehouseRefreshManager({ projectRoot, dataDir });
+const weeklySalesService = registerWeeklySalesRoutes(app, {
+  dataDir,
+  applyMarketWeeks: applyAutomatedMarketWeeks,
+  onDataChanged: (reason) => warehouseRefresh.requestRefresh(reason),
+});
 registerIndustryExpertRoutes(app, {
   dataDir,
-  workbookPath,
-  databasePath,
-  getWeeklySalesOverview: (query) => weeklySalesService.getOverview(query),
-  getMarketTrendOverview: () =>
-    buildMarketTrendOverview(readMarketTrendDraftFromDatabase() ?? readMarketTrendFromWorkbook()),
+  warehousePath: warehouseRefresh.warehousePath,
+  waitForWarehouse: () => warehouseRefresh.waitForIdle(),
 });
 
 async function ensureDataDir() {
@@ -997,7 +1000,12 @@ app.get('/api/health', (_request, response) => {
     marketTrendWorkbookPath,
     weeklySalesDatabasePath: weeklySalesService.databasePath,
     weeklySalesWorkbookPath: weeklySalesService.workbookPath,
+    warehouse: warehouseRefresh.getStatus(),
   });
+});
+
+app.get('/api/warehouse/status', (_request, response) => {
+  response.json(warehouseRefresh.getStatus());
 });
 
 app.get('/api/raw-editor-draft', async (_request, response) => {
@@ -1019,6 +1027,7 @@ app.post('/api/raw-editor-draft', async (request, response) => {
 
   await ensureDataDir();
   const nextDraft = writeDraftToDatabase(payload);
+  warehouseRefresh.requestRefresh('raw-price-draft');
   if (payload.syncWorkbook === true) {
     try {
       const workbookResult =
@@ -1058,6 +1067,7 @@ app.post('/api/market-trend/draft', async (request, response) => {
 
   await ensureDataDir();
   const nextDraft = writeMarketTrendDraftToDatabase(payload);
+  warehouseRefresh.requestRefresh('market-trend-draft');
   response.json({ ok: true, savedAt: nextDraft.savedAt, validation });
 });
 
@@ -1072,6 +1082,7 @@ app.post('/api/market-trend/apply', async (request, response) => {
   try {
     await ensureDataDir();
     const nextDraft = writeMarketTrendDraftToDatabase(payload);
+    warehouseRefresh.requestRefresh('market-trend-apply');
     const workbook = writeMarketTrendToWorkbook(nextDraft);
     response.json({ ok: true, savedAt: nextDraft.savedAt, workbook, validation, overview: buildMarketTrendOverview(nextDraft) });
   } catch (error) {
@@ -1094,6 +1105,7 @@ app.post('/api/market-trend/weeks', async (request, response) => {
 
     await ensureDataDir();
     const nextDraft = writeMarketTrendDraftToDatabase(nextPayload);
+    warehouseRefresh.requestRefresh('market-trend-week');
     const workbook = writeMarketTrendToWorkbook(nextDraft);
     response.json({ ok: true, savedAt: nextDraft.savedAt, workbook, validation, overview: buildMarketTrendOverview(nextDraft) });
   } catch (error) {
@@ -1165,8 +1177,10 @@ if (fsSync.existsSync(distDir)) {
 ensureDataDir()
   .then(() => migrateLegacyDraftIfNeeded())
   .then(() => migrateLegacyMarketTrendDraftIfNeeded())
+  .then(() => warehouseRefresh.refresh('startup'))
   .then(() => {
     weeklySalesService.startAutomationScheduler();
+    warehouseRefresh.startScheduler();
     app.listen(port, () => {
       console.log(`price-monitor-api listening on http://localhost:${port}`);
     });

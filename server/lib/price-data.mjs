@@ -1,3 +1,4 @@
+import fsSync from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import XLSX from 'xlsx';
 
@@ -396,6 +397,92 @@ export function readRawEditorDraft(databasePath) {
   }
 }
 
+export function datasetFromRawEditorDraft(draft, fallbackDataset = null, sourceName = '原始数据草稿') {
+  const dates = [...(draft?.dates ?? [])].sort(sortDateLabels);
+  const fallbackBrandByModel = new Map(
+    (fallbackDataset?.skus ?? []).map((sku) => [String(sku.model).trim(), String(sku.brand).trim()]),
+  );
+  const skus = (draft?.rows ?? [])
+    .map((row, index) => {
+      const model = String(row.model ?? '').trim();
+      const storage = String(row.storage ?? '').trim();
+      if (!model || !storage) {
+        return null;
+      }
+
+      const brand =
+        normalizeBrand(row.brand) ||
+        normalizeBrand(fallbackBrandByModel.get(model)) ||
+        inferBrand(model);
+      const snapshots = dates
+        .map((date) => {
+          const raw = row.snapshots?.[date];
+          if (!raw) {
+            return null;
+          }
+
+          const finalPrice = parseNumber(raw.finalPrice);
+          const listPrice = parseNumber(raw.listPrice);
+          const coupon = parseNumber(raw.coupon);
+          const biPrice = parseNumber(raw.biPrice);
+          const rawValues = [raw.finalPrice, raw.listPrice, raw.coupon, raw.biPrice].map((value) =>
+            String(value ?? '').trim(),
+          );
+          if (!rawValues.some(Boolean)) {
+            return null;
+          }
+
+          return {
+            date,
+            finalPrice,
+            listPrice,
+            coupon,
+            biPrice: biPrice || undefined,
+            isDelisted: rawValues.some((value) => isDelistedCell(value)) || undefined,
+          };
+        })
+        .filter(Boolean);
+
+      return {
+        id: String(row.id || `${model}-${storage}-${index + 1}`),
+        brand,
+        model,
+        series: String(row.series ?? '').trim() || inferSeries(model, brand),
+        storage,
+        position: String(row.position ?? '').trim(),
+        ppv: String(row.ppv ?? '').trim(),
+        launchPrice: parseNumber(row.launchPrice),
+        snapshots,
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    skus,
+    dates,
+    brands: [...new Set(skus.map((sku) => sku.brand))].sort(compareText),
+    loadedAt: draft?.savedAt || new Date().toISOString(),
+    sourceName,
+    sheetName: 'raw-editor-draft',
+  };
+}
+
+export function loadCurrentPriceDataset({ workbookPath, databasePath, sourceName = DEFAULT_SOURCE_NAME }) {
+  const workbookDataset = parseWorkbookFile(workbookPath, sourceName);
+  if (!databasePath || !fsSync.existsSync(databasePath)) {
+    return workbookDataset;
+  }
+
+  const draft = readRawEditorDraft(databasePath);
+  const draftLatestDate = draft?.dates?.at(-1) ?? '';
+  const workbookLatestDate = workbookDataset.dates.at(-1) ?? '';
+  if (!draft || !draftLatestDate || (workbookLatestDate && sortDateLabels(draftLatestDate, workbookLatestDate) < 0)) {
+    return workbookDataset;
+  }
+
+  return datasetFromRawEditorDraft(draft, workbookDataset);
+}
+
 function getAggregationSnapshots(sku, dates) {
   const snapshotByDate = new Map(sku.snapshots.map((snapshot) => [snapshot.date, snapshot]));
   const normalizedSnapshots = [];
@@ -403,10 +490,6 @@ function getAggregationSnapshots(sku, dates) {
 
   for (const date of dates) {
     const snapshot = snapshotByDate.get(date);
-    if (snapshot?.isDelisted) {
-      previousSnapshot = null;
-      continue;
-    }
     if (snapshot && snapshot.finalPrice > 0) {
       normalizedSnapshots.push(snapshot);
       previousSnapshot = snapshot;

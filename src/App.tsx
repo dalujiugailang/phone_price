@@ -871,11 +871,6 @@ function getAggregationSnapshots(sku: SKUData, dates: string[]) {
 
   dates.forEach((date) => {
     const snapshot = snapshotByDate.get(date);
-    if (snapshot?.isDelisted) {
-      previousSnapshot = null;
-      return;
-    }
-
     if (snapshot && snapshot.finalPrice > 0) {
       normalizedSnapshots.push(snapshot);
       previousSnapshot = snapshot;

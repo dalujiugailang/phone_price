@@ -1,9 +1,8 @@
-import fsSync from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { Agent, run, tool, webSearchTool } from '@openai/agents';
 import { z } from 'zod';
-import { buildAnalysis, parseWorkbookFile, readRawEditorDraft } from './price-data.mjs';
+import { createWarehouseQueryService } from './warehouse-query.mjs';
 
 const DEFAULT_MODEL_LABEL = 'Agents SDK默认模型';
 
@@ -28,374 +27,45 @@ const SYSTEM_INSTRUCTION = `你是“3C行业专家agent”，服务于回收业
 
 工作规则：
 1. 先理解用户真正要做的判断，再自行决定是否调用工具、调用哪些工具以及调用顺序。简单问题可以直接回答，不要为了展示能力而滥用工具。
-2. 涉及内部价格、残值、销量或市场数据时，使用对应业务工具；涉及近期新闻、零件涨价、供应链、品牌发布或外部市场变化时，使用实时 Web Search。
+2. 涉及内部价格、残值、销量或市场数据时，必须查询数仓工具；不要凭记忆补数字，也不要把工具返回的事实误写成模型估算。涉及近期新闻、零件涨价、供应链、品牌发布或外部市场变化时，使用实时 Web Search。
 3. 回答结构由问题决定，不使用固定六段式模板。可以是一段结论、要点、对比表或短报告，优先直接、具体、有数字。
 4. 业务数字只能来自工具结果；重要数字写明日期、周次或来源。把已确认事实和分析判断区分清楚，但不必机械地使用固定标题。
-5. 当前系统的 latestPrice 是“国补后价格试算”口径，尚未确认等同JD自营实际成交价，相关判断必须如实说明。
-6. 没有旧机回收量、库存、销量和毛利数据时，只能给机会方向，不能给预算或投入强度结论。
-7. Web Search 信息必须带可点击来源；优先品牌官网、监管机构、研究机构和可信媒体，不要把搜索摘要当成内部事实。
-8. 当趋势、品牌对比、排名或时间序列用图形更容易理解时，调用 create_chart；简单问答不要强行生成图表。
-9. 最终回答使用自然、简洁的中文 Markdown。不要复述工具执行过程，界面会单独展示。`;
-
-function numberValue(value) {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-  const parsed = Number(String(value ?? '').replace(/,/g, '').trim());
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function median(values) {
-  const sorted = values.filter((value) => Number.isFinite(value)).sort((left, right) => left - right);
-  if (sorted.length === 0) {
-    return 0;
-  }
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0 ? (sorted[middle - 1] + sorted[middle]) / 2 : sorted[middle];
-}
-
-function round(value, digits = 2) {
-  return Number(Number(value || 0).toFixed(digits));
-}
-
-function compareDateLabels(left, right) {
-  const [leftMonth, leftDay] = String(left).split('.').map(Number);
-  const [rightMonth, rightDay] = String(right).split('.').map(Number);
-  return leftMonth === rightMonth ? leftDay - rightDay : leftMonth - rightMonth;
-}
-
-function datasetFromDraft(draft, sourceName) {
-  const dates = [...draft.dates].sort(compareDateLabels);
-  const skus = draft.rows
-    .map((row, index) => {
-      const model = String(row.model ?? '').trim();
-      const storage = String(row.storage ?? '').trim();
-      if (!model || !storage) {
-        return null;
-      }
-
-      const snapshots = dates
-        .map((date) => {
-          const raw = row.snapshots?.[date];
-          if (!raw) {
-            return null;
-          }
-          const finalPrice = numberValue(raw.finalPrice);
-          const listPrice = numberValue(raw.listPrice);
-          const coupon = numberValue(raw.coupon);
-          const biPrice = numberValue(raw.biPrice);
-          const rawValues = [raw.finalPrice, raw.listPrice, raw.coupon, raw.biPrice].map((value) =>
-            String(value ?? '').trim(),
-          );
-          if (!rawValues.some(Boolean)) {
-            return null;
-          }
-          return {
-            date,
-            finalPrice,
-            listPrice,
-            coupon,
-            biPrice: biPrice || undefined,
-            isDelisted: rawValues.some((value) => value === '已下架') || undefined,
-          };
-        })
-        .filter(Boolean);
-
-      return {
-        id: String(row.id || `${model}-${storage}-${index + 1}`),
-        brand: String(row.brand ?? '').trim() || '未识别',
-        model,
-        series: '',
-        storage,
-        position: String(row.position ?? '').trim(),
-        ppv: String(row.ppv ?? '').trim(),
-        launchPrice: numberValue(row.launchPrice),
-        snapshots,
-      };
-    })
-    .filter(Boolean);
-
-  return {
-    skus,
-    dates,
-    brands: [...new Set(skus.map((sku) => sku.brand))],
-    loadedAt: draft.savedAt || new Date().toISOString(),
-    sourceName,
-    sheetName: 'raw-editor-draft',
-  };
-}
-
-function loadPriceDataset({ workbookPath, databasePath }) {
-  const workbookDataset = parseWorkbookFile(workbookPath);
-  if (!databasePath || !fsSync.existsSync(databasePath)) {
-    return workbookDataset;
-  }
-
-  const draft = readRawEditorDraft(databasePath);
-  const draftLatestDate = draft?.dates?.at(-1) ?? '';
-  const workbookLatestDate = workbookDataset.dates.at(-1) ?? '';
-  if (!draft || !draftLatestDate || (workbookLatestDate && compareDateLabels(draftLatestDate, workbookLatestDate) < 0)) {
-    return workbookDataset;
-  }
-  return datasetFromDraft(draft, '原始数据草稿');
-}
-
-function riskLevel(finalPrice, biPrice) {
-  if (!finalPrice || !biPrice) {
-    return 'unmatched';
-  }
-  if (biPrice >= finalPrice) {
-    return 'high';
-  }
-  if (biPrice >= finalPrice * 0.95) {
-    return 'risk';
-  }
-  return 'none';
-}
-
-function priceRows(dataset) {
-  return buildAnalysis(dataset).skuList.map((sku) => {
-    const snapshot = sku.snapshots.at(-1) ?? null;
-    const finalPrice = snapshot?.finalPrice ?? 0;
-    const biPrice = snapshot?.biPrice ?? 0;
-    return {
-      model: sku.model,
-      storage: sku.storage,
-      brand: sku.brand,
-      position: sku.position,
-      ppv: sku.ppv,
-      priceDate: snapshot?.date ?? null,
-      launchPrice: sku.launchPrice,
-      latestPrice: finalPrice,
-      biPrice,
-      priceGap: finalPrice && biPrice ? round(finalPrice - biPrice) : null,
-      riskRatioPct: finalPrice && biPrice ? round((biPrice / finalPrice) * 100) : null,
-      recycleResidualPct: sku.launchPrice && biPrice ? round((biPrice / sku.launchPrice) * 100) : null,
-      newProductResidualPct: sku.launchPrice && finalPrice ? round((finalPrice / sku.launchPrice) * 100) : null,
-      riskLevel: riskLevel(finalPrice, biPrice || null),
-    };
-  });
-}
-
-export function buildPriceSummary(dataset, { limit = 8 } = {}) {
-  const rows = priceRows(dataset);
-  const matchedRows = rows.filter((row) => row.latestPrice > 0 && row.biPrice > 0);
-  const riskRows = matchedRows
-    .filter((row) => row.riskLevel === 'high' || row.riskLevel === 'risk')
-    .sort((left, right) => (right.riskRatioPct ?? 0) - (left.riskRatioPct ?? 0));
-  const byBrand = new Map();
-  for (const row of rows) {
-    if (!row.newProductResidualPct) {
-      continue;
-    }
-    const values = byBrand.get(row.brand) ?? [];
-    values.push(row.newProductResidualPct);
-    byBrand.set(row.brand, values);
-  }
-
-  return {
-    source: dataset.sourceName,
-    priceDate: dataset.dates.at(-1) ?? null,
-    priceDefinition: 'latestPrice 当前为系统“国补后价格试算”，尚未确认等同JD自营实际成交价',
-    skuCount: rows.length,
-    matchedBiPriceCount: matchedRows.length,
-    highRiskCount: matchedRows.filter((row) => row.riskLevel === 'high').length,
-    riskCount: matchedRows.filter((row) => row.riskLevel === 'risk').length,
-    topRisks: riskRows.slice(0, Math.max(1, Math.min(20, Number(limit) || 8))),
-    brandNewProductResiduals: [...byBrand.entries()]
-      .map(([brand, values]) => ({
-        brand,
-        skuCount: values.length,
-        medianResidualPct: round(median(values)),
-      }))
-      .sort((left, right) => right.medianResidualPct - left.medianResidualPct),
-    evidence: [
-      {
-        label: '新机售价与BI价底表',
-        source: dataset.sourceName,
-        dataDate: dataset.dates.at(-1) ?? null,
-        note: '风险阈值：BI价不低于新品价为高风险；达到新品价95%为风险。',
-      },
-    ],
-  };
-}
-
-export function buildSalesSummary(overview, { limit = 8 } = {}) {
-  const weeks = overview.filters?.weeks ?? [];
-  const latestWeek = overview.summary?.latestWeek ?? weeks.at(-1) ?? '';
-  const latestIndex = weeks.indexOf(latestWeek);
-  const windowWeeks = weeks.slice(Math.max(0, latestIndex - 3), latestIndex + 1);
-  const rowsByModel = new Map();
-
-  for (const row of overview.weeklyRows ?? []) {
-    if (!windowWeeks.includes(row.weekLabel)) {
-      continue;
-    }
-    const current = rowsByModel.get(row.standardModelName) ?? {
-      model: row.standardModelName,
-      brand: row.brand,
-      seriesPosition: row.seriesPosition || '未定位',
-      values: Object.fromEntries(windowWeeks.map((week) => [week, null])),
-    };
-    current.values[row.weekLabel] = row.weeklySales;
-    rowsByModel.set(row.standardModelName, current);
-  }
-
-  const candidates = [...rowsByModel.values()].map((item) => {
-    const numericValues = windowWeeks
-      .map((week) => item.values[week])
-      .filter((value) => typeof value === 'number' && Number.isFinite(value));
-    const first = numericValues[0] ?? 0;
-    const last = numericValues.at(-1) ?? 0;
-    return {
-      model: item.model,
-      brand: item.brand,
-      seriesPosition: item.seriesPosition,
-      weeklySales: item.values,
-      fourWeekSales: round(numericValues.reduce((sum, value) => sum + value, 0)),
-      latestWeekSales: round(last),
-      trendPct: first ? round(((last - first) / first) * 100) : null,
-      completeWeekCount: numericValues.length,
-    };
-  });
-
-  const rankByPosition = new Map();
-  for (const candidate of candidates) {
-    const list = rankByPosition.get(candidate.seriesPosition) ?? [];
-    list.push(candidate);
-    rankByPosition.set(candidate.seriesPosition, list);
-  }
-  for (const list of rankByPosition.values()) {
-    list
-      .sort((left, right) => right.fourWeekSales - left.fourWeekSales)
-      .forEach((item, index) => {
-        item.positionRank = index + 1;
-      });
-  }
-
-  return {
-    source: '新品周销数据库',
-    year: overview.summary?.year ?? null,
-    latestWeek,
-    windowWeeks,
-    windowDefinition: '以最新可用完整周为截止，向前取4个周次；当前按T-2业务口径解释。',
-    modelCount: candidates.length,
-    topModels: candidates
-      .filter((item) => item.completeWeekCount > 0)
-      .sort((left, right) => right.fourWeekSales - left.fourWeekSales)
-      .slice(0, Math.max(1, Math.min(20, Number(limit) || 8))),
-    evidence: [
-      {
-        label: '新品周销累计销量差分',
-        source: 'weekly-sales.sqlite',
-        dataDate: latestWeek,
-        note: `分析窗口：${windowWeeks.join('、') || '暂无数据'}`,
-      },
-    ],
-  };
-}
-
-function buildMarketSummary(overview) {
-  const latestWeek = overview.summary?.latestWeek ?? '';
-  const recentWeeks = (overview.weeklyTotal ?? []).slice(-4);
-  const latestEvents = (overview.events ?? []).filter((event) => recentWeeks.some((week) => week.week === event.week));
-  return {
-    source: overview.dataset?.sheetName ?? '市场总量份额趋势',
-    latestWeek,
-    latestTotalIndex: overview.summary?.latestTotalIndex ?? 0,
-    latestTotalIndexChangePct: overview.summary?.latestTotalIndexChangePct ?? 0,
-    topBrand: overview.summary?.topBrand ?? '',
-    topBrandShare: overview.summary?.topBrandShare ?? 0,
-    recentWeeks: recentWeeks.map((item) => ({
-      week: item.week,
-      totalIndex: item.totalIndex,
-      marketNote: item.marketNote,
-      eventName: item.eventName,
-    })),
-    events: latestEvents,
-    externalSignalStatus: '当前没有已确认的零件、供应链涨价结构化数据，不能据此给出确定性判断。',
-    evidence: [
-      {
-        label: '市场总量份额趋势',
-        source: overview.dataset?.sheetName ?? '市场总量份额趋势',
-        dataDate: latestWeek || null,
-        note: '包括总量指数、品牌份额、市场备注和已录入事件。',
-      },
-    ],
-  };
-}
-
-function buildBrief({ freshness, price, sales, market, configured, model }) {
-  const topRisk = price.topRisks[0];
-  const topSale = sales.topModels[0];
-  const facts = [
-    `价格数据截至 ${price.priceDate || '暂无'}，共 ${price.skuCount} 个SKU，匹配BI价 ${price.matchedBiPriceCount} 个。`,
-    `防高收高风险 ${price.highRiskCount} 个、风险 ${price.riskCount} 个。`,
-    `新品周销截至 ${sales.year || ''}${sales.latestWeek || '暂无'}，近四周窗口为 ${sales.windowWeeks.join('、') || '暂无'}。`,
-    `市场总量数据截至 ${market.latestWeek || '暂无'}。`,
-  ];
-  const recommendations = [];
-  if (topRisk) {
-    recommendations.push(
-      `优先核查 ${topRisk.model} ${topRisk.storage}：BI价/最新新品价为 ${topRisk.riskRatioPct}%。`,
-    );
-  }
-  if (topSale) {
-    recommendations.push(
-      `新品侧优先关注 ${topSale.model}：近四周销量 ${topSale.fourWeekSales} 万，${topSale.seriesPosition}内排名第 ${topSale.positionRank}。`,
-    );
-  }
-  if (recommendations.length === 0) {
-    recommendations.push('当前有效数据不足，先补齐BI价或新品周销后再判断。');
-  }
-  return {
-    configured,
-    model,
-    freshness,
-    facts,
-    recommendations,
-    caveats: [
-      '当前新品价为“国补后价格试算”，尚未确认等同JD自营实际成交价。',
-      '当前缺少旧机回收量、库存和毛利，建议仅代表机会方向，不代表投入强度。',
-      '当前没有已确认的零件和供应链结构化情报。',
-    ],
-  };
-}
+5. 风险与残值只使用四项指标：高收价差=BI出货价－国补后价格试算；高收风险率=BI出货价÷国补后价格试算；旧机残值率=BI出货价÷新机发售价；新机残值率=国补后价格试算÷新机发售价。不要自行新增风险分、风险等级或阈值。
+6. 新机价格走势的聚合口径与【概览】一致；价格为0或已下架时，都沿用此前最近一次有效的国补后价格试算。
+7. 新品周销的T-2是相对数仓内最新周向前推2周。若用户要求“近一个月”，应查询足够周次后由你汇总判断，而不是只返回一个固定榜单。
+8. 没有旧机回收量、库存、销量和毛利数据时，只能给机会方向，不能给预算或投入强度结论。
+9. Web Search 信息必须带可点击来源；优先品牌官网、监管机构、研究机构和可信媒体，不要把搜索摘要当成内部事实。
+10. 当趋势、品牌对比、排名或时间序列用图形更容易理解时，调用 create_chart；图表数字必须来自本轮工具结果，简单问答不要强行生成图表。
+11. 最终回答使用自然、简洁的中文 Markdown。不要复述工具执行过程，界面会单独展示。`;
 
 function toolSummary(name, result) {
-  if (name === 'check_data_freshness') {
-    return `价格 ${result.priceDate || '暂无'}；周销 ${result.salesYear || ''}${result.salesWeek || '暂无'}；市场 ${result.marketWeek || '暂无'}`;
+  if (name === 'inspect_warehouse') {
+    return `价格 ${result.价格数据日期 || '暂无'}；BI ${result.BI数据日期 || '暂无'}；周销 ${result.周销年份 || ''}${result.周销最新周 || '暂无'}；市场 ${result.市场最新周 || '暂无'}`;
   }
-  if (name === 'get_price_summary') {
-    return `高风险 ${result.highRiskCount}，风险 ${result.riskCount}，BI价匹配 ${result.matchedBiPriceCount}`;
+  if (name === 'query_new_price_trend') {
+    return `${result.数据粒度}，返回 ${result.返回行数} 行`;
   }
-  if (name === 'get_sales_summary') {
-    return `${result.windowWeeks.join('、') || '暂无周次'}，返回 ${result.topModels.length} 个型号`;
+  if (name === 'query_new_used_risk') {
+    return `新旧机风险明细，返回 ${result.返回行数} 行`;
   }
-  if (name === 'get_market_trend') {
-    return `${result.latestWeek || '暂无周次'}，总量指数 ${result.latestTotalIndex}`;
-  }
-  if (name === 'drilldown_sku') {
-    return `匹配 ${result.items.length} 个SKU`;
+  if (name === 'query_market_sales_trend') {
+    return `市场与新品周销，返回 ${result.返回行数} 行`;
   }
   return '工具调用完成';
 }
 
 function toolActivityLabel(name, args = {}) {
-  if (name === 'check_data_freshness') {
-    return '读取价格、周销与市场数据日期';
+  if (name === 'inspect_warehouse') {
+    return '读取数仓目录与数据新鲜度';
   }
-  if (name === 'get_price_summary') {
-    return '读取价格与残值数据';
+  if (name === 'query_new_price_trend') {
+    return args.mode === '聚合' ? '查询新机价格聚合走势' : '查询SKU价格走势';
   }
-  if (name === 'get_sales_summary') {
-    return '读取新品周销数据';
+  if (name === 'query_new_used_risk') {
+    return '查询新旧机风险与残值';
   }
-  if (name === 'get_market_trend') {
-    return '读取市场趋势数据';
-  }
-  if (name === 'drilldown_sku') {
-    return `查找 SKU：${String(args.keyword ?? '').trim() || '未指定'}`;
+  if (name === 'query_market_sales_trend') {
+    return '查询新品周销与市场趋势';
   }
   if (name === 'create_chart') {
     return `生成图表：${String(args.title ?? '').trim() || '数据图表'}`;
@@ -527,84 +197,73 @@ function collectMessageSources(item, sources) {
 
 export function createIndustryExpertService({
   dataDir,
-  workbookPath,
-  databasePath,
-  getWeeklySalesOverview,
-  getMarketTrendOverview,
+  warehousePath,
+  waitForWarehouse,
 }) {
   const runDatabase = ensureRunDatabase(`${dataDir}/expert-runs.sqlite`);
+  const warehouse = createWarehouseQueryService({
+    dataDir,
+    warehousePath,
+    waitForWarehouse,
+  });
 
-  async function loadContext() {
-    const priceDataset = loadPriceDataset({ workbookPath, databasePath });
-    const [salesOverview, marketOverview] = await Promise.all([
-      getWeeklySalesOverview({ visibleOnly: 'true' }),
-      getMarketTrendOverview(),
-    ]);
+  function catalogToFreshness(catalog) {
     return {
-      priceDataset,
-      salesOverview,
-      marketOverview,
-      price: buildPriceSummary(priceDataset),
-      sales: buildSalesSummary(salesOverview),
-      market: buildMarketSummary(marketOverview),
-    };
-  }
-
-  async function getFreshness(context) {
-    return {
-      priceDate: context.price.priceDate,
-      priceSource: context.price.source,
-      salesYear: context.sales.year,
-      salesWeek: context.sales.latestWeek,
-      marketWeek: context.market.latestWeek,
+      priceDate: catalog.价格数据日期 ?? null,
+      priceSource: catalog.新机价格来源 ?? '新机价格走势表',
+      biPriceDate: catalog.BI数据日期 ?? null,
+      salesYear: catalog.周销年份 ?? null,
+      salesWeek: catalog.周销最新周 ?? '',
+      marketWeek: catalog.市场最新周 ?? '',
+      warehouseRefreshedAt: catalog.数仓刷新时间 ?? null,
       checkedAt: new Date().toISOString(),
     };
   }
 
-  async function executeTool(name, args, context) {
-    if (name === 'check_data_freshness') {
-      return getFreshness(context);
+  async function getFreshness() {
+    return catalogToFreshness(await warehouse.getCatalog());
+  }
+
+  async function executeTool(name, args) {
+    if (name === 'inspect_warehouse') {
+      return warehouse.getCatalog();
     }
-    if (name === 'get_price_summary') {
-      return buildPriceSummary(context.priceDataset, args);
+    if (name === 'query_new_price_trend') {
+      return warehouse.queryNewPriceTrend(args);
     }
-    if (name === 'get_sales_summary') {
-      return buildSalesSummary(context.salesOverview, args);
+    if (name === 'query_new_used_risk') {
+      return warehouse.queryNewUsedRisk(args);
     }
-    if (name === 'get_market_trend') {
-      return context.market;
-    }
-    if (name === 'drilldown_sku') {
-      const keyword = String(args?.keyword ?? '').trim().toLowerCase();
-      const items = priceRows(context.priceDataset)
-        .filter((row) => [row.brand, row.model, row.ppv].some((value) => String(value).toLowerCase().includes(keyword)))
-        .slice(0, 12);
-      return {
-        keyword,
-        priceDate: context.price.priceDate,
-        priceDefinition: context.price.priceDefinition,
-        items,
-        evidence: context.price.evidence,
-      };
+    if (name === 'query_market_sales_trend') {
+      return warehouse.queryMarketSalesTrend(args);
     }
     throw new Error(`不支持的Agent工具：${name}`);
   }
 
   async function getStatus() {
-    const context = await loadContext();
     return {
       configured: Boolean(process.env.OPENAI_API_KEY),
       model: process.env.OPENAI_MODEL || DEFAULT_MODEL_LABEL,
-      freshness: await getFreshness(context),
+      freshness: await getFreshness(),
+      warehousePath: warehouse.warehousePath,
     };
   }
 
   async function getBrief() {
-    const context = await loadContext();
     const configured = Boolean(process.env.OPENAI_API_KEY);
     const model = process.env.OPENAI_MODEL || DEFAULT_MODEL_LABEL;
-    const freshness = await getFreshness(context);
-    return buildBrief({ freshness, price: context.price, sales: context.sales, market: context.market, configured, model });
+    const catalog = await warehouse.getCatalog();
+    return {
+      configured,
+      model,
+      freshness: catalogToFreshness(catalog),
+      facts: [
+        `数仓包含 ${catalog.新机价格事实行数} 行新机价格事实和 ${catalog.旧机S等级价格事实行数} 行旧机S等级价格事实。`,
+        `新品周销 ${catalog.新品周销事实行数} 行，市场趋势 ${catalog.市场趋势事实行数} 行。`,
+      ],
+      recommendations: [],
+      caveats: catalog.PPV冲突数 > 0 ? [`存在 ${catalog.PPV冲突数} 个PPV映射冲突，相关SKU不会自动匹配BI价。`] : [],
+    };
   }
 
   function getSessions() {
@@ -664,7 +323,6 @@ export function createIndustryExpertService({
       throw error;
     }
 
-    const context = await loadContext();
     const model = process.env.OPENAI_MODEL || DEFAULT_MODEL_LABEL;
     const recentHistory = Array.isArray(history)
       ? history
@@ -687,7 +345,7 @@ export function createIndustryExpertService({
       const callId = randomUUID();
       const label = toolActivityLabel(name, args);
       onEvent({ type: 'tool_started', callId, name, label, args });
-      const result = await executeTool(name, args, context);
+      const result = await executeTool(name, args);
       const recordedCall = {
         callId,
         name,
@@ -707,40 +365,59 @@ export function createIndustryExpertService({
 
     const agentTools = [
       tool({
-        name: 'check_data_freshness',
-        description: '检查价格、新品周销和市场趋势数据分别更新到什么日期或周次。',
+        name: 'inspect_warehouse',
+        description: '读取数仓中有哪些业务表、四项指标口径、事实表行数、数据日期、刷新时间和PPV映射质量。',
         parameters: z.object({}),
-        execute: () => executeRecordedTool('check_data_freshness'),
+        execute: () => executeRecordedTool('inspect_warehouse'),
       }),
       tool({
-        name: 'get_price_summary',
-        description: '获取防高收风险、回收残值率、新品残值率和品牌残值率。',
+        name: 'query_new_price_trend',
+        description:
+          '查询新机SKU价格历史，或按与【概览】相同逻辑查询品牌、机型定位、型号系列的聚合价格走势。适合价格变化、趋势、挂牌价、优惠券和品牌对比。',
         parameters: z.object({
-          limit: z.number().int().min(1).max(20).optional().describe('返回风险SKU数量，默认8条。'),
+          mode: z.enum(['SKU明细', '聚合']).optional().describe('默认SKU明细；需要均价、环比或品牌/定位/型号趋势时用聚合。'),
+          brand: z.string().optional().describe('精确品牌名。'),
+          position: z.string().optional().describe('精确机型定位，仅SKU明细模式。'),
+          keyword: z.string().optional().describe('SKU模式匹配型号；聚合模式匹配维度值。'),
+          scope: z.enum(['全量', '老样本', '5.26新增']).optional().describe('聚合样本范围。'),
+          dimension: z.enum(['品牌', '机型定位', '型号系列']).optional().describe('聚合维度。'),
+          startDate: z.string().optional().describe('开始日期，YYYY-MM-DD。'),
+          endDate: z.string().optional().describe('结束日期，YYYY-MM-DD。'),
+          limit: z.number().int().min(1).max(100).optional().describe('最多返回100行，默认20行。'),
         }),
-        execute: (args) => executeRecordedTool('get_price_summary', args),
+        execute: (args) => executeRecordedTool('query_new_price_trend', args),
       }),
       tool({
-        name: 'get_sales_summary',
-        description: '按最新可用完整周向前取四周，找出同定位中新品周销表现较好的型号。',
+        name: 'query_new_used_risk',
+        description:
+          '查询SKU级新旧机价格、BI出货价，以及仅有的四项指标：高收价差、高收风险率、旧机残值率、新机残值率。适合风险排序、品牌或型号残值比较。',
         parameters: z.object({
-          limit: z.number().int().min(1).max(20).optional().describe('返回型号数量，默认8条。'),
+          brand: z.string().optional().describe('精确品牌名。'),
+          position: z.string().optional().describe('精确机型定位。'),
+          keyword: z.string().optional().describe('型号关键词。'),
+          startDate: z.string().optional().describe('新机价格开始日期，YYYY-MM-DD。'),
+          endDate: z.string().optional().describe('新机价格结束日期，YYYY-MM-DD。'),
+          latestOnly: z.boolean().optional().describe('是否只看最新新机价格日，默认true。'),
+          onlyMatched: z.boolean().optional().describe('是否只看已匹配BI价的SKU，默认true。'),
+          minRiskRate: z.number().optional().describe('高收风险率下限，例如0.95。'),
+          sortBy: z.enum(['高收风险率', '高收价差', '旧机残值率', '新机残值率']).optional(),
+          limit: z.number().int().min(1).max(100).optional().describe('最多返回100行，默认20行。'),
         }),
-        execute: (args) => executeRecordedTool('get_sales_summary', args),
+        execute: (args) => executeRecordedTool('query_new_used_risk', args),
       }),
       tool({
-        name: 'get_market_trend',
-        description: '获取当前市场总量指数、环周变化、品牌份额和已录入市场事件。',
-        parameters: z.object({}),
-        execute: () => executeRecordedTool('get_market_trend'),
-      }),
-      tool({
-        name: 'drilldown_sku',
-        description: '按品牌、型号或PPV关键词下钻价格、残值率和防高收风险证据。',
+        name: 'query_market_sales_trend',
+        description:
+          '联合查询新品分周销量、累计销量、系列定位、品牌周度份额、大盘指数和市场事件。适合T-2、近一个月销量、市场趋势和旧机投入方向判断。',
         parameters: z.object({
-          keyword: z.string().min(1).describe('品牌、型号或PPV关键词。'),
+          brand: z.string().optional().describe('精确品牌名。'),
+          position: z.string().optional().describe('精确系列定位。'),
+          keyword: z.string().optional().describe('型号或系列关键词。'),
+          week: z.string().optional().describe('精确周次，例如W19。'),
+          tMinus2Only: z.boolean().optional().describe('是否只返回T-2周。'),
+          limit: z.number().int().min(1).max(100).optional().describe('最多返回100行，默认20行。'),
         }),
-        execute: (args) => executeRecordedTool('drilldown_sku', args),
+        execute: (args) => executeRecordedTool('query_market_sales_trend', args),
       }),
       tool({
         name: 'create_chart',
@@ -915,7 +592,7 @@ export function createIndustryExpertService({
       model,
       toolCalls,
       evidence,
-      freshness: await getFreshness(context),
+      freshness: await getFreshness(),
       createdAt,
     };
     onEvent({ type: 'final', payload });

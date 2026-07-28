@@ -1657,7 +1657,7 @@ export function createWeeklySalesService({ dataDir, applyMarketWeeks }) {
   };
 }
 
-export function registerWeeklySalesRoutes(app, { dataDir, applyMarketWeeks }) {
+export function registerWeeklySalesRoutes(app, { dataDir, applyMarketWeeks, onDataChanged = () => {} }) {
   const service = createWeeklySalesService({ dataDir, applyMarketWeeks });
 
   app.get('/api/weekly-sales/overview', async (request, response) => {
@@ -1741,7 +1741,9 @@ export function registerWeeklySalesRoutes(app, { dataDir, applyMarketWeeks }) {
       return;
     }
     try {
-      response.json(await service.completeAutomationRun(request.params.id, request.body?.workerId, request.body?.posts));
+      const result = await service.completeAutomationRun(request.params.id, request.body?.workerId, request.body?.posts);
+      onDataChanged('weekly-sales-automation');
+      response.json(result);
     } catch (error) {
       response.status(400).json({ message: error instanceof Error ? error.message : 'Worker 结果回传失败' });
     }
@@ -1762,7 +1764,9 @@ export function registerWeeklySalesRoutes(app, { dataDir, applyMarketWeeks }) {
 
   app.post('/api/weekly-sales/import/confirm', async (request, response) => {
     try {
-      response.json(await service.confirmImport(request.body ?? {}));
+      const result = await service.confirmImport(request.body ?? {});
+      onDataChanged('weekly-sales-import');
+      response.json(result);
     } catch (error) {
       response.status(400).json({ message: error instanceof Error ? error.message : '新品周销确认落库失败' });
     }
@@ -1786,7 +1790,9 @@ export function registerWeeklySalesRoutes(app, { dataDir, applyMarketWeeks }) {
 
   app.put('/api/weekly-sales/config', async (request, response) => {
     try {
-      response.json(await service.updateConfig(request.body ?? {}));
+      const result = await service.updateConfig(request.body ?? {});
+      onDataChanged('weekly-sales-config');
+      response.json(result);
     } catch (error) {
       response.status(400).json({ message: error instanceof Error ? error.message : '新品周销配置保存失败' });
     }
@@ -1794,7 +1800,9 @@ export function registerWeeklySalesRoutes(app, { dataDir, applyMarketWeeks }) {
 
   app.post('/api/weekly-sales/models', async (request, response) => {
     try {
-      response.json(await service.upsertModel(request.body ?? {}));
+      const result = await service.upsertModel(request.body ?? {});
+      onDataChanged('weekly-sales-model');
+      response.json(result);
     } catch (error) {
       response.status(400).json({ message: error instanceof Error ? error.message : '型号保存失败' });
     }
@@ -1802,7 +1810,9 @@ export function registerWeeklySalesRoutes(app, { dataDir, applyMarketWeeks }) {
 
   app.put('/api/weekly-sales/models/:id', async (request, response) => {
     try {
-      response.json(await service.updateModelById(request.params.id, request.body ?? {}));
+      const result = await service.updateModelById(request.params.id, request.body ?? {});
+      onDataChanged('weekly-sales-model');
+      response.json(result);
     } catch (error) {
       response.status(400).json({ message: error instanceof Error ? error.message : '型号更新失败' });
     }
@@ -1810,7 +1820,9 @@ export function registerWeeklySalesRoutes(app, { dataDir, applyMarketWeeks }) {
 
   app.put('/api/weekly-sales/models', async (request, response) => {
     try {
-      response.json(await service.updateModelById(request.body?.id, request.body ?? {}));
+      const result = await service.updateModelById(request.body?.id, request.body ?? {});
+      onDataChanged('weekly-sales-model');
+      response.json(result);
     } catch (error) {
       response.status(400).json({ message: error instanceof Error ? error.message : '型号更新失败' });
     }

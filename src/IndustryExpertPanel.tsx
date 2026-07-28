@@ -163,11 +163,10 @@ const SUGGESTED_QUESTIONS = [
 ];
 
 const TOOL_LABELS: Record<string, string> = {
-  check_data_freshness: '检查数据新鲜度',
-  get_price_summary: '分析价格与残值',
-  get_sales_summary: '分析新品周销',
-  get_market_trend: '读取市场趋势',
-  drilldown_sku: '下钻SKU证据',
+  inspect_warehouse: '读取数仓目录',
+  query_new_price_trend: '查询新机价格走势',
+  query_new_used_risk: '查询新旧机风险',
+  query_market_sales_trend: '查询市场与新品周销',
   web_search: '搜索实时市场信息',
   create_chart: '生成图表',
 };
@@ -404,48 +403,107 @@ function renderInlineMarkdown(text: string) {
   });
 }
 
+function splitMarkdownTableRow(line: string) {
+  return line
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/\|$/, '')
+    .split('|')
+    .map((cell) => cell.trim());
+}
+
+function isMarkdownTableDivider(line: string) {
+  const cells = splitMarkdownTableRow(line);
+  return cells.length > 0 && cells.every((cell) => /^:?-{3,}:?$/.test(cell));
+}
+
 function MarkdownMessage({ content }: { content: string }) {
+  const lines = String(content).split('\n');
+  const blocks: React.ReactNode[] = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    const rawLine = lines[index];
+    const line = rawLine.trim();
+    if (line.includes('|') && index + 1 < lines.length && isMarkdownTableDivider(lines[index + 1])) {
+      const headers = splitMarkdownTableRow(line);
+      const rows: string[][] = [];
+      let rowIndex = index + 2;
+      while (rowIndex < lines.length && lines[rowIndex].trim().includes('|')) {
+        rows.push(splitMarkdownTableRow(lines[rowIndex]));
+        rowIndex += 1;
+      }
+      blocks.push(
+        <div key={`table-${index}`} className="my-3 overflow-x-auto rounded-xl border border-slate-200">
+          <table className="min-w-full border-collapse text-left text-xs">
+            <thead className="bg-slate-50">
+              <tr>
+                {headers.map((header, cellIndex) => (
+                  <th key={`${header}-${cellIndex}`} className="whitespace-nowrap border-b border-slate-200 px-3 py-2 font-black text-slate-700">
+                    {renderInlineMarkdown(header)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, tableRowIndex) => (
+                <tr key={`row-${tableRowIndex}`} className="border-b border-slate-100 last:border-0">
+                  {headers.map((_, cellIndex) => (
+                    <td key={`cell-${tableRowIndex}-${cellIndex}`} className="whitespace-nowrap px-3 py-2 text-slate-600">
+                      {renderInlineMarkdown(row[cellIndex] ?? '')}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>,
+      );
+      index = rowIndex - 1;
+      continue;
+    }
+    if (!line) {
+      blocks.push(<div key={`space-${index}`} className="h-1" />);
+      continue;
+    }
+    const heading = line.match(/^(#{1,3})\s+(.+)$/);
+    if (heading) {
+      const Tag = heading[1].length === 1 ? 'h3' : 'h4';
+      blocks.push(<Tag key={`${line}-${index}`} className="pt-2 text-base font-black text-slate-900">{renderInlineMarkdown(heading[2])}</Tag>);
+      continue;
+    }
+    const bullet = line.match(/^[-*]\s+(.+)$/);
+    if (bullet) {
+      blocks.push(
+        <div key={`${line}-${index}`} className="flex gap-2 pl-1">
+          <span className="mt-[11px] h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
+          <p>{renderInlineMarkdown(bullet[1])}</p>
+        </div>,
+      );
+      continue;
+    }
+    const ordered = line.match(/^(\d+)[.)]\s+(.+)$/);
+    if (ordered) {
+      blocks.push(
+        <div key={`${line}-${index}`} className="flex gap-2">
+          <span className="min-w-5 font-mono text-xs font-bold text-slate-400">{ordered[1]}.</span>
+          <p>{renderInlineMarkdown(ordered[2])}</p>
+        </div>,
+      );
+      continue;
+    }
+    if (line.startsWith('> ')) {
+      blocks.push(
+        <blockquote key={`${line}-${index}`} className="border-l-2 border-slate-300 pl-3 text-slate-500">
+          {renderInlineMarkdown(line.slice(2))}
+        </blockquote>,
+      );
+      continue;
+    }
+    blocks.push(<p key={`${line}-${index}`} className="whitespace-pre-wrap">{renderInlineMarkdown(line)}</p>);
+  }
+
   return (
     <div className="space-y-2 text-sm leading-7 text-slate-700">
-      {String(content)
-        .split('\n')
-        .map((rawLine, index) => {
-          const line = rawLine.trim();
-          if (!line) {
-            return <div key={`space-${index}`} className="h-1" />;
-          }
-          const heading = line.match(/^(#{1,3})\s+(.+)$/);
-          if (heading) {
-            const Tag = heading[1].length === 1 ? 'h3' : 'h4';
-            return <Tag key={`${line}-${index}`} className="pt-2 text-base font-black text-slate-900">{renderInlineMarkdown(heading[2])}</Tag>;
-          }
-          const bullet = line.match(/^[-*]\s+(.+)$/);
-          if (bullet) {
-            return (
-              <div key={`${line}-${index}`} className="flex gap-2 pl-1">
-                <span className="mt-[11px] h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
-                <p>{renderInlineMarkdown(bullet[1])}</p>
-              </div>
-            );
-          }
-          const ordered = line.match(/^(\d+)[.)]\s+(.+)$/);
-          if (ordered) {
-            return (
-              <div key={`${line}-${index}`} className="flex gap-2">
-                <span className="min-w-5 font-mono text-xs font-bold text-slate-400">{ordered[1]}.</span>
-                <p>{renderInlineMarkdown(ordered[2])}</p>
-              </div>
-            );
-          }
-          if (line.startsWith('> ')) {
-            return (
-              <blockquote key={`${line}-${index}`} className="border-l-2 border-slate-300 pl-3 text-slate-500">
-                {renderInlineMarkdown(line.slice(2))}
-              </blockquote>
-            );
-          }
-          return <p key={`${line}-${index}`} className="whitespace-pre-wrap">{renderInlineMarkdown(line)}</p>;
-        })}
+      {blocks}
     </div>
   );
 }
@@ -1042,7 +1100,7 @@ export function IndustryExpertPanel() {
               <div className="flex items-center justify-between px-2 pb-1">
                 <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400">
                   <Wrench size={12} />
-                  5 个内部数据工具 · 实时 Web Search · 图表输出
+                  4 个数仓工具 · 实时 Web Search · 图表输出
                 </div>
                 <button
                   type="submit"
