@@ -1,0 +1,20 @@
+import fs from 'node:fs';
+const file=process.argv[2];if(!file)throw Error('Pass PriceWorkbench.tsx path');
+let s=fs.readFileSync(file,'utf8');
+function replace(a,b){if(!s.includes(a))throw Error('Source changed: '+a.slice(0,80));s=s.replace(a,b);}
+replace('Check, ChevronLeft, ChevronRight, Download','Check, Download');
+replace(",[page,setPage]=useState(0)",'');
+replace('setLoading(true);setPage(0);','setLoading(true);');
+replace('  useEffect(()=>{setPage(0);},[search,filter,tab]);\n','');
+const start=s.indexOf("      if(filter==='pending')"),end=s.indexOf('      return true;',start);if(start<0||end<0)throw Error('Missing filters');
+s=s.slice(0,start)+`      if(filter==='mismatch')return Boolean(w && verificationIssues(w).some(i=>i.code==='PRICE_COMPONENT_MISMATCH') && (w.dirty || w.newObservation));
+      if(filter==='missing_price')return Boolean(r.generation==='N' && w?.list==null && w?.coupon==null && (!w || w.dirty || w.newObservation));
+`+s.slice(end);
+replace("const count=tab==='models'?filteredModels.length:rows.length,pages=Math.max(1,Math.ceil(count/50));","const count=tab==='models'?filteredModels.length:rows.length;");
+const opts=s.indexOf('<option value="all">全部状态</option>'),optsEnd=s.indexOf('</select>',opts);if(opts<0||optsEnd<0)throw Error('Missing options');
+s=s.slice(0,opts)+`<option value="all">全部问题类型</option><option value="mismatch">券价不一致</option><option value="missing_price">N代机型缺价</option>`+s.slice(optsEnd);
+replace('aria-label="筛选核验状态"','aria-label="筛选问题类型"');
+replace('rows.slice(page*50,page*50+50).map','rows.map');replace('filteredModels.slice(page*50,page*50+50).map','filteredModels.map');
+const p=s.indexOf('      <div className="pw-pagination"><span>共 {count}'),pEnd=s.indexOf('\n',p);if(p<0||pEnd<0)throw Error('Missing pagination');
+s=s.slice(0,p)+'      <div className="pw-list-total">共 {count} 条 · 已全部展示</div>'+s.slice(pEnd);
+fs.writeFileSync(file,s);console.log('Updated list UI:',file);
