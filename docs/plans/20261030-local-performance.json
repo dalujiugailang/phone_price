@@ -1,0 +1,74 @@
+{
+  "date": "2026-10-30T08:05:54.675201+00:00",
+  "scope": "local http://localhost:8001; no cloud release",
+  "method": "same ego-browser task space; click to second animation frame; one baseline sample and three post-change samples; no CPU throttling",
+  "baseline": {
+    "detailMs": 1537,
+    "detailNodes": 94977,
+    "detailCells": 68403,
+    "dashboardNodes": 16238,
+    "dashboardCells": 7865,
+    "returnDashboardMs": 313,
+    "dialogMs": 189
+  },
+  "after": {
+    "detailMs": [
+      279,
+      257,
+      270
+    ],
+    "detailNodes": 12031,
+    "detailCells": 7550,
+    "dashboardNodes": 6502,
+    "dashboardCells": 2475,
+    "returnDashboardMs": [
+      144,
+      124,
+      131
+    ],
+    "dialogMs": [
+      87,
+      48,
+      53
+    ]
+  },
+  "productLinks": {
+    "oldRowsEndpoint": {
+      "ms": 120,
+      "bytes": 1023223
+    },
+    "newEndpoint": {
+      "ms": 4.6,
+      "bytes": 36680
+    },
+    "skuCount": 453,
+    "identicalBySku": true,
+    "queryCount": 1
+  },
+  "checks": {
+    "typecheck": true,
+    "build": true,
+    "brandAndVolatilityTestsPassed": 7,
+    "newLinkTestsPassed": 2,
+    "baselineWorkbenchTests": {
+      "passed": 23,
+      "failed": 9
+    },
+    "currentWorkbenchTests": {
+      "passed": 25,
+      "failed": 9
+    },
+    "failuresIdenticalToBaseline": true,
+    "all453SkuIdsReachableAcross10Pages": true,
+    "lastSkuPageRows": 3,
+    "seriesTotal": 128,
+    "seriesLastPageRows": 8,
+    "fullDatasetSearchFindsLastPageSku": true,
+    "clearSearchReturnsFirstPage": true,
+    "emptySearchState": true,
+    "topSkuOpensItsHistory": true,
+    "latestDate": "10.29",
+    "noArchived26_27_28Headers": true,
+    "workbookFetchSkippedForFormalData": true
+  }
+}

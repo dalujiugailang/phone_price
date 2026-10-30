@@ -1,0 +1,41 @@
+{
+  "completedAt": "2026-10-30T07:23:48.353761+00:00",
+  "removedActiveDates": [
+    "2026-10-26",
+    "2026-10-27"
+  ],
+  "latestFormalDate": "2026-10-29",
+  "preservedDatesOnCloud": [
+    "2026-10-28",
+    "2026-10-29",
+    "2026-10-30"
+  ],
+  "syncedScope": "29th price quotes, product references, publication cutoff; no users, sessions, credentials, or raw provider responses transferred",
+  "official29Rows": 453,
+  "validOfficial29Prices": 436,
+  "localAndCloudOfficial29Sha256": "d176b45e80a8c831a72ddfb672de44c5100d56243e3ba8f31d75d861db1dc4c4",
+  "warehouseCountsBoth": {
+    "2026-10-28": 429,
+    "2026-10-29": 436
+  },
+  "cloudArchive": "/www/wwwroot/gtm-price-monitor/data/.archive/price-dates-20261030-26-27",
+  "localArchive": "/Users/dudu_1/.codex/worktrees/6a6f/【GTM】新机售价监控分析系统/data/preview-20261027/.archive/price-dates-20261030-26-27",
+  "checks": [
+    "isolated import and preservation test passed",
+    "cloud 28/29/30 daily, observations, revisions, runs, quote_reviews, publication rows unchanged",
+    "cloud SQLite quick_check ok; local and cloud foreign_key_check empty",
+    "both warehouse refreshes completed without error",
+    "local UI latest date 10.29; detail headers no 26/27"
+  ],
+  "localAdditionalArchive": {
+    "completedAt": "2026-10-30T07:29:01.609801+00:00",
+    "removedDate": "2026-10-28",
+    "cloudChanged": false,
+    "date29BusinessRecordsUnchanged": true,
+    "latestLocalFormalDate": "2026-10-29",
+    "localWarehouseCounts": {
+      "2026-10-29": 436
+    },
+    "archive": "/Users/dudu_1/.codex/worktrees/6a6f/【GTM】新机售价监控分析系统/data/preview-20261027/.archive/price-date-28-20261030"
+  }
+}

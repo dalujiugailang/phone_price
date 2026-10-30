@@ -372,3 +372,53 @@ test('提交链接创建单SKU任务；已人工确认缺货的行可载入新�
     await s.processRun();assert.equal(s.listRows(date).rows[0].work.coupon,30000);
   }finally{await settle();s.close();}
 });
+
+test('轻量商品链接一次批量查询，保留人工/正式证据/当日报价优先级和正式截止线',async()=>{
+  const {service:s,users}=fixture();
+  try {
+    s.importRows([sample(),sample('小米 18 Pro'),sample('小米 19 Pro'),sample('小米 20 Pro','12GB+256GB',{link:''}),sample('小米 21 Pro')],date,users.admin.user,'link-projection');
+    s.pushWarehouse(date,{token:s.listRows(date).pushToken},users.admin.user);
+    const byModel=new Map(s.listRows(date).rows.map(row=>[row.model,row]));
+    const manualId=byModel.get('小米 17 Pro').id,publishedId=byModel.get('小米 18 Pro').id,quoteId=byModel.get('小米 19 Pro').id,archivedId=byModel.get('小米 21 Pro').id;
+    s.saveProductLink(manualId,{link:'https://item.jd.com/manual.html',baseLink:''},users.reviewer1.user);
+    s.db.prepare('UPDATE revisions SET evidence=? WHERE sku_id=? AND date=?').run('https://item.jd.com/frozen.html',publishedId,date);
+    const published=s.db.prepare('SELECT * FROM revisions WHERE sku_id=? AND date=? ORDER BY rowid DESC LIMIT 1').get(publishedId,date);
+    s.db.prepare('INSERT INTO revisions VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run('later-unpublished-link',publishedId,date,published.list,published.coupon,published.final,published.availability,published.observation_id,users.admin.user.id,'not pushed','https://item.jd.com/unpublished.html',published.formula,'2026-10-27T20:00:00Z',published.id);
+    s.db.prepare('UPDATE revisions SET evidence=? WHERE sku_id=? AND date=?').run('javascript:alert(1)',quoteId,date);
+    s.db.prepare('INSERT INTO meta(key,value) VALUES(?,?)').run(`product_link:${quoteId}`,'https://user:secret@item.jd.com/unsafe.html');
+    s.db.prepare('UPDATE skus SET active=0 WHERE id=?').run(archivedId);
+    const full=s.listRows(date);
+    let statements=0;
+    const original=s.db.prepare.bind(s.db);
+    s.db.prepare=(...args)=>{statements++;return original(...args);};
+    const result=s.productLinks(date);
+    s.db.prepare=original;
+    assert.equal(statements,1);
+    const links=new Map(result.rows.map(row=>[row.id,row.productLink]));
+    assert.equal(links.get(manualId),'https://item.jd.com/manual.html');
+    assert.equal(links.get(publishedId),'https://item.jd.com/frozen.html');
+    assert.equal(links.get(quoteId),'https://item.jd.com/123.html');
+    assert.equal(links.get(byModel.get('小米 20 Pro').id),'');
+    assert.equal(links.has(archivedId),false);
+    assert.equal(result.rows.length,full.rows.length);
+    assert.ok(result.rows.every(row=>Object.keys(row).sort().join(',')==='id,productLink'));
+    assert.ok(JSON.stringify(result).length<JSON.stringify(full).length*0.2);
+    assert.throws(()=>s.productLinks('2026-02-30'),e=>e.status===422);
+  } finally {await settle();s.close();}
+});
+
+test('轻量商品链接 HTTP 与原 rows 一样允许访客只读，拒绝无效日期',async()=>{
+  const {service:s,users}=fixture();
+  s.importRows([sample()],date,users.admin.user,'link-http');
+  const app=express();app.use(express.json());const routes=registerPriceWorkbenchRoutes(app,s);
+  const server=await new Promise(resolve=>{const srv=app.listen(0,'127.0.0.1',()=>resolve(srv));});
+  const base=`http://127.0.0.1:${server.address().port}`;
+  try {
+    const response=await fetch(`${base}/api/workbench/product-links?date=${date}`);
+    assert.equal(response.status,200);
+    const result=await response.json();
+    assert.equal(result.date,date);assert.deepEqual(result.rows,[{id:'old-id',productLink:'https://item.jd.com/123.html'}]);
+    assert.equal((await fetch(`${base}/api/workbench/product-links?date=invalid`)).status,422);
+    assert.equal((await fetch(`${base}/api/workbench/product-links?date=2026-02-30`)).status,422);
+  } finally {routes.stop();await new Promise(resolve=>server.close(resolve));await settle();s.close();}
+});

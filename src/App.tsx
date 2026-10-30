@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import {
   ArrowDownRight,
@@ -41,6 +41,9 @@ import { IndustryExpertPanel } from './IndustryExpertPanel';
 import { getNewMachinePpvMapping } from './ppvMapping';
 import { WeeklySalesPanel } from './WeeklySalesPanel';
 import { PriceWorkbench } from './PriceWorkbench';
+import { SkuVolatilityRanking } from './SkuVolatilityRanking';
+import { buildBrandPivot } from './brandPivot';
+import { Pagination, usePagedRows } from './Pagination';
 
 type ViewMode = 'dashboard' | 'summary' | 'risk' | 'marketTrend' | 'weeklySales' | 'industryExpert' | 'table' | 'raw';
 const NAV_ITEMS: Array<{ id: ViewMode; label: string; description: string; icon: typeof LayoutDashboard }> = [
@@ -355,7 +358,7 @@ const EMPTY_ANALYSIS: AnalysisResult = {
 };
 
 const formatPrice = (price: number) => `¥${Math.round(price).toLocaleString()}`;
-const formatCoupon = (coupon: number) => (coupon > 0 ? `¥${Math.round(coupon).toLocaleString()}` : '--');
+const formatCoupon = (coupon: number) => (Number.isFinite(coupon) && coupon >= 0 ? `¥${Math.round(coupon).toLocaleString()}` : '--');
 const formatSignedPercent = (value: number) => `${value > 0 ? '+' : ''}${value.toFixed(1)}%`;
 const isZeroChange = (value: number) => Math.abs(value) < 0.0001;
 const SERIES_PIVOT_IGNORE_AMOUNT = 10;
@@ -1304,50 +1307,61 @@ function buildAttribution(listPriceDiff: number, couponDiff: number, recentChang
   };
 }
 
-function MiniTrendChart({ points }: { points: PriceSnapshot[] }) {
-  if (points.length === 0) {
-    return <div className="h-16 w-full rounded-xl" />;
+const MiniTrendChart = React.memo(function MiniTrendChart({ points, diffPct, label }: { points: PriceSnapshot[]; diffPct: number; label: string }) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const displayPoints = points.filter(point => Number.isFinite(point.finalPrice) && point.finalPrice > 0).slice().reverse();
+  if (displayPoints.length === 0) {
+    return <div className="sku-detail-trend sku-detail-trend-empty">暂无有效报价</div>;
   }
-
-  const values = points.map((point) => point.finalPrice);
+  const values = displayPoints.map(point => point.finalPrice);
   const maxValue = Math.max(...values);
   const minValue = Math.min(...values);
   const range = maxValue - minValue;
-  const leftAxisX = 12;
-  const rightEdge = 118;
-  const topY = 8;
-  const bottomY = 48;
-  const flatY = 26;
-
-  const svgPoints = points.map((point, index) => {
-    const x = leftAxisX + (index * (rightEdge - leftAxisX)) / Math.max(points.length - 1, 1);
-    const y = range === 0 ? flatY : topY + ((maxValue - point.finalPrice) / range) * (bottomY - topY - 6);
-    const dotFill = point.finalPrice < values[0] ? '#2563EB' : '#C2410C';
-    return { x, y, dotFill, key: `${point.date}-${index}` };
-  });
-
+  const svgPoints = displayPoints.map((point, index) => ({
+    ...point,
+    x: 8 + index * 192 / Math.max(displayPoints.length - 1, 1),
+    y: range === 0 ? 33 : 8 + (maxValue - point.finalPrice) / range * 46,
+  }));
   const path = svgPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
+  const active = activeIndex === null ? null : svgPoints[Math.min(activeIndex, svgPoints.length - 1)];
+  const latest = svgPoints[0];
+  const stroke = getChangeStroke(diffPct);
+  const displayPrice = (price: number) => `¥${price.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
 
-  return (
-    <div className="rounded-xl px-2 py-1.5">
-      <svg viewBox="0 0 128 56" className="h-16 w-full overflow-visible">
-        <line x1={leftAxisX} y1={6} x2={leftAxisX} y2={bottomY} stroke="#D6D9DD" strokeWidth="1.5" />
-        <line x1={leftAxisX} y1={bottomY} x2={rightEdge} y2={bottomY} stroke="#E7E2D7" strokeWidth="1" />
-        <path d={path} fill="none" stroke="#C85A11" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-        {svgPoints.map((point) => (
-          <circle key={point.key} cx={point.x} cy={point.y} r="3.2" fill={point.dotFill} stroke="#FFFFFF" strokeWidth="1.2" />
-        ))}
-      </svg>
-    </div>
-  );
-}
+  return <div className="sku-detail-trend">
+    <div className="sku-detail-trend-value"><span>{active ? active.date : '最新'}</span><strong>{displayPrice((active ?? latest).finalPrice)}</strong></div>
+    <svg viewBox="0 0 208 64" role="img" aria-label={`${label} 国补后价格趋势，最新日期在左`} tabIndex={0}
+      onPointerMove={event => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const x = (event.clientX - rect.left) / rect.width * 208;
+        setActiveIndex(Math.max(0, Math.min(svgPoints.length - 1, Math.round((x - 8) / 192 * (svgPoints.length - 1)))));
+      }}
+      onPointerLeave={() => setActiveIndex(null)} onFocus={() => setActiveIndex(0)} onBlur={() => setActiveIndex(null)}
+      onKeyDown={event => {
+        if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+          event.preventDefault();
+          setActiveIndex(index => Math.max(0, Math.min(svgPoints.length - 1, (index ?? 0) + (event.key === 'ArrowRight' ? 1 : -1))));
+        }
+        if (event.key === 'Escape') setActiveIndex(null);
+      }}>
+      <title>{label} · 国补后价格 · 最新 → 最早</title>
+      <line x1={8} y1={58} x2={200} y2={58} stroke="#e5e7eb" />
+      <line x1={8} y1={6} x2={200} y2={6} stroke="#f3f4f6" strokeDasharray="3 3" />
+      <path d={path} fill="none" stroke={stroke} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      {svgPoints.map((point, index) => <circle key={point.date} cx={point.x} cy={point.y} r={index === 0 ? 3 : 1.8} fill={stroke} stroke="#fff" strokeWidth={0.8}><title>{point.date}：{displayPrice(point.finalPrice)}</title></circle>)}
+      {active && <g pointerEvents="none"><line x1={active.x} y1={6} x2={active.x} y2={58} stroke="#9ca3af" strokeDasharray="3 3" /><circle cx={active.x} cy={active.y} r={4} fill={stroke} stroke="#fff" strokeWidth={1.5} /></g>}
+    </svg>
+    <div className="sku-detail-trend-dates"><span>{latest.date} 最新</span><span>{svgPoints.at(-1)?.date} 最早</span></div>
+  </div>;
+});
 
-function SeriesTrendChart({ points, diffPct }: { points: SeriesPoint[]; diffPct: number }) {
+const SeriesTrendChart = React.memo(function SeriesTrendChart({ points, diffPct }: { points: SeriesPoint[]; diffPct: number }) {
   if (points.length === 0) {
     return <div className="h-20 w-full rounded-xl" />;
   }
 
-  const values = points.map((point) => point.avgPrice);
+  const displayPoints = [...points].reverse();
+  const values = displayPoints.map((point) => point.avgPrice);
   const maxValue = Math.max(...values);
   const minValue = Math.min(...values);
   const range = maxValue - minValue;
@@ -1357,11 +1371,11 @@ function SeriesTrendChart({ points, diffPct }: { points: SeriesPoint[]; diffPct:
   const bottomY = 62;
   const flatY = 36;
 
-  const svgPoints = points.map((point, index) => {
-    const x = leftAxisX + (index * (rightEdge - leftAxisX)) / Math.max(points.length - 1, 1);
+  const svgPoints = displayPoints.map((point, index) => {
+    const x = leftAxisX + (index * (rightEdge - leftAxisX)) / Math.max(displayPoints.length - 1, 1);
     const y = range === 0 ? flatY : topY + ((maxValue - point.avgPrice) / range) * (bottomY - topY - 6);
 
-    return { x, y, key: `${point.date}-${index}` };
+    return { x, y, key: `${point.date}-${index}`, label: `${point.date}：${formatPrice(point.avgPrice)}` };
   });
 
   const path = svgPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
@@ -1369,17 +1383,19 @@ function SeriesTrendChart({ points, diffPct }: { points: SeriesPoint[]; diffPct:
 
   return (
     <div className="rounded-xl px-2 py-1.5">
-      <svg viewBox="0 0 168 72" className="h-20 w-full overflow-visible">
+      <svg viewBox="0 0 168 72" className="h-20 w-full overflow-visible" role="img" aria-label="均价走势，从左到右：最新 → 最早 → 发布">
         <line x1={leftAxisX} y1={6} x2={leftAxisX} y2={bottomY} stroke="#D6D9DD" strokeWidth="1.5" />
         <line x1={leftAxisX} y1={bottomY} x2={rightEdge} y2={bottomY} stroke="#E7E2D7" strokeWidth="1" />
         <path d={path} fill="none" stroke={stroke} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
         {svgPoints.map((point) => (
-          <circle key={point.key} cx={point.x} cy={point.y} r="3.6" fill={stroke} stroke="#FFFFFF" strokeWidth="1.2" />
+          <circle key={point.key} cx={point.x} cy={point.y} r="3.6" fill={stroke} stroke="#FFFFFF" strokeWidth="1.2">
+            <title>{point.label}</title>
+          </circle>
         ))}
       </svg>
     </div>
   );
-}
+});
 
 function formatStorageCompact(storage: string) {
   return storage.replace(/GB/g, '').replace(/\s+/g, '');
@@ -1883,6 +1899,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const deferredSearchTerm = useDeferredValue(searchTerm);
   const [view, setView] = useState<ViewMode>(() => new URLSearchParams(window.location.search).get('view') === 'raw' ? 'raw' : 'dashboard');
   const [positionPivotScope, setPositionPivotScope] = useState<PositionPivotScope>('stable');
   const [attributionFilter, setAttributionFilter] = useState('all');
@@ -1929,7 +1946,14 @@ export default function App() {
     let cancelled = false;
 
     setIsLoading(true);
-    Promise.all([loadWorkbookData(), loadRawEditorDraftFromApi()])
+    (async (): Promise<[WorkbookDataset, RawEditorDraft | null]> => {
+      const draft = await loadRawEditorDraftFromApi();
+      // Published workbench data is authoritative; an old Excel is only a fallback.
+      if (draft?.dates.length && draft.rows.some(row => row.strictDates?.length)) {
+        return [{ dates: draft.dates, skus: [], brands: [], sourceName: '每日采价生效数据', loadedAt: new Date().toISOString() }, draft];
+      }
+      return [await loadWorkbookData(), draft];
+    })()
       .then(([nextDataset, persistedDraft]) => {
         if (cancelled) {
           return;
@@ -2061,6 +2085,7 @@ export default function App() {
       }
     };
   }, [marketTrendPayload]);
+  const rawCouponBySku = useMemo(() => new Map(rawEditorRows.map(row => [row.id, row.snapshots])), [rawEditorRows]);
   const dataset = sourceDataset;
   const dates = dataset?.dates ?? [];
 
@@ -2069,6 +2094,10 @@ export default function App() {
     const selectedSkus = filterPositionPivotSkus(analysis.skuList, dates, positionPivotScope);
     return buildPositionAnalysisForSkus(selectedSkus, dates, positionPivotScope !== 'new526');
   }, [analysis.skuList, dates, positionPivotScope]);
+  const brandPivotAnalysis = useMemo(
+    () => buildBrandPivot(analysis.skuList.map(sku => ({ ...sku, snapshots: getAggregationSnapshots(sku, dates) })), dates),
+    [analysis.skuList, dates],
+  );
   const attributionOptions = useMemo(() => {
     const optionMap = new Map<string, number>();
 
@@ -2100,7 +2129,7 @@ export default function App() {
 
   const filteredSKUs = useMemo(
     () => {
-      const keyword = searchTerm.trim().toLowerCase();
+      const keyword = deferredSearchTerm.trim().toLowerCase();
       const matchedSKUs = analysis.skuList.filter((sku) => {
         if (attributionFilter !== 'all' && getAttributionCombination(sku.reasonDetails) !== attributionFilter) {
           return false;
@@ -2143,11 +2172,13 @@ export default function App() {
         return compareText(left.storage, right.storage);
       });
     },
-    [analysis.skuList, attributionFilter, searchTerm],
+    [analysis.skuList, attributionFilter, deferredSearchTerm],
   );
-  const topVolatileSKUs = useMemo(
-    () => sortByChangePriority<AnalysisSKU>(analysis.skuList, (sku) => sku.recentChangePct).slice(0, 5),
-    [analysis.skuList],
+  const detailPage = usePagedRows(filteredSKUs, 50, `${attributionFilter}|${deferredSearchTerm}`);
+  const seriesPage = usePagedRows(analysis.seriesAnalysis, 30);
+  const volatilitySkus = useMemo(
+    () => analysis.skuList.map(sku => ({ ...sku, snapshots: getAggregationSnapshots(sku, dates) })),
+    [analysis.skuList, dates],
   );
   const changeSummaryReport = useMemo(() => buildChangeSummaryReport(analysis.skuList), [analysis.skuList]);
   const biPriceMap = useMemo(() => new Map(biPriceRows.map((row) => [row.ppv, row.biPrice])), [biPriceRows]);
@@ -2739,36 +2770,15 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">
-                  <TrendingUp size={20} className="text-orange-600" />
-                  波动最大 SKU
-                </h2>
-                <div className="space-y-4">
-                  {topVolatileSKUs.map((sku) => (
-                    <div
-                      key={sku.id}
-                      className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 p-3"
-                    >
-                      <div>
-                        <p className="text-sm font-bold">{sku.model}</p>
-                        <p className="text-xs text-gray-500">
-                          {sku.brand} · {sku.storage}
-                        </p>
-                      </div>
-                      <div className={`text-right ${getChangeTextClass(sku.recentChangePct)}`}>
-                        <p className="text-sm font-bold">{formatSignedPercent(sku.recentChangePct)}</p>
-                        <p className="text-[10px] font-medium uppercase">{sku.reason}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <SkuVolatilityRanking skus={volatilitySkus} dates={dates} />
             </div>
 
             <div className="mb-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-6">
-                <h2 className="text-lg font-bold">机型定位透视表 (汇总层)</h2>
+                <div>
+                  <h2 className="text-lg font-bold">机型定位透视表 (汇总层)</h2>
+                  <p className="mt-1 text-xs text-gray-500">日期与均价走势从左到右：最新 → 最早 → 发布；发布均价置于末列</p>
+                </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
                     {POSITION_PIVOT_SCOPE_OPTIONS.map((option) => (
@@ -2804,14 +2814,14 @@ export default function App() {
                       <th className="sticky left-[260px] z-10 min-w-[210px] border-r border-gray-100 bg-gray-50/95 px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">
                         均价走势
                       </th>
-                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">发布均价</th>
+                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">最新环比 (金额)</th>
+                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">最新方向结构</th>
                       {displayDates.map((date) => (
                         <th key={date} className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">
                           {date} 均价
                         </th>
                       ))}
-                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">最新环比 (金额)</th>
-                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">最新方向结构</th>
+                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">发布均价</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -2838,15 +2848,6 @@ export default function App() {
                           >
                             <SeriesTrendChart points={position.trendData} diffPct={displayChange.diffPct} />
                           </td>
-                          <td className="px-6 py-2.5 text-sm text-gray-500">{formatPrice(position.avgLaunch)}</td>
-                          {displayDates.map((date) => {
-                            const point = position.snapshotAvgs.find((item) => item.date === date);
-                            return (
-                              <td key={`${position.position}-${date}`} className="px-6 py-2.5 text-sm font-medium">
-                                {point ? formatPrice(point.avgPrice) : '--'}
-                              </td>
-                            );
-                          })}
                           <td className="px-6 py-2.5">
                             <span
                               className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${getChangeBadgeClass(displayChange.diffPct)}`}
@@ -2865,6 +2866,117 @@ export default function App() {
                           <td className="px-6 py-2.5 text-sm font-semibold text-gray-600">
                             {position.directionSummary.up}涨 / {position.directionSummary.down}跌 / {position.directionSummary.flat}平
                           </td>
+                          {displayDates.map((date) => {
+                            const point = position.snapshotAvgs.find((item) => item.date === date);
+                            return (
+                              <td key={`${position.position}-${date}`} className="px-6 py-2.5 text-sm font-medium">
+                                {point ? formatPrice(point.avgPrice) : '--'}
+                              </td>
+                            );
+                          })}
+                          <td className="px-6 py-2.5 text-sm text-gray-500">{formatPrice(position.avgLaunch)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="mb-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-6">
+                <div>
+                  <h2 className="text-lg font-bold">品牌透视表 (汇总层)</h2>
+                  <p className="mt-1 text-xs text-gray-500">日期与均价走势从左到右：最新 → 最早 → 发布；发布均价置于末列。全量 SKU 等权平均。</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="rounded bg-orange-50 px-2 py-1 text-[10px] font-bold uppercase text-orange-600">
+                    {latestRangeLabel} Data
+                  </span>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-max border-collapse text-left">
+                  <thead>
+                    <tr className="bg-gray-50/50">
+                      <th className="sticky left-0 z-30 min-w-[150px] border-r border-gray-100 bg-gray-50/95 px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">
+                        品牌
+                      </th>
+                      <th className="sticky left-[150px] z-20 min-w-[110px] border-r border-gray-100 bg-gray-50/95 px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">
+                        SKU 数
+                      </th>
+                      <th className="sticky left-[260px] z-10 min-w-[210px] border-r border-gray-100 bg-gray-50/95 px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">
+                        均价走势
+                      </th>
+                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">最新环比 (金额)</th>
+                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">最新方向结构</th>
+                      {displayDates.map((date) => (
+                        <th key={date} className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">
+                          {date} 均价
+                        </th>
+                      ))}
+                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">发布均价</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {brandPivotAnalysis.map((brand) => {
+                      const displayChange = { diff: brand.diff, diffPct: brand.diffPct };
+                      const isFlat = isZeroChange(displayChange.diffPct);
+                      const rowClassName = isFlat
+                        ? 'group bg-white hover:bg-gray-50'
+                        : displayChange.diffPct > 0
+                          ? 'group bg-orange-50/40 hover:bg-orange-50/70'
+                          : 'group bg-blue-50/40 hover:bg-blue-50/70';
+                      const stickyClassName = isFlat
+                        ? 'bg-white group-hover:bg-gray-50'
+                        : displayChange.diffPct > 0
+                          ? 'bg-orange-50'
+                          : 'bg-blue-50';
+
+                      return (
+                        <tr key={brand.brand} className={`transition-colors ${rowClassName}`}>
+                          <td
+                            className={`sticky left-0 z-30 min-w-[150px] border-r border-gray-100 px-6 py-2.5 text-sm font-bold shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] ${stickyClassName}`}
+                          >
+                            {brand.brand}
+                          </td>
+                          <td
+                            className={`sticky left-[150px] z-20 min-w-[110px] border-r border-gray-100 px-6 py-2.5 text-sm font-semibold text-gray-600 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.04)] ${stickyClassName}`}
+                          >
+                            {brand.skuCount}
+                          </td>
+                          <td
+                            className={`sticky left-[260px] z-10 min-w-[210px] border-r border-gray-100 px-4 py-2 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.03)] ${stickyClassName}`}
+                          >
+                            <SeriesTrendChart points={brand.trendData} diffPct={displayChange.diffPct} />
+                          </td>
+                          <td className="px-6 py-2.5">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${getChangeBadgeClass(displayChange.diffPct)}`}
+                            >
+                              {isZeroChange(displayChange.diffPct) ? (
+                                <Minus size={12} />
+                              ) : displayChange.diffPct > 0 ? (
+                                <ArrowUpRight size={12} />
+                              ) : (
+                                <ArrowDownRight size={12} />
+                              )}
+                              {Math.abs(displayChange.diffPct).toFixed(1)}% ({displayChange.diff > 0 ? '+' : ''}
+                              {Math.round(displayChange.diff)})
+                            </span>
+                          </td>
+                          <td className="px-6 py-2.5 text-sm font-semibold text-gray-600">
+                            {brand.directionSummary.up}涨 / {brand.directionSummary.down}跌 / {brand.directionSummary.flat}平
+                          </td>
+                          {displayDates.map((date) => {
+                            const point = brand.snapshotAvgs.find((item) => item.date === date);
+                            return (
+                              <td key={`${brand.brand}-${date}`} className="px-6 py-2.5 text-sm font-medium">
+                                {point ? formatPrice(point.avgPrice) : '--'}
+                              </td>
+                            );
+                          })}
+                          <td className="px-6 py-2.5 text-sm text-gray-500">{formatPrice(brand.avgLaunch)}</td>
                         </tr>
                       );
                     })}
@@ -2874,14 +2986,18 @@ export default function App() {
             </div>
 
             <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-              <div className="flex items-center justify-between border-b border-gray-100 p-6">
-                <h2 className="text-lg font-bold">型号系列透视表 (汇总层)</h2>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-6">
+                <div>
+                  <h2 className="text-lg font-bold">型号系列透视表 (汇总层)</h2>
+                  <p className="mt-1 text-xs text-gray-500">日期与均价走势从左到右：最新 → 最早 → 发布；发布均价置于末列</p>
+                </div>
                 <div className="flex gap-2">
                   <span className="rounded bg-orange-50 px-2 py-1 text-[10px] font-bold uppercase text-orange-600">
                     {latestRangeLabel} Data
                   </span>
                 </div>
               </div>
+              <Pagination control={seriesPage} label="型号系列" />
               <div className="overflow-x-auto">
                 <table className="min-w-max border-collapse text-left">
                   <thead>
@@ -2895,18 +3011,18 @@ export default function App() {
                       <th className="sticky left-[330px] z-10 min-w-[210px] border-r border-gray-100 bg-gray-50/95 px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">
                         均价走势
                       </th>
-                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">发布均价</th>
+                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">最新环比 (金额)</th>
+                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">最新方向结构</th>
                       {displayDates.map((date) => (
                         <th key={date} className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">
                           {date} 均价
                         </th>
                       ))}
-                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">最新环比 (金额)</th>
-                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">最新方向结构</th>
+                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">发布均价</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {analysis.seriesAnalysis.map((series) => {
+                    {seriesPage.rows.map((series) => {
                       const hasChange = isSeriesPivotChanged(series);
                       const displayChange = getSeriesPivotDisplayChange(series);
                       const brandTone = getBrandTone(series.brand, seriesBrandIndexMap);
@@ -2941,15 +3057,6 @@ export default function App() {
                           >
                             <SeriesTrendChart points={series.trendData} diffPct={displayChange.diffPct} />
                           </td>
-                          <td className="px-6 py-2.5 text-sm text-gray-500">{formatPrice(series.avgLaunch)}</td>
-                          {displayDates.map((date) => {
-                            const point = series.snapshotAvgs.find((item) => item.date === date);
-                            return (
-                              <td key={`${series.model}-${date}`} className="px-6 py-2.5 text-sm font-medium">
-                                {point ? formatPrice(point.avgPrice) : '--'}
-                              </td>
-                            );
-                          })}
                           <td className="px-6 py-2.5">
                             <span
                               className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${getChangeBadgeClass(displayChange.diffPct)}`}
@@ -2968,12 +3075,22 @@ export default function App() {
                           <td className="px-6 py-2.5 text-sm font-semibold text-gray-600">
                             {series.directionSummary.up}涨 / {series.directionSummary.down}跌 / {series.directionSummary.flat}平
                           </td>
+                          {displayDates.map((date) => {
+                            const point = series.snapshotAvgs.find((item) => item.date === date);
+                            return (
+                              <td key={`${series.model}-${date}`} className="px-6 py-2.5 text-sm font-medium">
+                                {point ? formatPrice(point.avgPrice) : '--'}
+                              </td>
+                            );
+                          })}
+                          <td className="px-6 py-2.5 text-sm text-gray-500">{formatPrice(series.avgLaunch)}</td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
               </div>
+              <Pagination control={seriesPage} label="型号系列" />
             </div>
           </>
         ) : view === 'summary' ? (
@@ -3017,7 +3134,7 @@ export default function App() {
             <div className="flex flex-col gap-4 border-b border-gray-100 p-6 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <h2 className="text-lg font-bold">SKU 趋势明细 (发售价 - {latestDate})</h2>
-                <p className="mt-1 text-sm text-gray-500">深度展示每日国补后价格、挂牌价及优惠券变动明细</p>
+                <p className="mt-1 text-sm text-gray-500">深度展示每日国补后价格、挂牌价及优惠券变动明细；价格趋势从左到右：最新 → 最早，悬停查看报价</p>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-sm font-semibold text-gray-500">最新归因筛选</span>
@@ -3038,6 +3155,7 @@ export default function App() {
                 </div>
               </div>
             </div>
+            <Pagination control={detailPage} label="SKU 明细" />
             <div className="overflow-x-auto">
               <table className="min-w-[1800px] w-full border-collapse text-left">
                 <thead>
@@ -3085,10 +3203,11 @@ export default function App() {
                       </td>
                     </tr>
                   ) : (
-                    filteredSKUs.map((sku) => {
+                    detailPage.rows.map((sku) => {
                       const listDiff = sku.listPriceDiff;
                       const couponDiff = sku.couponDiff;
                       const trendData = sku.snapshots;
+                      const snapshotByDate = new Map(sku.snapshots.map(point => [point.date, point]));
 
                       return (
                         <tr key={sku.id} className="transition-colors hover:bg-gray-50/50">
@@ -3101,14 +3220,14 @@ export default function App() {
                               {sku.position || '未定位'} · {sku.ppv || '未匹配PPV'}
                             </p>
                           </td>
-                          <td className="w-40 border-r border-gray-100 px-4 py-4">
-                            <MiniTrendChart points={trendData} />
+                          <td className="min-w-[240px] border-r border-gray-100 px-4 py-4">
+                            <MiniTrendChart points={trendData} diffPct={sku.recentChangePct} label={`${sku.model} ${sku.storage}`} />
                           </td>
                           <td className="border-r border-gray-100 px-4 py-4 text-sm text-gray-400">
                             {formatPrice(sku.launchPrice)}
                           </td>
                           {displayDates.map((date) => {
-                            const snapshot = sku.snapshots.find((item) => item.date === date);
+                            const snapshot = snapshotByDate.get(date);
                             const isLast = date === latestDate;
 
                             return (
@@ -3124,7 +3243,7 @@ export default function App() {
                                     isLast ? 'bg-orange-50/30' : ''
                                   }`}
                                 >
-                                  {snapshot ? formatCoupon(snapshot.coupon) : '--'}
+                                  {snapshot && String(rawCouponBySku.get(sku.id)?.[date]?.coupon ?? '').trim() !== '' ? formatCoupon(snapshot.coupon) : '--'}
                                 </td>
                               </React.Fragment>
                             );
@@ -3156,6 +3275,7 @@ export default function App() {
                 </tbody>
               </table>
             </div>
+            <Pagination control={detailPage} label="SKU 明细" />
           </div>
         )}
       </main>

@@ -44,6 +44,7 @@ export function registerPriceWorkbenchRoutes(app,service) {
   app.post(`${prefix}/logout`,safe((req,res)=>{if(token(req))service.logout(token(req));res.setHeader('Set-Cookie',`${cookieName}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0`);res.json({ok:true});}));
   app.post(`${prefix}/password`,safe((req,res)=>{service.changePassword(requireUser(req),req.body.oldPassword,req.body.newPassword);res.json({ok:true});}));
   app.get(`${prefix}/rows`,safe((req,res)=>res.json(service.listRows(String(req.query.date || beijingDate())))));
+  app.get(`${prefix}/product-links`,safe((req,res)=>res.json(service.productLinks(String(req.query.date || beijingDate())))));
   app.get(`${prefix}/models`,safe((req,res)=>res.json(service.models())));
   app.post(`${prefix}/check-cell/:id`,safe((req,res)=>res.json(service.checkCell(req.params.id,req.body.date,req.body,requireUser(req,'edit')))));
   app.post(`${prefix}/delisted/:id`,safe((req,res)=>res.json(service.markDelisted(req.params.id,req.body.date,req.body,requireUser(req,'edit')))));

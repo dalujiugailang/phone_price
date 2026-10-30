@@ -452,6 +452,32 @@ export function createPriceWorkbench({ dataDir, legacyDatabasePath, onPublished 
     const summary={total:rows.length,collected:rows.filter(r=>r.work?.observation_id).length,published:rows.filter(r=>r.work?.published?.availability==='on_sale' && r.work.published.final>0).length,pending:rows.filter(r=>r.work && r.work.verificationCount>0 && (r.work.dirty || r.work.newObservation)).length,unmatched:rows.filter(r=>r.work?.issues.some(i=>i.code==='NO_MATCH')).length};
     return {date,rows,summary,pushToken:JSON.stringify(rows.map(r=>[r.id,r.work?.version ?? null,r.work?.newObservation?.id || null])),projection:db.prepare('SELECT * FROM outbox WHERE id=1').get() || null};
   }
+  // The ranking needs only links, not the full quote/review state for every SKU.
+  function productLinks(date) {
+    if (!validDate(date)) throw fault(422,'日期格式不正确');
+    const records=db.prepare(`
+      WITH published AS (
+        SELECT r.sku_id,MAX(r.rowid) revision_rowid
+        FROM revisions r JOIN formal_price_publications p ON p.date=r.date AND r.rowid<=p.revision_rowid
+        WHERE r.date=? GROUP BY r.sku_id
+      )
+      SELECT s.id,link.value manual_link,r.evidence published_link,
+        CASE WHEN json_valid(o.quote_json) THEN json_extract(o.quote_json,'$.link') END quote_link
+      FROM skus s
+      LEFT JOIN meta link ON link.key='product_link:'||s.id
+      LEFT JOIN published p ON p.sku_id=s.id
+      LEFT JOIN revisions r ON r.rowid=p.revision_rowid
+      LEFT JOIN daily d ON d.sku_id=s.id AND d.date=?
+      LEFT JOIN observations o ON o.id=d.observation_id
+      WHERE s.active=1 ORDER BY s.rowid
+    `).all(date,date);
+    const safeLink=value=>{
+      if (typeof value!=='string' || !value) return '';
+      try { const url=new URL(value);return ['http:','https:'].includes(url.protocol) && !url.username && !url.password?url.href:''; }
+      catch { return ''; }
+    };
+    return {date,rows:records.map(row=>({id:row.id,productLink:[row.manual_link,row.published_link,row.quote_link].map(safeLink).find(Boolean) || ''}))};
+  }
   function createRun(date,actor,{slot=null,ids=null}={}) {
     if (!provider?.configured) throw fault(503,'采价接口未配置；管理员需配置服务端买手参数');
     if (!validDate(date)) throw fault(422,'日期格式不正确');
@@ -584,7 +610,7 @@ export function createPriceWorkbench({ dataDir, legacyDatabasePath, onPublished 
     return {...row,offset,limit,nextOffset:offset+limit<row.totalChars?offset+limit:null};
   }
   function observationDownload(observationId,id,date){const row=db.prepare('SELECT raw_json FROM observations WHERE id=? AND sku_id=? AND date=?').get(observationId,id,date);if(!row)throw fault(404,'原始记录不存在');return row.raw_json;}
-  const api={db,tx,audit,login,userFromToken,users,saveUser,importRows,patchCell,confirm,claim,checkCell,resetApi,pushWarehouse,markDelisted,updateModel,saveProductLink,getDraft,listRows,createRun,processRun,tick,flushProjection,subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn);},models:()=>db.prepare('SELECT m.* FROM models m WHERE EXISTS(SELECT 1 FROM skus s WHERE s.model_id=m.id AND s.active=1) ORDER BY m.name').all(),status:()=>({providerConfigured:Boolean(provider?.configured),scheduleEnabled:process.env.PRICE_COLLECTION_SCHEDULE_ENABLED==='true',scheduleTime:'10:00',timezone:'Asia/Shanghai'}),logout(token){db.prepare('DELETE FROM sessions WHERE token=?').run(tokenHash(token));},history,rawObservation,observationDownload,logs,runs:()=>db.prepare('SELECT r.*,(SELECT COUNT(*) FROM run_items i WHERE i.run_id=r.id) total,(SELECT COUNT(*) FROM run_items i WHERE i.run_id=r.id AND i.state=\'done\') done,(SELECT COUNT(*) FROM run_items i WHERE i.run_id=r.id AND i.state=\'failed\') failed,(SELECT COUNT(*) FROM run_items i WHERE i.run_id=r.id AND i.state=\'done\' AND i.message=\'已匹配\') matched,(SELECT COUNT(*) FROM run_items i WHERE i.run_id=r.id AND i.state=\'done\' AND i.message=\'未找到合格报价\') unmatched FROM runs r ORDER BY r.created_at DESC LIMIT 30').all(),close(){db.close();}};
+  const api={db,tx,audit,login,userFromToken,users,saveUser,importRows,patchCell,confirm,claim,checkCell,resetApi,pushWarehouse,markDelisted,updateModel,saveProductLink,getDraft,listRows,productLinks,createRun,processRun,tick,flushProjection,subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn);},models:()=>db.prepare('SELECT m.* FROM models m WHERE EXISTS(SELECT 1 FROM skus s WHERE s.model_id=m.id AND s.active=1) ORDER BY m.name').all(),status:()=>({providerConfigured:Boolean(provider?.configured),scheduleEnabled:process.env.PRICE_COLLECTION_SCHEDULE_ENABLED==='true',scheduleTime:'10:00',timezone:'Asia/Shanghai'}),logout(token){db.prepare('DELETE FROM sessions WHERE token=?').run(tokenHash(token));},history,rawObservation,observationDownload,logs,runs:()=>db.prepare('SELECT r.*,(SELECT COUNT(*) FROM run_items i WHERE i.run_id=r.id) total,(SELECT COUNT(*) FROM run_items i WHERE i.run_id=r.id AND i.state=\'done\') done,(SELECT COUNT(*) FROM run_items i WHERE i.run_id=r.id AND i.state=\'failed\') failed,(SELECT COUNT(*) FROM run_items i WHERE i.run_id=r.id AND i.state=\'done\' AND i.message=\'已匹配\') matched,(SELECT COUNT(*) FROM run_items i WHERE i.run_id=r.id AND i.state=\'done\' AND i.message=\'未找到合格报价\') unmatched FROM runs r ORDER BY r.created_at DESC LIMIT 30').all(),close(){db.close();}};
   api.changePassword=(actor,oldPassword,newPassword)=>{
     const record=db.prepare('SELECT * FROM users WHERE id=?').get(actor.id);
     if(!record || !checkPassword(oldPassword,record.password))throw fault(401,'原密码不正确');
