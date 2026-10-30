@@ -1,0 +1,21 @@
+{
+  "image": "sha256:015c994e34c4c76c1868e81c386334942c785f8b645a3221784f11ee13a288ee",
+  "containerHealth": "healthy",
+  "positions": 453,
+  "ppvs": 452,
+  "missingPpv": "REDMI Note 17 6GB+256GB",
+  "priceTablesUnchanged": {
+    "daily": true,
+    "revisions": true,
+    "formal_price_publications": true
+  },
+  "legacyDatabaseUnchanged": true,
+  "backendThreshold": "strict greater-than-20 verified",
+  "outbox": [
+    [
+      0,
+      null
+    ]
+  ],
+  "archive": "/www/wwwroot/gtm-price-monitor/.archive/release-20261030-summary-metadata"
+}

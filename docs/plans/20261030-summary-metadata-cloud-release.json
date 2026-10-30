@@ -1,0 +1,50 @@
+{
+  "image": "sha256:015c994e34c4c76c1868e81c386334942c785f8b645a3221784f11ee13a288ee",
+  "containerHealth": "healthy",
+  "positions": 453,
+  "ppvs": 452,
+  "missingPpv": "REDMI Note 17 6GB+256GB",
+  "priceTablesUnchanged": {
+    "daily": true,
+    "revisions": true,
+    "formal_price_publications": true
+  },
+  "legacyDatabaseUnchanged": true,
+  "backendThreshold": "strict greater-than-20 verified",
+  "outbox": [
+    [
+      0,
+      null
+    ]
+  ],
+  "archive": "/www/wwwroot/gtm-price-monitor/.archive/release-20261030-summary-metadata",
+  "releasedAt": "2026-10-30T10:01:48.192236+00:00",
+  "url": "https://gtmdudu.xyz/",
+  "modelPositionsAdded": 47,
+  "ppvsAdded": 170,
+  "frontendAsset": "index-Bl-KR0d6.js",
+  "summaryThreshold": "abs(change) > 20; exactly 20 excluded",
+  "cloudPaginationPreserved": true,
+  "detailLinkBrowserVerified": true,
+  "workbenchTargetBrowserVerified": true,
+  "automaticCollectionEnabled": true,
+  "warehouseLastError": null,
+  "sourceStrategy": "Build from existing cloud frontend and apply only summary threshold, detail/ranking navigation and workbench target handling. Backend file differs only in summary threshold.",
+  "validation": {
+    "frontendTypecheck": "passed",
+    "frontendBuild": "passed",
+    "frontendAndBackendThresholdBoundaries": "passed",
+    "regressionTests": {
+      "before": {
+        "passed": 27,
+        "failed": 9
+      },
+      "after": {
+        "passed": 27,
+        "failed": 9
+      },
+      "sameFailureNames": true,
+      "newFailures": 0
+    }
+  }
+}

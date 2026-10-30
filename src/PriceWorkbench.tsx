@@ -115,7 +115,7 @@ function AccountRow({account,onDone,onError}:{account:User;onDone:()=>void;onErr
 }
 
 export function PriceWorkbench({onPublished}:{onPublished:()=>void}){
-  const [date,setDate]=useState(today),[tab,setTab]=useState(()=>new URLSearchParams(window.location.search).get('tab')==='logs'?'logs':'daily'),[search,setSearch]=useState(()=>new URLSearchParams(window.location.search).get('search') || ''),[filter,setFilter]=useState('all');
+  const [date,setDate]=useState(()=>{const value=new URLSearchParams(window.location.search).get('date');return value && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0,10)===value?value:today();}),[tab,setTab]=useState(()=>new URLSearchParams(window.location.search).get('tab')==='logs'?'logs':'daily'),[search,setSearch]=useState(()=>new URLSearchParams(window.location.search).get('search') || ''),[filter,setFilter]=useState('all');
   const [payload,setPayload]=useState<Payload|null>(null),[models,setModels]=useState<Model[]>([]),[runs,setRuns]=useState<Run[]>([]),[logs,setLogs]=useState<Audit[]>([]),[accounts,setAccounts]=useState<User[]>([]);
   const [me,setMe]=useState<{user:User|null;providerConfigured:boolean;scheduleEnabled:boolean}|null>(null);
   const [error,setError]=useState(''),[notice,setNotice]=useState(''),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[loginOpen,setLoginOpen]=useState(false);
@@ -168,6 +168,21 @@ export function PriceWorkbench({onPublished}:{onPublished:()=>void}){
       return true;
     });
   },[payload,search,filter,tab,me?.user?.id]);
+  const [jumpTarget] = useState(() => new URLSearchParams(window.location.search).get('sku'));
+  const [jumpDate] = useState(date);
+  const jumpHandled = useRef(false);
+  useEffect(() => {
+    if (!jumpTarget || jumpHandled.current || loading || payload?.date !== jumpDate || date !== jumpDate || tab !== 'daily') return;
+    const row = [...document.querySelectorAll<HTMLTableRowElement>('tr[data-workbench-sku]')].find(el => el.dataset.workbenchSku === jumpTarget);
+    if (!row) return;
+    const timer = requestAnimationFrame(() => {
+      row.scrollIntoView({ block: 'center' });
+      row.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true });
+      setNotice(`已定位 ${jumpDate} 的对应 SKU。修改价格并保存后，由管理员确认推数仓。`);
+      jumpHandled.current = true;
+    });
+    return () => cancelAnimationFrame(timer);
+  }, [payload, loading, date, jumpDate, jumpTarget, tab]);
   const filteredModels=useMemo(()=>models.filter(m=>searchKey(`${m.name} ${m.brand}`).includes(searchKey(search))),[models,search]);
   const selected=payload?.rows.find(r=>r.id===selectedId);
   useEffect(()=>{
@@ -214,7 +229,7 @@ export function PriceWorkbench({onPublished}:{onPublished:()=>void}){
       {tab!=='models'?<>
         <div className="pw-metrics">{[['监控 SKU',payload?.summary.total],['已采集',payload?.summary.collected],['已生效',payload?.summary.published],['待核验',payload?.summary.pending],['未匹配',payload?.summary.unmatched]].map(([label,n])=><div key={label}><span>{label}</span><strong>{n ?? '—'}</strong></div>)}<div className="pw-schedule"><span className={`pw-dot ${me?.scheduleEnabled?'on':''}`}/><div><b>每天 10:00 · 北京时间</b><span>{me?.scheduleEnabled?'自动采价已启用':'本地预览：自动任务未启用'}</span></div></div></div>
         <div className="pw-help"><ShieldCheck size={16}/><span>黄色表示待检查；点击单元格并离开后变蓝，表示已检查，价格无需改动。管理员“一键推数仓”按当前挂牌价和券额生效，缺价行跳过；国补后自动计算。</span></div>
-        {loading || payload?.date!==date?<div className="pw-empty">正在读取 {date} 的价格记录…</div>:<div className="pw-table-scroll"><table className="pw-price-table"><thead><tr><th className="pw-model-col">型号</th><th>存储版本</th><th>挂牌价 <small>元</small></th><th>优惠券 <small>元</small></th><th>国补后 <small>公式</small></th><th>核验状态</th><th>查询与核验</th></tr></thead><tbody>{rows.map(r=><tr key={`${date}/${r.id}`}><td><b>{r.model}</b></td><td className="pw-storage">{r.storage}</td><td><PriceCell key={`list-${r.id}-${date}`} row={r} date={date} field="list" editable={editable} onChange={()=>refreshRef.current()} onError={setError} onPaste={preparePaste}/></td><td><PriceCell key={`coupon-${r.id}-${date}`} row={r} date={date} field="coupon" editable={editable} onChange={()=>refreshRef.current()} onError={setError} onPaste={preparePaste}/></td><td><div className="pw-formula">{money(r.work?.final)}<LockKeyhole size={11}/></div>{r.work && (r.work.list==null || r.work.coupon==null)?<small className="pw-muted">补齐价格后自动计算</small>:null}{r.work?.dirty && r.work.published?<small className="pw-muted">生效：{money(r.work.published.final)}</small>:null}</td><td><Status work={r.work}/>{r.work?.claimedBy && r.work.claim_until!>new Date().toISOString()?<small className="pw-owner">{r.work.claimedBy} 核验中</small>:null}{r.work && verificationCount(r.work)>0 && r.work.dirty?<small className="pw-issues">{verificationCount(r.work)} 项待检查</small>:null}</td><td><div className="pw-links"><SafeLink href={r.productLink || r.work?.quote?.link}>商品</SafeLink><SafeLink href={r.searchUrl}>搜索</SafeLink><button onClick={()=>openDetail(r)}>{editable?'核验 / 详情':'查看详情'}</button></div></td></tr>)}</tbody></table>{!rows.length?<div className="pw-empty">没有符合条件的记录</div>:null}</div>}
+        {loading || payload?.date!==date?<div className="pw-empty">正在读取 {date} 的价格记录…</div>:<div className="pw-table-scroll"><table className="pw-price-table"><thead><tr><th className="pw-model-col">型号</th><th>存储版本</th><th>挂牌价 <small>元</small></th><th>优惠券 <small>元</small></th><th>国补后 <small>公式</small></th><th>核验状态</th><th>查询与核验</th></tr></thead><tbody>{rows.map(r=><tr key={`${date}/${r.id}`} data-workbench-sku={r.id} className={r.id===jumpTarget && date===jumpDate?'pw-jump-target':undefined}><td><b>{r.model}</b></td><td className="pw-storage">{r.storage}</td><td><PriceCell key={`list-${r.id}-${date}`} row={r} date={date} field="list" editable={editable} onChange={()=>refreshRef.current()} onError={setError} onPaste={preparePaste}/></td><td><PriceCell key={`coupon-${r.id}-${date}`} row={r} date={date} field="coupon" editable={editable} onChange={()=>refreshRef.current()} onError={setError} onPaste={preparePaste}/></td><td><div className="pw-formula">{money(r.work?.final)}<LockKeyhole size={11}/></div>{r.work && (r.work.list==null || r.work.coupon==null)?<small className="pw-muted">补齐价格后自动计算</small>:null}{r.work?.dirty && r.work.published?<small className="pw-muted">生效：{money(r.work.published.final)}</small>:null}</td><td><Status work={r.work}/>{r.work?.claimedBy && r.work.claim_until!>new Date().toISOString()?<small className="pw-owner">{r.work.claimedBy} 核验中</small>:null}{r.work && verificationCount(r.work)>0 && r.work.dirty?<small className="pw-issues">{verificationCount(r.work)} 项待检查</small>:null}</td><td><div className="pw-links"><SafeLink href={r.productLink || r.work?.quote?.link}>商品</SafeLink><SafeLink href={r.searchUrl}>搜索</SafeLink><button onClick={()=>openDetail(r)}>{editable?'核验 / 详情':'查看详情'}</button></div></td></tr>)}</tbody></table>{!rows.length?<div className="pw-empty">没有符合条件的记录</div>:null}</div>}
       </>:<div className="pw-table-scroll"><table className="pw-model-table"><thead><tr><th>型号</th><th>品牌</th><th>机型定位</th><th>代际</th><th>代际基准日期</th><th>操作</th></tr></thead><tbody>{filteredModels.map(m=><ModelRow key={m.id} model={m} editable={editable} onChange={()=>{refreshRef.current();publishedRef.current();}} onError={setError}/>)}</tbody></table></div>}
       <div className="pw-list-total">共 {count} 条 · 已全部展示</div>
     </>:null}

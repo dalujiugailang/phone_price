@@ -1,0 +1,16 @@
+{
+  "dataDir": "/Users/dudu_1/Desktop/trae/重点日常项目/【GTM】新机售价监控分析系统/data/preview-20261027",
+  "apply": true,
+  "modelChanges": 0,
+  "ppvChanges": 2,
+  "archive": "data/preview-20261027/.archive/metadata-9f45d77b-c9b2-4f7b-b0b2-64c6382a9724",
+  "priceDataUnchanged": true,
+  "requestId": "9f45d77b-c9b2-4f7b-b0b2-64c6382a9724",
+  "missingPositions": 0,
+  "missingPpvs": [
+    {
+      "model": "REDMI Note 17",
+      "storage": "6GB+256GB"
+    }
+  ]
+}

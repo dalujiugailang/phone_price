@@ -1,0 +1,28 @@
+{
+  "releasedAt": "2026-10-30T08:31:48.031884+00:00",
+  "url": "https://gtmdudu.xyz/",
+  "image": "sha256:4c596d596afeff831dace60ad81f75b3e5b5ca1b6ad0ac58ccca74bc47c543f5",
+  "rollbackImage": "gtm-price-monitor-app:rollback-20261030-ui",
+  "cloudArchive": "/www/wwwroot/gtm-price-monitor/.archive/release-20261030-ui-performance",
+  "frontendAsset": "index-Cm0pzG9O.js",
+  "backendChange": "additive product-links function and route only; existing cloud behavior retained",
+  "businessDataUnchanged": true,
+  "retainedCloudDates": [
+    "10.28",
+    "10.29"
+  ],
+  "collectionScheduleEnabled": true,
+  "health200": true,
+  "warehouseLastError": null,
+  "productLinks": {
+    "rows": 453,
+    "bytes": 36680
+  },
+  "browserChecks": [
+    "brand pivot visible",
+    "series pagination visible",
+    "five independent ranking buttons",
+    "detail pagination: 50 rows",
+    "explicit zero coupons displayed as ¥0"
+  ]
+}

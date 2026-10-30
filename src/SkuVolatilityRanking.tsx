@@ -136,7 +136,7 @@ export function SkuVolatilityRanking({ skus, dates }: { skus: VolatilitySKU[]; d
     <dialog ref={dialog} className="sku-race-dialog" onCancel={() => setOpen(false)} onClose={() => setOpen(false)}>
       {open && <><header><div><span className="sku-race-eyebrow">[ FULL RANKING ]</span><h2>全部 SKU 波动详情</h2><p>{previousDate ?? '--'} → {date ?? '--'} · 按波动绝对值降序 · 缺价沿用最近正式报价；无可比基准时标记不可比</p></div><button type="button" onClick={() => setOpen(false)} aria-label="关闭 SKU 波动详情">✕</button></header>
         <div className="sku-race-filters"><input aria-label="搜索 SKU 波动" placeholder="搜索品牌、型号、容量" value={query} onChange={event => setQuery(event.target.value)} /><select aria-label="波动方向" value={direction} onChange={event => setDirection(event.target.value)}><option value="all">全部方向</option><option value="up">上涨</option><option value="down">下跌</option><option value="flat">持平</option><option value="missing">不可比</option></select><select aria-label="波动排序" value={sort} onChange={event => setSort(event.target.value)}><option value="percent">按涨跌幅绝对值</option><option value="amount">按金额绝对值</option></select><span>{filtered.length} / {skus.length} 个 SKU</span></div>
-        <div className="sku-race-table-wrap"><table><thead><tr><th>排名</th><th>品牌 / 型号 / 容量</th><th>{previousDate ?? '--'} 到手价</th><th>{date ?? '--'} 到手价</th><th>涨跌幅</th><th>变动金额</th><th>归因 / 状态</th><th>商品链接</th><th>历史</th></tr></thead><tbody>{page.rows.map(row => <SkuRow key={row.id} row={row} rank={rankById.get(row.id) ?? 0} productLink={productLinks[row.id]} linkStatus={linkStatus} expanded={expanded === row.id} onToggle={toggleHistory} />)}{!filtered.length && <tr><td colSpan={9} className="sku-race-no-results">没有符合条件的 SKU</td></tr>}</tbody></table></div>
+        <div className="sku-race-table-wrap"><table><thead><tr><th>排名</th><th>品牌 / 型号 / 容量</th><th>{previousDate ?? '--'} 到手价</th><th>{date ?? '--'} 到手价</th><th>涨跌幅</th><th>变动金额</th><th>归因 / 状态</th><th>商品链接</th><th>历史</th></tr></thead><tbody>{page.rows.map(row => <SkuRow key={row.id} row={row} rank={rankById.get(row.id) ?? 0} date={date} productLink={productLinks[row.id]} linkStatus={linkStatus} expanded={expanded === row.id} onToggle={toggleHistory} />)}{!filtered.length && <tr><td colSpan={9} className="sku-race-no-results">没有符合条件的 SKU</td></tr>}</tbody></table></div>
         <Pagination control={page} label="SKU 波动" />
       </>}
     </dialog>
@@ -151,14 +151,14 @@ function safeProductLink(value?: string) {
   } catch { return ''; }
 }
 
-const SkuRow = memo(function SkuRow({ row, rank, expanded, onToggle, productLink, linkStatus }: {
+const SkuRow = memo(function SkuRow({ row, rank, expanded, onToggle, productLink, linkStatus, date }: {
   row: ReturnType<typeof rankVolatility>[number]; rank: number; expanded: boolean; onToggle: (id: string) => void;
-  productLink?: string; linkStatus: 'loading' | 'ready' | 'error';
+  date: string; productLink?: string; linkStatus: 'loading' | 'ready' | 'error';
 }) {
   return <>
     <tr data-sku-id={row.id}>
       <td>{row.comparable ? String(rank).padStart(2, '0') : '--'}</td>
-      <td><strong>{row.model}</strong><small>{row.brand} · {row.storage}</small></td>
+      <td><a className="sku-race-edit-link" href={`/?${new URLSearchParams({view:'raw',tab:'daily',date:date.includes('-')?date:`2026-${date.split('.')[0].padStart(2,'0')}-${date.split('.')[1].padStart(2,'0')}`,sku:row.id,search:row.model})}`} title="前往对应日期的每日采价，修改后可由管理员推数仓"><strong>{row.model}</strong><small>{row.brand} · {row.storage}</small></a></td>
       <td>{money(row.previous?.finalPrice)}</td><td>{money(row.current?.finalPrice)}</td>
       <td className={tone(row.percent)}>{signed(row.percent, '%')}</td>
       <td className={tone(row.amount)}>{signed(row.amount)}{row.amount === null ? '' : '元'}</td>

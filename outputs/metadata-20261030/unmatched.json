@@ -1,0 +1,112 @@
+[
+  {
+    "id": "华为 畅享 90-128GB-128",
+    "storage": "128GB",
+    "ppv": "S华为 畅享 90 大陆国行 全网通 8G+128G 星空黑",
+    "model_id": "5632c5ae-e88c-40b7-95ae-393fb0d015c6",
+    "model": "华为 畅享 90",
+    "brand": "华为",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "华为 畅享 90-256GB-129",
+    "storage": "256GB",
+    "ppv": "S华为 畅享 90 大陆国行 全网通 8G+256G 星空黑",
+    "model_id": "5632c5ae-e88c-40b7-95ae-393fb0d015c6",
+    "model": "华为 畅享 90",
+    "brand": "华为",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "华为 畅享90 Plus-128GB-130",
+    "storage": "128GB",
+    "ppv": "S华为 畅享90 Plus 大陆国行 全网通 8G+128G 星空黑",
+    "model_id": "99dc3ce2-3638-43ff-a0b6-7a607ba5bde2",
+    "model": "华为 畅享90 Plus",
+    "brand": "华为",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "华为 畅享90 Plus-256GB-131",
+    "storage": "256GB",
+    "ppv": "S华为 畅享90 Plus 大陆国行 全网通 8G+256G 星空黑",
+    "model_id": "99dc3ce2-3638-43ff-a0b6-7a607ba5bde2",
+    "model": "华为 畅享90 Plus",
+    "brand": "华为",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "华为 畅享 90 Pro Max-128GB-147",
+    "storage": "128GB",
+    "ppv": "S华为 畅享 90 Pro Max 大陆国行 全网通 8G+128G 曜金黑",
+    "model_id": "22dc7920-0383-411a-8a2d-d9c3fd0b2ad1",
+    "model": "华为 畅享 90 Pro Max",
+    "brand": "华为",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "华为 畅享 90 Pro Max-256GB-148",
+    "storage": "256GB",
+    "ppv": "S华为 畅享 90 Pro Max 大陆国行 全网通 8G+256G 曜金黑",
+    "model_id": "22dc7920-0383-411a-8a2d-d9c3fd0b2ad1",
+    "model": "华为 畅享 90 Pro Max",
+    "brand": "华为",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "华为 畅享 90 Pro Max-512GB-149",
+    "storage": "512GB",
+    "ppv": "S华为 畅享 90 Pro Max 大陆国行 全网通 8G+512G 曜金黑",
+    "model_id": "22dc7920-0383-411a-8a2d-d9c3fd0b2ad1",
+    "model": "华为 畅享 90 Pro Max",
+    "brand": "华为",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "63d2dce8-2826-4e2f-9e52-f5b3230a03c9",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "0c111788-1a6d-4122-b376-6b6909b11b4a",
+    "model": "iQOO Neo11 至尊版",
+    "brand": "iQOO",
+    "position": "",
+    "version": 1
+  },
+  {
+    "id": "a12aac37-a4fa-4f18-8ad0-77c01b0f5fd5",
+    "storage": "16GB+256GB",
+    "ppv": "",
+    "model_id": "0c111788-1a6d-4122-b376-6b6909b11b4a",
+    "model": "iQOO Neo11 至尊版",
+    "brand": "iQOO",
+    "position": "",
+    "version": 1
+  },
+  {
+    "id": "cb3b7ffa-c034-4e00-a635-d857c20b01a7",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "0c111788-1a6d-4122-b376-6b6909b11b4a",
+    "model": "iQOO Neo11 至尊版",
+    "brand": "iQOO",
+    "position": "",
+    "version": 1
+  },
+  {
+    "id": "03887257-cc2d-4c52-84d9-4849df9acbbd",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "0c111788-1a6d-4122-b376-6b6909b11b4a",
+    "model": "iQOO Neo11 至尊版",
+    "brand": "iQOO",
+    "position": "",
+    "version": 1
+  }
+]

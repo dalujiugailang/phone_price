@@ -1,0 +1,425 @@
+[
+  {
+    "id": "6aee1a71-23f6-4074-9bc5-7534e4ea7ea9",
+    "model": "REDMI K100 Pro",
+    "position": "中端",
+    "source": "https://antutu.com/doc/137380",
+    "basis": "官网发布信息所述性能产品；按项目既有 REDMI K90 系列中端口径归类，营销旗舰不等于本项目旗舰分类",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "001cf5e7-e805-4d98-b382-04366fab9500",
+    "model": "REDMI K100 Pro Max",
+    "position": "中端",
+    "source": "https://antutu.com/doc/137380",
+    "basis": "官网发布信息所述性能产品；按项目既有 REDMI K90 系列中端口径归类，营销旗舰不等于本项目旗舰分类",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "004b5b34-23de-4186-9a3f-9c986560c338",
+    "model": "荣耀 600 超级版",
+    "position": "中端",
+    "source": "https://www.honor.com/cn/news/honor-600-launch/",
+    "basis": "数字系列人像产品，沿用荣耀500系列中端口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "2e9a6150-f046-4412-bc20-48c0e431497a",
+    "model": "荣耀 600 Pro",
+    "position": "中端",
+    "source": "https://www.honor.com/cn/news/honor-600-launch/",
+    "basis": "数字系列人像产品，沿用荣耀500系列中端口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "e594fcca-0812-444e-b258-ddf361c268f8",
+    "model": "荣耀 600 元气版",
+    "position": "中端",
+    "source": "https://www.honor.com/cn/news/honor-600-launch/",
+    "basis": "数字系列人像产品，沿用荣耀500系列中端口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "06eb64e1-a6c0-424e-8334-6a11448e95d1",
+    "model": "荣耀 WIN RT2",
+    "position": "中端",
+    "source": "https://www.honor.com/cn/news/honor-win2-series/",
+    "basis": "电竞性能系列，沿用荣耀WIN与WIN RT中端口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "734e0e07-6f39-470b-8368-7d6e711fa077",
+    "model": "荣耀 WIN2",
+    "position": "中端",
+    "source": "https://www.honor.com/cn/news/honor-win2-series/",
+    "basis": "电竞性能系列，沿用荣耀WIN与WIN RT中端口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "2db49ee6-ad31-4c46-8158-c59ddc5927a5",
+    "model": "三星 Galaxy S25",
+    "position": "旗舰",
+    "source": "https://www.samsung.com.cn/news/product/galaxy-s25-ai/",
+    "basis": "官方定义高端旗舰系列",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "081cb070-ea25-44ea-98d0-da656521e117",
+    "model": "三星 Galaxy S25+",
+    "position": "旗舰",
+    "source": "https://www.samsung.com.cn/news/product/galaxy-s25-ai/",
+    "basis": "官方定义高端旗舰系列",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "4fafba25-2e19-41d9-84bf-e688faf04936",
+    "model": "三星 Galaxy S25 Ultra",
+    "position": "旗舰",
+    "source": "https://www.samsung.com.cn/news/product/galaxy-s25-ai/",
+    "basis": "官方定义高端旗舰系列",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "0c111788-1a6d-4122-b376-6b6909b11b4a",
+    "model": "iQOO Neo11 至尊版",
+    "position": "低端",
+    "source": "https://www.vivo.com.cn/vivo/param/iqooneo11zun",
+    "basis": "Neo性能系列，沿用项目iQOO Neo11低端口径；不是按官网营销措辞定级",
+    "oldPosition": "",
+    "version": 1
+  },
+  {
+    "id": "0c204a8f-f3a7-4153-8413-513a15a22e24",
+    "model": "一加 16",
+    "position": "旗舰",
+    "source": "https://bbs.oneplus.com/thread/2235241494359310344",
+    "basis": "数字系列性能旗舰，沿用一加15旗舰口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "0c8b46b7-0080-4f59-b5ce-3dbeb83db958",
+    "model": "vivo X Fold6",
+    "position": "折叠",
+    "source": "https://www.vivo.com.cn/vivo/param/xfold6",
+    "basis": "X Fold折叠屏形态优先",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "c2f4bcfb-8e21-4e07-a630-1289a46e8851",
+    "model": "小米 17T",
+    "position": "旗舰",
+    "source": "https://www.ithome.com/0/957/947.htm",
+    "basis": "官方发布所述全能影像旗舰",
+    "oldPosition": "",
+    "version": 1
+  },
+  {
+    "id": "0e871a2a-4559-4f6a-b553-ba5a1a8d0ef7",
+    "model": "小米 17T Pro",
+    "position": "旗舰",
+    "source": "https://www.ithome.com/0/957/947.htm",
+    "basis": "官方发布所述全能影像旗舰",
+    "oldPosition": "",
+    "version": 1
+  },
+  {
+    "id": "1e2a7e45-f721-4566-857f-dffbd8969c7d",
+    "model": "努比亚 红魔 12 Pro+",
+    "position": "旗舰",
+    "source": "https://mobile.zol.com.cn/1260/12606035.html",
+    "basis": "品牌发布资讯定义电竞旗舰，沿用红魔11 Pro+旗舰口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "f2cad5cd-7cf2-4bfd-af7c-2eb135800e90",
+    "model": "华为 Mate 90",
+    "position": "旗舰",
+    "source": "https://consumer.huawei.com/cn/support/content/zh-cn16119533/",
+    "basis": "Mate高端主系列及典藏/非凡大师，沿用Mate80旗舰口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "880df712-c2b7-4f6f-bdba-829e92bb6764",
+    "model": "华为 Mate 90 Pro",
+    "position": "旗舰",
+    "source": "https://consumer.huawei.com/cn/support/content/zh-cn16119533/",
+    "basis": "Mate高端主系列及典藏/非凡大师，沿用Mate80旗舰口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "9c9b254a-057c-4498-88fd-6199fd22c859",
+    "model": "华为 Mate 90 Pro Max",
+    "position": "旗舰",
+    "source": "https://consumer.huawei.com/cn/support/content/zh-cn16119533/",
+    "basis": "Mate高端主系列及典藏/非凡大师，沿用Mate80旗舰口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "a435fc66-0f44-41b6-8788-e0cac20c3bd4",
+    "model": "华为 Mate 90 Pro Max 典藏版",
+    "position": "旗舰",
+    "source": "https://consumer.huawei.com/cn/support/content/zh-cn16119533/",
+    "basis": "Mate高端主系列及典藏/非凡大师，沿用Mate80旗舰口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "2527dd3c-b425-4abd-b1d7-12a9f3e3ad56",
+    "model": "华为 Mate 90 RS 非凡大师",
+    "position": "旗舰",
+    "source": "https://consumer.huawei.com/cn/support/content/zh-cn16119533/",
+    "basis": "Mate高端主系列及典藏/非凡大师，沿用Mate80旗舰口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "53c4c31d-4608-4b6e-a90e-54b3d75c0daf",
+    "model": "荣耀 Magic9",
+    "position": "旗舰",
+    "source": "https://www.honor.com/cn/news/honor-magic9-launch/",
+    "basis": "Magic数字影像旗舰系列",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "d99ad4e2-30be-44c1-9e5d-7f0811512168",
+    "model": "荣耀 Magic9 Pro Max",
+    "position": "旗舰",
+    "source": "https://www.honor.com/cn/news/honor-magic9-launch/",
+    "basis": "Magic数字影像旗舰系列",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "2980b3bf-331f-4506-ade5-b8dd799c526d",
+    "model": "荣耀 Magic9 超能版",
+    "position": "旗舰",
+    "source": "https://www.honor.com/cn/news/honor-magic9-launch/",
+    "basis": "Magic数字影像旗舰系列",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "50288f54-2f9a-400b-b6f1-53d60387a3eb",
+    "model": "荣耀 Magic V Flip",
+    "position": "折叠",
+    "source": "https://www.honor.com/cn/phones/honor-magic-v-flip/",
+    "basis": "官方超轻薄折叠机身",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "8087f356-25af-4c0e-9296-d6d60e61c914",
+    "model": "荣耀 Magic V5",
+    "position": "折叠",
+    "source": "https://www.honor.com/cn/news/honor-magic-v5-launch/",
+    "basis": "官方折叠旗舰，折叠形态优先",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "62157a52-740e-4cd9-85e5-ba7a4280770e",
+    "model": "vivo S60",
+    "position": "中端",
+    "source": "https://www.vivo.com.cn/vivo/param/s60",
+    "basis": "S系列人像产品，沿用S50中端口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "5762d629-258f-42bd-a991-cf9547629a50",
+    "model": "vivo S60 元气版",
+    "position": "中端",
+    "source": "https://m.vivo.com.cn/vivo/param/s60e",
+    "basis": "S系列人像产品，沿用S50中端口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "5a9da3be-0f31-4ff4-8143-5194bcd7eb9b",
+    "model": "OPPO Find X10",
+    "position": "旗舰",
+    "source": "https://www.oppo.com/cn/smartphones/series-find-x/find-x10/",
+    "basis": "官方影像旗舰",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "df1997a8-cdb3-4255-b54c-48fbe1827ebd",
+    "model": "OPPO Find X10 Pro Max",
+    "position": "旗舰",
+    "source": "https://www.oppo.com/cn/smartphones/series-find-x/find-x10-pro-max/",
+    "basis": "Find X旗舰影像系列",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "6675bea2-82f7-4559-bc3a-52ff45113509",
+    "model": "vivo X500",
+    "position": "旗舰",
+    "source": "https://www.vivo.com.cn/brand/news/detail?id=1392",
+    "basis": "官方X500系列影像旗舰发布",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "eeff7ba0-0ca6-486e-9a81-2d1987d3cde2",
+    "model": "vivo X500 Pro",
+    "position": "旗舰",
+    "source": "https://www.vivo.com.cn/brand/news/detail?id=1392",
+    "basis": "官方X500系列影像旗舰发布",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "a3d837d0-f019-46b2-9ed0-faad8b69d4af",
+    "model": "vivo X500 Pro Max",
+    "position": "旗舰",
+    "source": "https://www.vivo.com.cn/brand/news/detail?id=1392",
+    "basis": "官方X500系列影像旗舰发布",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "690167fd-9232-4484-bf78-9284d4e7f340",
+    "model": "OPPO Find N5",
+    "position": "折叠",
+    "source": "https://www.oppo.com/cn/smartphones/series-find-n/find-n5/",
+    "basis": "官方折叠旗舰，折叠形态优先",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "77982f04-180c-4ee3-9ba9-612732614126",
+    "model": "vivo Y600 Pro",
+    "position": "低端",
+    "source": "https://www.vivo.com.cn/vivo/param/y600pro",
+    "basis": "Y系列入门续航产品，沿用Y500 Pro低端口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "7e6f8134-aa49-4e88-9fb3-aa7de8d6772d",
+    "model": "小米 18 Pro",
+    "position": "旗舰",
+    "source": "https://www.mi.com/shop/aptitude/list",
+    "basis": "小米数字高端主系列，官网5999/6999元起，沿用17 Pro系列旗舰口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "a6f930c4-fdac-4a31-9119-af902ad4eceb",
+    "model": "小米 18 Pro Max",
+    "position": "旗舰",
+    "source": "https://www.mi.com/shop/aptitude/list",
+    "basis": "小米数字高端主系列，官网5999/6999元起，沿用17 Pro系列旗舰口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "8800701f-6f4b-428a-9038-47082e228e93",
+    "model": "iQOO 16",
+    "position": "旗舰",
+    "source": "https://m.vivo.com.cn/brand/news/detail?id=1397&type=0",
+    "basis": "官方性能旗舰",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "bab74e3e-66c0-4195-a51d-c88be23c67d5",
+    "model": "OPPO Reno16",
+    "position": "中端",
+    "source": "https://bshop.oppo.com/",
+    "basis": "Reno人像系列，沿用Reno15中端口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "8d58599e-3974-4e5c-8c99-6172df55860b",
+    "model": "OPPO Reno16 Pro",
+    "position": "中端",
+    "source": "https://bshop.oppo.com/",
+    "basis": "Reno人像系列，沿用Reno15中端口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "8f6c0280-261f-4e32-a009-fe9baf5f6663",
+    "model": "REDMI Note 17",
+    "position": "低端",
+    "source": "https://www.mi.com/a/h/86816.html",
+    "basis": "官网1299/1599元起的大屏续航产品，沿用Note15低端口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "ee431ea9-805e-40b3-a118-5459797679db",
+    "model": "REDMI Note 17 Pro",
+    "position": "低端",
+    "source": "https://www.mi.com/a/h/86816.html",
+    "basis": "官网1299/1599元起的大屏续航产品，沿用Note15低端口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "a32fdcea-b720-4738-803a-989f095447e2",
+    "model": "REDMI Turbo 4",
+    "position": "低端",
+    "source": "https://m.mi.com/search/list?key=redmi",
+    "basis": "Turbo性能普及系列，沿用项目Turbo5低端口径",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "bc070e3d-92d9-46d6-8d29-8a3f299eff3f",
+    "model": "华为 Pura 80 Pro",
+    "position": "旗舰",
+    "source": "https://www.huawei.com/cn/news/2025/5/pura80",
+    "basis": "官方定义影像旗舰",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "ef562613-6b77-4ea4-8af7-db3f881ecaec",
+    "model": "华为 Pura 80 Pro+",
+    "position": "旗舰",
+    "source": "https://www.huawei.com/cn/news/2025/5/pura80",
+    "basis": "官方定义影像旗舰",
+    "oldPosition": "",
+    "version": 0
+  },
+  {
+    "id": "c256d19e-9c63-478d-8b1e-02cbcfba31c1",
+    "model": "华为 Pura 80 Ultra",
+    "position": "旗舰",
+    "source": "https://www.huawei.com/cn/news/2025/5/pura80",
+    "basis": "官方定义影像旗舰",
+    "oldPosition": "",
+    "version": 1
+  },
+  {
+    "id": "cca75a81-dac6-4839-b9a7-b435df50964d",
+    "model": "iQOO Z10 Turbo",
+    "position": "低端",
+    "source": "https://bbs.vivo.com.cn/newbbs/thread/38434701",
+    "basis": "Z系列性能普及产品，沿用Z11 Turbo低端口径",
+    "oldPosition": "",
+    "version": 0
+  }
+]

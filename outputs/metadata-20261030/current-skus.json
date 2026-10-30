@@ -1,0 +1,4532 @@
+[
+  {
+    "id": "REDMI Turbo 5 Max-12G+256G-4",
+    "storage": "12G+256G",
+    "ppv": "SREDMI Turbo 5 Max 大陆国行 全网通 12G+256G 暗影黑",
+    "model_id": "3975f8eb-43d4-4cc9-b28e-27c193df5efe",
+    "model": "REDMI Turbo 5 Max",
+    "brand": "小米",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "REDMI Turbo 5 Max-12G+512G-5",
+    "storage": "12G+512G",
+    "ppv": "SREDMI Turbo 5 Max 大陆国行 全网通 12G+512G 暗影黑",
+    "model_id": "3975f8eb-43d4-4cc9-b28e-27c193df5efe",
+    "model": "REDMI Turbo 5 Max",
+    "brand": "小米",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "REDMI Turbo 5 Max-16G+256G-6",
+    "storage": "16G+256G",
+    "ppv": "SREDMI Turbo 5 Max 大陆国行 全网通 16G+256G 暗影黑",
+    "model_id": "3975f8eb-43d4-4cc9-b28e-27c193df5efe",
+    "model": "REDMI Turbo 5 Max",
+    "brand": "小米",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "REDMI Turbo 5 Max-16G+512G-7",
+    "storage": "16G+512G",
+    "ppv": "SREDMI Turbo 5 Max 大陆国行 全网通 16G+512G 暗影黑",
+    "model_id": "3975f8eb-43d4-4cc9-b28e-27c193df5efe",
+    "model": "REDMI Turbo 5 Max",
+    "brand": "小米",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "REDMI Turbo 5 Max-16G+1T-8",
+    "storage": "16G+1T",
+    "ppv": "SREDMI Turbo 5 Max 大陆国行 全网通 暗影黑 16G+1T",
+    "model_id": "3975f8eb-43d4-4cc9-b28e-27c193df5efe",
+    "model": "REDMI Turbo 5 Max",
+    "brand": "小米",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "iQOO Z11 Turbo-12G+256G-9",
+    "storage": "12G+256G",
+    "ppv": "SiQOO Z11 Turbo 大陆国行 全网通 12G+256G 极夜黑",
+    "model_id": "3494d693-5a17-4ab4-af08-d0595ea99197",
+    "model": "iQOO Z11 Turbo",
+    "brand": "iQOO",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "iQOO Z11 Turbo-16G+256G-10",
+    "storage": "16G+256G",
+    "ppv": "SiQOO Z11 Turbo 大陆国行 全网通 16G+256G 极夜黑",
+    "model_id": "3494d693-5a17-4ab4-af08-d0595ea99197",
+    "model": "iQOO Z11 Turbo",
+    "brand": "iQOO",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "iQOO Z11 Turbo-12G+512G-11",
+    "storage": "12G+512G",
+    "ppv": "SiQOO Z11 Turbo 大陆国行 全网通 12G+512G 极夜黑",
+    "model_id": "3494d693-5a17-4ab4-af08-d0595ea99197",
+    "model": "iQOO Z11 Turbo",
+    "brand": "iQOO",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "iQOO Z11 Turbo-16G+512G-12",
+    "storage": "16G+512G",
+    "ppv": "SiQOO Z11 Turbo 大陆国行 全网通 16G+512G 极夜黑",
+    "model_id": "3494d693-5a17-4ab4-af08-d0595ea99197",
+    "model": "iQOO Z11 Turbo",
+    "brand": "iQOO",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "iQOO Z11 Turbo-16G+1T-13",
+    "storage": "16G+1T",
+    "ppv": "SiQOO Z11 Turbo 大陆国行 全网通 极夜黑 16G+1T",
+    "model_id": "3494d693-5a17-4ab4-af08-d0595ea99197",
+    "model": "iQOO Z11 Turbo",
+    "brand": "iQOO",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Power 2-12G+256G-14",
+    "storage": "12G+256G",
+    "ppv": "S荣耀 Power 2 大陆国行 全网通 12G+256G 幻夜黑",
+    "model_id": "6e429b6a-2ad6-44a4-8ada-ec2a187c076b",
+    "model": "荣耀 Power 2",
+    "brand": "荣耀",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Power 2-12G+512G-15",
+    "storage": "12G+512G",
+    "ppv": "S荣耀 Power 2 大陆国行 全网通 12G+512G 幻夜黑",
+    "model_id": "6e429b6a-2ad6-44a4-8ada-ec2a187c076b",
+    "model": "荣耀 Power 2",
+    "brand": "荣耀",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "vivo S50-12G+256G-16",
+    "storage": "12G+256G",
+    "ppv": "Svivo S50 大陆国行 全网通 12G+256G 深空黑",
+    "model_id": "2fb51d19-ab54-496a-93f3-f21be3b9d69d",
+    "model": "vivo S50",
+    "brand": "vivo",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "vivo S50-16G+256G-17",
+    "storage": "16G+256G",
+    "ppv": "Svivo S50 大陆国行 全网通 16G+256G 深空黑",
+    "model_id": "2fb51d19-ab54-496a-93f3-f21be3b9d69d",
+    "model": "vivo S50",
+    "brand": "vivo",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "vivo S50-12G+512G-18",
+    "storage": "12G+512G",
+    "ppv": "Svivo S50 大陆国行 全网通 12G+512G 深空黑",
+    "model_id": "2fb51d19-ab54-496a-93f3-f21be3b9d69d",
+    "model": "vivo S50",
+    "brand": "vivo",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "vivo S50-16G+512G-19",
+    "storage": "16G+512G",
+    "ppv": "Svivo S50 大陆国行 全网通 16G+512G 深空黑",
+    "model_id": "2fb51d19-ab54-496a-93f3-f21be3b9d69d",
+    "model": "vivo S50",
+    "brand": "vivo",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "华为 Mate 80-12G+256G-20",
+    "storage": "12G+256G",
+    "ppv": "S华为 Mate 80 大陆国行 全网通 12G+256G 曜石黑 保修时长≥30天",
+    "model_id": "e80b46e8-8809-48b2-a2ff-de58a9bcc36e",
+    "model": "华为 Mate 80",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Mate 80-12G+512G-21",
+    "storage": "12G+512G",
+    "ppv": "S华为 Mate 80 大陆国行 全网通 12G+512G 曜石黑 保修时长≥30天",
+    "model_id": "e80b46e8-8809-48b2-a2ff-de58a9bcc36e",
+    "model": "华为 Mate 80",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Mate 80-16G+512G-22",
+    "storage": "16G+512G",
+    "ppv": "S华为 Mate 80 大陆国行 全网通 16G+512G 曜石黑 保修时长≥30天",
+    "model_id": "e80b46e8-8809-48b2-a2ff-de58a9bcc36e",
+    "model": "华为 Mate 80",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Mate 80 Pro-12G+256G-23",
+    "storage": "12G+256G",
+    "ppv": "S华为 Mate 80 Pro 大陆国行 全网通 12G+256G 曜石黑 保修时长≥30天",
+    "model_id": "a724e9bf-eba9-46d5-9f01-cb4bcea23774",
+    "model": "华为 Mate 80 Pro",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Mate 80 Pro-12G+512G-24",
+    "storage": "12G+512G",
+    "ppv": "S华为 Mate 80 Pro 大陆国行 全网通 12G+512G 曜石黑 保修时长≥30天",
+    "model_id": "a724e9bf-eba9-46d5-9f01-cb4bcea23774",
+    "model": "华为 Mate 80 Pro",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Mate 80 Pro-16G+512G-25",
+    "storage": "16G+512G",
+    "ppv": "S华为 Mate 80 Pro 大陆国行 全网通 16G+512G 曜石黑 保修时长≥30天",
+    "model_id": "a724e9bf-eba9-46d5-9f01-cb4bcea23774",
+    "model": "华为 Mate 80 Pro",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Mate 80 Pro-16G+1T-26",
+    "storage": "16G+1T",
+    "ppv": "S华为 Mate 80 Pro 大陆国行 全网通 曜石黑 保修时长≥30天 16G+1T",
+    "model_id": "a724e9bf-eba9-46d5-9f01-cb4bcea23774",
+    "model": "华为 Mate 80 Pro",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Mate X7-12G+256G-27",
+    "storage": "12G+256G",
+    "ppv": "S华为 Mate X7 大陆国行 全网通 12G+256G 曜石黑 保修时长≥30天",
+    "model_id": "80b0aa28-10d8-4967-99fb-4bcb985e2ba5",
+    "model": "华为 Mate X7",
+    "brand": "华为",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "华为 Mate X7-12G+512G-28",
+    "storage": "12G+512G",
+    "ppv": "S华为 Mate X7 大陆国行 全网通 12G+512G 曜石黑 保修时长≥30天",
+    "model_id": "80b0aa28-10d8-4967-99fb-4bcb985e2ba5",
+    "model": "华为 Mate X7",
+    "brand": "华为",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "华为 Mate X7 典藏版-16G+512G-29",
+    "storage": "16G+512G",
+    "ppv": "S华为 Mate X7 典藏版 大陆国行 全网通 16G+512G 保修时长≥30天 云锦白",
+    "model_id": "a580bbc4-548e-4c47-ba95-d2b0f4c63cdc",
+    "model": "华为 Mate X7 典藏版",
+    "brand": "华为",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "华为 Mate X7 典藏版-16G+1T-30",
+    "storage": "16G+1T",
+    "ppv": "S华为 Mate X7 典藏版 大陆国行 全网通 保修时长≥30天 16G+1T 云锦白",
+    "model_id": "a580bbc4-548e-4c47-ba95-d2b0f4c63cdc",
+    "model": "华为 Mate X7 典藏版",
+    "brand": "华为",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "华为 Mate X7 典藏版-20G+1T-31",
+    "storage": "20GB+1TB 手写笔套装",
+    "ppv": "S华为 Mate X7 典藏版 大陆国行 全网通 保修时长≥30天 云锦白 20G+1T",
+    "model_id": "a580bbc4-548e-4c47-ba95-d2b0f4c63cdc",
+    "model": "华为 Mate X7 典藏版",
+    "brand": "华为",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "荣耀 500-12G+256G-32",
+    "storage": "12G+256G",
+    "ppv": "S荣耀 500 大陆国行 全网通 12G+256G 曜石黑 保修时长≥30天",
+    "model_id": "f5df5565-d242-48d7-a392-888a93a2b739",
+    "model": "荣耀 500",
+    "brand": "荣耀",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "荣耀 500-12G+512G-33",
+    "storage": "12G+512G",
+    "ppv": "S荣耀 500 大陆国行 全网通 12G+512G 曜石黑 保修时长≥30天",
+    "model_id": "f5df5565-d242-48d7-a392-888a93a2b739",
+    "model": "荣耀 500",
+    "brand": "荣耀",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "荣耀 500-16G+512G-34",
+    "storage": "16G+512G",
+    "ppv": "S荣耀 500 大陆国行 全网通 16G+512G 曜石黑 保修时长≥30天",
+    "model_id": "f5df5565-d242-48d7-a392-888a93a2b739",
+    "model": "荣耀 500",
+    "brand": "荣耀",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "OPPO Reno15-12G+256G-35",
+    "storage": "12G+256G",
+    "ppv": "SOPPO Reno15 大陆国行 全网通 12G+256G 星光蝴蝶结",
+    "model_id": "803e45f6-3222-49ae-9e95-0c83bcbcafb4",
+    "model": "OPPO Reno15",
+    "brand": "OPPO",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "OPPO Reno15-12G+512G-36",
+    "storage": "12G+512G",
+    "ppv": "SOPPO Reno15 大陆国行 全网通 12G+512G 星光蝴蝶结",
+    "model_id": "803e45f6-3222-49ae-9e95-0c83bcbcafb4",
+    "model": "OPPO Reno15",
+    "brand": "OPPO",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "OPPO Reno15-16G+256G-37",
+    "storage": "16G+256G",
+    "ppv": "SOPPO Reno15 大陆国行 全网通 16G+256G 星光蝴蝶结",
+    "model_id": "803e45f6-3222-49ae-9e95-0c83bcbcafb4",
+    "model": "OPPO Reno15",
+    "brand": "OPPO",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "OPPO Reno15-16G+512G-38",
+    "storage": "16G+512G",
+    "ppv": "SOPPO Reno15 大陆国行 全网通 16G+512G 星光蝴蝶结",
+    "model_id": "803e45f6-3222-49ae-9e95-0c83bcbcafb4",
+    "model": "OPPO Reno15",
+    "brand": "OPPO",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "OPPO Reno15-16G+1T-39",
+    "storage": "16G+1T",
+    "ppv": "SOPPO Reno15 大陆国行 全网通 16G+1T 星光蝴蝶结",
+    "model_id": "803e45f6-3222-49ae-9e95-0c83bcbcafb4",
+    "model": "OPPO Reno15",
+    "brand": "OPPO",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "iQOO Neo11-12G+256G-40",
+    "storage": "12G+256G",
+    "ppv": "SiQOO Neo11 大陆国行 全网通 12G+256G 驰光白",
+    "model_id": "1bdabf68-af10-4f55-9b74-e19b0354a06a",
+    "model": "iQOO Neo11",
+    "brand": "iQOO",
+    "position": "低端",
+    "version": 2
+  },
+  {
+    "id": "iQOO Neo11-16G+256G-41",
+    "storage": "16G+256G",
+    "ppv": "SiQOO Neo11 大陆国行 全网通 16G+256G 驰光白",
+    "model_id": "1bdabf68-af10-4f55-9b74-e19b0354a06a",
+    "model": "iQOO Neo11",
+    "brand": "iQOO",
+    "position": "低端",
+    "version": 2
+  },
+  {
+    "id": "iQOO Neo11-12G+512G-42",
+    "storage": "12G+512G",
+    "ppv": "SiQOO Neo11 大陆国行 全网通 12G+512G 驰光白",
+    "model_id": "1bdabf68-af10-4f55-9b74-e19b0354a06a",
+    "model": "iQOO Neo11",
+    "brand": "iQOO",
+    "position": "低端",
+    "version": 2
+  },
+  {
+    "id": "iQOO Neo11-16G+512G-43",
+    "storage": "16G+512G",
+    "ppv": "SiQOO Neo11 大陆国行 全网通 16G+512G 驰光白",
+    "model_id": "1bdabf68-af10-4f55-9b74-e19b0354a06a",
+    "model": "iQOO Neo11",
+    "brand": "iQOO",
+    "position": "低端",
+    "version": 2
+  },
+  {
+    "id": "iQOO Neo11-16G+1T-44",
+    "storage": "16G+1T",
+    "ppv": "SiQOO Neo11 大陆国行 全网通 16G+1T 驰光白",
+    "model_id": "1bdabf68-af10-4f55-9b74-e19b0354a06a",
+    "model": "iQOO Neo11",
+    "brand": "iQOO",
+    "position": "低端",
+    "version": 2
+  },
+  {
+    "id": "一加 15-12G+256G-45",
+    "storage": "12G+256G",
+    "ppv": "S一加 15 大陆国行 全网通 12G+256G 原色沙丘",
+    "model_id": "b4c1052e-11cb-46e0-a43c-1c3ce08c2d0b",
+    "model": "一加 15",
+    "brand": "一加",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "一加 15-12G+512G-46",
+    "storage": "12G+512G",
+    "ppv": "S一加 15 大陆国行 全网通 12G+512G 原色沙丘",
+    "model_id": "b4c1052e-11cb-46e0-a43c-1c3ce08c2d0b",
+    "model": "一加 15",
+    "brand": "一加",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "一加 15-16G+256G-47",
+    "storage": "16G+256G",
+    "ppv": "S一加 15 大陆国行 全网通 16G+256G 原色沙丘",
+    "model_id": "b4c1052e-11cb-46e0-a43c-1c3ce08c2d0b",
+    "model": "一加 15",
+    "brand": "一加",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "一加 15-16G+512G-48",
+    "storage": "16G+512G",
+    "ppv": "S一加 15 大陆国行 全网通 16G+512G 原色沙丘",
+    "model_id": "b4c1052e-11cb-46e0-a43c-1c3ce08c2d0b",
+    "model": "一加 15",
+    "brand": "一加",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "一加 15-16G+1T-49",
+    "storage": "16G+1T",
+    "ppv": "S一加 15 大陆国行 全网通 16G+1T 原色沙丘",
+    "model_id": "b4c1052e-11cb-46e0-a43c-1c3ce08c2d0b",
+    "model": "一加 15",
+    "brand": "一加",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "REDMI K90-16G+256G-50",
+    "storage": "16G+256G",
+    "ppv": "SREDMI K90 大陆国行 白色 全网通 16G+256G",
+    "model_id": "a221ae2e-f3c0-4fb8-8103-106128ceeed3",
+    "model": "REDMI K90",
+    "brand": "小米",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "REDMI K90-12G+256G-51",
+    "storage": "12G+256G",
+    "ppv": "SREDMI K90 大陆国行 白色 全网通 12G+256G",
+    "model_id": "a221ae2e-f3c0-4fb8-8103-106128ceeed3",
+    "model": "REDMI K90",
+    "brand": "小米",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "REDMI K90-12G+512G-52",
+    "storage": "12G+512G",
+    "ppv": "SREDMI K90 大陆国行 白色 全网通 12G+512G",
+    "model_id": "a221ae2e-f3c0-4fb8-8103-106128ceeed3",
+    "model": "REDMI K90",
+    "brand": "小米",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "REDMI K90-16G+512G-53",
+    "storage": "16G+512G",
+    "ppv": "SREDMI K90 大陆国行 白色 全网通 16G+512G",
+    "model_id": "a221ae2e-f3c0-4fb8-8103-106128ceeed3",
+    "model": "REDMI K90",
+    "brand": "小米",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "REDMI K90-16G+1T-54",
+    "storage": "16G+1T",
+    "ppv": "SREDMI K90 大陆国行 白色 全网通 16G+1T",
+    "model_id": "a221ae2e-f3c0-4fb8-8103-106128ceeed3",
+    "model": "REDMI K90",
+    "brand": "小米",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "OPPO Find X9-12G+256G-55",
+    "storage": "12G+256G",
+    "ppv": "SOPPO Find X9 大陆国行 全网通 12G+256G 霜白",
+    "model_id": "f368f9a4-4e75-4943-b83c-19b0d9f24578",
+    "model": "OPPO Find X9",
+    "brand": "OPPO",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "OPPO Find X9-16G+256G-56",
+    "storage": "16G+256G",
+    "ppv": "SOPPO Find X9 大陆国行 全网通 16G+256G 霜白",
+    "model_id": "f368f9a4-4e75-4943-b83c-19b0d9f24578",
+    "model": "OPPO Find X9",
+    "brand": "OPPO",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "OPPO Find X9-12G+512G-57",
+    "storage": "12G+512G",
+    "ppv": "SOPPO Find X9 大陆国行 全网通 12G+512G 霜白",
+    "model_id": "f368f9a4-4e75-4943-b83c-19b0d9f24578",
+    "model": "OPPO Find X9",
+    "brand": "OPPO",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "OPPO Find X9-16G+512G-58",
+    "storage": "16G+512G",
+    "ppv": "SOPPO Find X9 大陆国行 全网通 16G+512G 霜白",
+    "model_id": "f368f9a4-4e75-4943-b83c-19b0d9f24578",
+    "model": "OPPO Find X9",
+    "brand": "OPPO",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "OPPO Find X9-16G+1T-59",
+    "storage": "16G+1T",
+    "ppv": "SOPPO Find X9 大陆国行 全网通 16G+1T 霜白",
+    "model_id": "f368f9a4-4e75-4943-b83c-19b0d9f24578",
+    "model": "OPPO Find X9",
+    "brand": "OPPO",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "OPPO Find X9 Pro-12G+256G-60",
+    "storage": "12G+256G",
+    "ppv": "SOPPO Find X9 Pro 大陆国行 全网通 12G+256G 霜白",
+    "model_id": "5df8c6de-8fae-48a0-aef0-cfd5d9b886a7",
+    "model": "OPPO Find X9 Pro",
+    "brand": "OPPO",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "OPPO Find X9 Pro-12G+512G-61",
+    "storage": "12G+512G",
+    "ppv": "SOPPO Find X9 Pro 大陆国行 全网通 12G+512G 霜白",
+    "model_id": "5df8c6de-8fae-48a0-aef0-cfd5d9b886a7",
+    "model": "OPPO Find X9 Pro",
+    "brand": "OPPO",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "OPPO Find X9 Pro-16G+512G-62",
+    "storage": "16G+512G",
+    "ppv": "SOPPO Find X9 Pro 大陆国行 全网通 16G+512G 霜白",
+    "model_id": "5df8c6de-8fae-48a0-aef0-cfd5d9b886a7",
+    "model": "OPPO Find X9 Pro",
+    "brand": "OPPO",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "OPPO Find X9 Pro-16G+1T-63",
+    "storage": "16G+1T",
+    "ppv": "SOPPO Find X9 Pro 大陆国行 全网通 16G+1T 霜白",
+    "model_id": "5df8c6de-8fae-48a0-aef0-cfd5d9b886a7",
+    "model": "OPPO Find X9 Pro",
+    "brand": "OPPO",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Magic8-12G+256G-64",
+    "storage": "12G+256G",
+    "ppv": "S荣耀 Magic8 大陆国行 全网通 12G+256G 保修时长≥30天 雪域白",
+    "model_id": "51265ee6-bafe-4b4b-85a0-fdb4da3c447e",
+    "model": "荣耀 Magic8",
+    "brand": "荣耀",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Magic8-12G+512G-65",
+    "storage": "12G+512G",
+    "ppv": "S荣耀 Magic8 大陆国行 全网通 12G+512G 保修时长≥30天 雪域白",
+    "model_id": "51265ee6-bafe-4b4b-85a0-fdb4da3c447e",
+    "model": "荣耀 Magic8",
+    "brand": "荣耀",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Magic8-16G+512G-66",
+    "storage": "16G+512G",
+    "ppv": "S荣耀 Magic8 大陆国行 全网通 16G+512G 保修时长≥30天 雪域白",
+    "model_id": "51265ee6-bafe-4b4b-85a0-fdb4da3c447e",
+    "model": "荣耀 Magic8",
+    "brand": "荣耀",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Magic8-16G+1T-67",
+    "storage": "16G+1T",
+    "ppv": "S荣耀 Magic8 大陆国行 全网通 保修时长≥30天 雪域白 16G+1T",
+    "model_id": "51265ee6-bafe-4b4b-85a0-fdb4da3c447e",
+    "model": "荣耀 Magic8",
+    "brand": "荣耀",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "iQOO 15-12G+256G-68",
+    "storage": "12G+256G",
+    "ppv": "SiQOO 15 大陆国行 全网通 12G+256G 传奇版",
+    "model_id": "e71aa557-8629-4382-8801-594f57286e45",
+    "model": "iQOO 15",
+    "brand": "iQOO",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "iQOO 15-16G+256G-69",
+    "storage": "16G+256G",
+    "ppv": "SiQOO 15 大陆国行 全网通 16G+256G 传奇版",
+    "model_id": "e71aa557-8629-4382-8801-594f57286e45",
+    "model": "iQOO 15",
+    "brand": "iQOO",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "iQOO 15-12G+512G-70",
+    "storage": "12G+512G",
+    "ppv": "SiQOO 15 大陆国行 全网通 12G+512G 传奇版",
+    "model_id": "e71aa557-8629-4382-8801-594f57286e45",
+    "model": "iQOO 15",
+    "brand": "iQOO",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "iQOO 15-16G+512G-71",
+    "storage": "16G+512G",
+    "ppv": "SiQOO 15 大陆国行 全网通 16G+512G 传奇版",
+    "model_id": "e71aa557-8629-4382-8801-594f57286e45",
+    "model": "iQOO 15",
+    "brand": "iQOO",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "iQOO 15-16G+1T-72",
+    "storage": "16G+1T",
+    "ppv": "SiQOO 15 大陆国行 全网通 传奇版 16G+1T",
+    "model_id": "e71aa557-8629-4382-8801-594f57286e45",
+    "model": "iQOO 15",
+    "brand": "iQOO",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "vivo X300-12G+256G-73",
+    "storage": "12G+256G",
+    "ppv": "Svivo X300 大陆国行 全网通 12G+256G 纯粹黑",
+    "model_id": "4e65f8a0-5597-4639-b1c0-27feebbf054f",
+    "model": "vivo X300",
+    "brand": "vivo",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "vivo X300-16G+256G-74",
+    "storage": "16G+256G",
+    "ppv": "Svivo X300 大陆国行 全网通 16G+256G 纯粹黑",
+    "model_id": "4e65f8a0-5597-4639-b1c0-27feebbf054f",
+    "model": "vivo X300",
+    "brand": "vivo",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "vivo X300-12G+512G-75",
+    "storage": "12G+512G",
+    "ppv": "Svivo X300 大陆国行 全网通 12G+512G 纯粹黑",
+    "model_id": "4e65f8a0-5597-4639-b1c0-27feebbf054f",
+    "model": "vivo X300",
+    "brand": "vivo",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "vivo X300-16G+512G-76",
+    "storage": "16G+512G",
+    "ppv": "Svivo X300 大陆国行 全网通 16G+512G 纯粹黑",
+    "model_id": "4e65f8a0-5597-4639-b1c0-27feebbf054f",
+    "model": "vivo X300",
+    "brand": "vivo",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "vivo X300-16G+1T-77",
+    "storage": "16G+1T",
+    "ppv": "Svivo X300 大陆国行 全网通 16G+1T 纯粹黑",
+    "model_id": "4e65f8a0-5597-4639-b1c0-27feebbf054f",
+    "model": "vivo X300",
+    "brand": "vivo",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "vivo X300 Pro-12G+256G-78",
+    "storage": "12G+256G",
+    "ppv": "Svivo X300 Pro 大陆国行 全网通 12G+256G 简单白",
+    "model_id": "9ac336c8-425c-471e-b6dd-35aeb53d0d23",
+    "model": "vivo X300 Pro",
+    "brand": "vivo",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "vivo X300 Pro-16G+512G-79",
+    "storage": "16G+512G",
+    "ppv": "Svivo X300 Pro 大陆国行 全网通 16G+512G 简单白",
+    "model_id": "9ac336c8-425c-471e-b6dd-35aeb53d0d23",
+    "model": "vivo X300 Pro",
+    "brand": "vivo",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "vivo X300 Pro-16G+1T-80",
+    "storage": "16G+1T",
+    "ppv": "Svivo X300 Pro 大陆国行 全网通 16G+1T 简单白",
+    "model_id": "9ac336c8-425c-471e-b6dd-35aeb53d0d23",
+    "model": "vivo X300 Pro",
+    "brand": "vivo",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "小米 17-12G+256G-81",
+    "storage": "12G+256G",
+    "ppv": "S小米 17 大陆国行 白色 全网通 12G+256G 保修时长≥30天",
+    "model_id": "b757cfc6-6298-4192-98c5-86c16ec642a0",
+    "model": "小米 17",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "小米 17-12G+512G-82",
+    "storage": "12G+512G",
+    "ppv": "S小米 17 大陆国行 白色 全网通 12G+512G 保修时长≥30天",
+    "model_id": "b757cfc6-6298-4192-98c5-86c16ec642a0",
+    "model": "小米 17",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "小米 17-16G+512G-83",
+    "storage": "16G+512G",
+    "ppv": "S小米 17 大陆国行 白色 全网通 16G+512G 保修时长≥30天",
+    "model_id": "b757cfc6-6298-4192-98c5-86c16ec642a0",
+    "model": "小米 17",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "小米 17-16G+1T-84",
+    "storage": "16G+1T",
+    "ppv": "S小米 17 大陆国行 白色 全网通 保修时长≥30天 16G+1T",
+    "model_id": "b757cfc6-6298-4192-98c5-86c16ec642a0",
+    "model": "小米 17",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "vivo X Fold 5-12G+256G-85",
+    "storage": "12G+256G",
+    "ppv": "Svivo X Fold 5 大陆国行 全网通 12G+256G 钛度",
+    "model_id": "51cfa3cd-552c-40ab-aa24-e8011729dcb6",
+    "model": "vivo X Fold 5",
+    "brand": "vivo",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "vivo X Fold 5-12G+512G-86",
+    "storage": "12G+512G",
+    "ppv": "Svivo X Fold 5 大陆国行 全网通 12G+512G 钛度",
+    "model_id": "51cfa3cd-552c-40ab-aa24-e8011729dcb6",
+    "model": "vivo X Fold 5",
+    "brand": "vivo",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "vivo X Fold 5-16G+512G-87",
+    "storage": "16G+512G",
+    "ppv": "Svivo X Fold 5 大陆国行 全网通 16G+512G 钛度",
+    "model_id": "51cfa3cd-552c-40ab-aa24-e8011729dcb6",
+    "model": "vivo X Fold 5",
+    "brand": "vivo",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "vivo X Fold 5-16G+1T-88",
+    "storage": "16G+1T",
+    "ppv": "Svivo X Fold 5 大陆国行 全网通 16G+1T 钛度",
+    "model_id": "51cfa3cd-552c-40ab-aa24-e8011729dcb6",
+    "model": "vivo X Fold 5",
+    "brand": "vivo",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "小米 17 Max-12GB+512GB-89",
+    "storage": "12GB+512GB",
+    "ppv": "S小米 17 Max 大陆国行 白色 全网通 12G+512G 保修时长≥30天",
+    "model_id": "b525a700-b2e4-4d06-a32b-a4296f0fb55c",
+    "model": "小米 17 Max",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "iQOO 15T-12GB+256GB-90",
+    "storage": "12GB+256GB",
+    "ppv": "SiQOO 15T 大陆国行 全网通 12G+256G 传奇版",
+    "model_id": "245e4ab5-5a25-48af-9403-e53c5ce41f8b",
+    "model": "iQOO 15T",
+    "brand": "iQOO",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "iQOO 15T-12GB+512GB-91",
+    "storage": "12GB+512GB",
+    "ppv": "SiQOO 15T 大陆国行 全网通 12G+512G 传奇版",
+    "model_id": "245e4ab5-5a25-48af-9403-e53c5ce41f8b",
+    "model": "iQOO 15T",
+    "brand": "iQOO",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "iQOO 15T-16GB+256GB-92",
+    "storage": "16GB+256GB",
+    "ppv": "SiQOO 15T 大陆国行 全网通 16G+256G 传奇版",
+    "model_id": "245e4ab5-5a25-48af-9403-e53c5ce41f8b",
+    "model": "iQOO 15T",
+    "brand": "iQOO",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "iQOO 15T-16GB+512GB-93",
+    "storage": "16GB+512GB",
+    "ppv": "SiQOO 15T 大陆国行 全网通 16G+512G 传奇版",
+    "model_id": "245e4ab5-5a25-48af-9403-e53c5ce41f8b",
+    "model": "iQOO 15T",
+    "brand": "iQOO",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "iQOO 15T-16GB+1TB-94",
+    "storage": "16GB+1TB",
+    "ppv": "SiQOO 15T 大陆国行 全网通 传奇版 16G+1T",
+    "model_id": "245e4ab5-5a25-48af-9403-e53c5ce41f8b",
+    "model": "iQOO 15T",
+    "brand": "iQOO",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "一加 Ace 6 至尊版-12GB+256GB-95",
+    "storage": "12GB+256GB",
+    "ppv": "S一加 Ace 6 至尊版 大陆国行 全网通 12G+256G 王牌觉醒",
+    "model_id": "4c9a7e71-1a8d-4dd2-8a51-c254700fc7b7",
+    "model": "一加 Ace 6 至尊版",
+    "brand": "一加",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "一加 Ace 6 至尊版-16GB+256GB-96",
+    "storage": "16GB+256GB",
+    "ppv": "S一加 Ace 6 至尊版 大陆国行 全网通 16G+256G 王牌觉醒",
+    "model_id": "4c9a7e71-1a8d-4dd2-8a51-c254700fc7b7",
+    "model": "一加 Ace 6 至尊版",
+    "brand": "一加",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "一加 Ace 6 至尊版-12GB+512GB-97",
+    "storage": "12GB+512GB",
+    "ppv": "S一加 Ace 6 至尊版 大陆国行 全网通 12G+512G 王牌觉醒",
+    "model_id": "4c9a7e71-1a8d-4dd2-8a51-c254700fc7b7",
+    "model": "一加 Ace 6 至尊版",
+    "brand": "一加",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "一加 Ace 6 至尊版-16GB+512GB-98",
+    "storage": "16GB+512GB",
+    "ppv": "S一加 Ace 6 至尊版 大陆国行 全网通 16G+512G 王牌觉醒",
+    "model_id": "4c9a7e71-1a8d-4dd2-8a51-c254700fc7b7",
+    "model": "一加 Ace 6 至尊版",
+    "brand": "一加",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "一加 Ace 6 至尊版-16GB+1TB-99",
+    "storage": "16GB+1TB",
+    "ppv": "S一加 Ace 6 至尊版 大陆国行 全网通 16G+1T 王牌觉醒",
+    "model_id": "4c9a7e71-1a8d-4dd2-8a51-c254700fc7b7",
+    "model": "一加 Ace 6 至尊版",
+    "brand": "一加",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "OPPO Find X9 Ultra-12GB+256GB-100",
+    "storage": "12GB+256GB",
+    "ppv": "SOPPO Find X9 Ultra 大陆国行 全网通 12G+256G 大地苔原",
+    "model_id": "ce4c1420-3d0f-45cf-8d88-0e3f14e9bb9e",
+    "model": "OPPO Find X9 Ultra",
+    "brand": "OPPO",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "OPPO Find X9 Ultra-12GB+512GB-101",
+    "storage": "12GB+512GB",
+    "ppv": "SOPPO Find X9 Ultra 大陆国行 全网通 12G+512G 大地苔原",
+    "model_id": "ce4c1420-3d0f-45cf-8d88-0e3f14e9bb9e",
+    "model": "OPPO Find X9 Ultra",
+    "brand": "OPPO",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "OPPO Find X9 Ultra-16GB+512GB-102",
+    "storage": "16GB+512GB",
+    "ppv": "SOPPO Find X9 Ultra 大陆国行 全网通 16G+512G 大地苔原",
+    "model_id": "ce4c1420-3d0f-45cf-8d88-0e3f14e9bb9e",
+    "model": "OPPO Find X9 Ultra",
+    "brand": "OPPO",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "OPPO Find X9 Ultra-16GB+1TB-103",
+    "storage": "16GB+1TB",
+    "ppv": "SOPPO Find X9 Ultra 大陆国行 全网通 16G+1T 大地苔原",
+    "model_id": "ce4c1420-3d0f-45cf-8d88-0e3f14e9bb9e",
+    "model": "OPPO Find X9 Ultra",
+    "brand": "OPPO",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "OPPO Find X9s Pro-12GB+256GB-104",
+    "storage": "12GB+256GB",
+    "ppv": "SOPPO Find X9s Pro 大陆国行 全网通 12G+256G 自在白",
+    "model_id": "16407fec-15fb-46ae-9ed6-846b98c8e22e",
+    "model": "OPPO Find X9s Pro",
+    "brand": "OPPO",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "OPPO Find X9s Pro-12GB+512GB-105",
+    "storage": "12GB+512GB",
+    "ppv": "SOPPO Find X9s Pro 大陆国行 全网通 12G+512G 自在白",
+    "model_id": "16407fec-15fb-46ae-9ed6-846b98c8e22e",
+    "model": "OPPO Find X9s Pro",
+    "brand": "OPPO",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "OPPO Find X9s Pro-16GB+512GB-106",
+    "storage": "16GB+512GB",
+    "ppv": "SOPPO Find X9s Pro 大陆国行 全网通 16G+512G 自在白",
+    "model_id": "16407fec-15fb-46ae-9ed6-846b98c8e22e",
+    "model": "OPPO Find X9s Pro",
+    "brand": "OPPO",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "OPPO Find X9s Pro-16GB+1TB-107",
+    "storage": "16GB+1TB",
+    "ppv": "SOPPO Find X9s Pro 大陆国行 全网通 16G+1T 自在白",
+    "model_id": "16407fec-15fb-46ae-9ed6-846b98c8e22e",
+    "model": "OPPO Find X9s Pro",
+    "brand": "OPPO",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "REDMI K90 Max-12GB+256GB-108",
+    "storage": "12GB+256GB",
+    "ppv": "SREDMI K90 Max 大陆国行 全网通 12G+256G 暗影黑 保修时长≥30天",
+    "model_id": "83a29c6c-92ab-4654-88ef-e0221dacaa69",
+    "model": "REDMI K90 Max",
+    "brand": "小米",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "REDMI K90 Max-16GB+256GB-109",
+    "storage": "16GB+256GB",
+    "ppv": "SREDMI K90 Max 大陆国行 全网通 16G+256G 暗影黑 保修时长≥30天",
+    "model_id": "83a29c6c-92ab-4654-88ef-e0221dacaa69",
+    "model": "REDMI K90 Max",
+    "brand": "小米",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "REDMI K90 Max-12GB+512GB-110",
+    "storage": "12GB+512GB",
+    "ppv": "SREDMI K90 Max 大陆国行 全网通 12G+512G 暗影黑 保修时长≥30天",
+    "model_id": "83a29c6c-92ab-4654-88ef-e0221dacaa69",
+    "model": "REDMI K90 Max",
+    "brand": "小米",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "REDMI K90 Max-16GB+512GB-111",
+    "storage": "16GB+512GB",
+    "ppv": "SREDMI K90 Max 大陆国行 全网通 16G+512G 暗影黑 保修时长≥30天",
+    "model_id": "83a29c6c-92ab-4654-88ef-e0221dacaa69",
+    "model": "REDMI K90 Max",
+    "brand": "小米",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "REDMI K90 Max-16GB+1TB-112",
+    "storage": "16GB+1TB",
+    "ppv": "SREDMI K90 Max 大陆国行 全网通 暗影黑 保修时长≥30天 16G+1T",
+    "model_id": "83a29c6c-92ab-4654-88ef-e0221dacaa69",
+    "model": "REDMI K90 Max",
+    "brand": "小米",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "华为 Pura X Max-12GB+256GB-113",
+    "storage": "12GB+256GB",
+    "ppv": "S华为 Pura X Max 大陆国行 全网通 12G+256G 幻夜黑 保修时长≥30天",
+    "model_id": "ed21d60e-3a8a-4101-b02d-7add73bc3071",
+    "model": "华为 Pura X Max",
+    "brand": "华为",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "华为 Pura X Max-12GB+512GB-114",
+    "storage": "12GB+512GB",
+    "ppv": "S华为 Pura X Max 大陆国行 全网通 12G+512G 幻夜黑 保修时长≥30天",
+    "model_id": "ed21d60e-3a8a-4101-b02d-7add73bc3071",
+    "model": "华为 Pura X Max",
+    "brand": "华为",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "华为 Pura 90 Pro-12GB+256GB-115",
+    "storage": "12GB+256GB",
+    "ppv": "S华为 Pura 90 Pro 大陆国行 全网通 12G+256G 保修时长≥30天 桑果黑",
+    "model_id": "93b528b7-4fe1-46cc-8b93-f35c7d629130",
+    "model": "华为 Pura 90 Pro",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Pura 90 Pro-12GB+512GB-116",
+    "storage": "12GB+512GB",
+    "ppv": "S华为 Pura 90 Pro 大陆国行 全网通 12G+512G 保修时长≥30天 桑果黑",
+    "model_id": "93b528b7-4fe1-46cc-8b93-f35c7d629130",
+    "model": "华为 Pura 90 Pro",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Pura 90 Pro-16GB+512GB-117",
+    "storage": "16GB+512GB",
+    "ppv": "S华为 Pura 90 Pro 大陆国行 全网通 16G+512G 保修时长≥30天 桑果黑",
+    "model_id": "93b528b7-4fe1-46cc-8b93-f35c7d629130",
+    "model": "华为 Pura 90 Pro",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Pura 90 Pro-16GB+1TB-118",
+    "storage": "16GB+1TB",
+    "ppv": "S华为 Pura 90 Pro 大陆国行 全网通 保修时长≥30天 16G+1T 桑果黑",
+    "model_id": "93b528b7-4fe1-46cc-8b93-f35c7d629130",
+    "model": "华为 Pura 90 Pro",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Pura 90 Pro Max-12GB+256GB-119",
+    "storage": "12GB+256GB",
+    "ppv": "S华为 Pura 90 Pro Max 大陆国行 全网通 12G+256G 曜石黑 保修时长≥30天",
+    "model_id": "e16ca4df-0997-4265-93da-c6cd959997e2",
+    "model": "华为 Pura 90 Pro Max",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Pura 90 Pro Max-12GB+512GB-120",
+    "storage": "12GB+512GB",
+    "ppv": "S华为 Pura 90 Pro Max 大陆国行 全网通 12G+512G 曜石黑 保修时长≥30天",
+    "model_id": "e16ca4df-0997-4265-93da-c6cd959997e2",
+    "model": "华为 Pura 90 Pro Max",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Pura 90 Pro Max-16GB+512GB-121",
+    "storage": "16GB+512GB",
+    "ppv": "S华为 Pura 90 Pro Max 大陆国行 全网通 16G+512G 曜石黑 保修时长≥30天",
+    "model_id": "e16ca4df-0997-4265-93da-c6cd959997e2",
+    "model": "华为 Pura 90 Pro Max",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Pura 90 Pro Max-16GB+1TB-122",
+    "storage": "16GB+1TB",
+    "ppv": "S华为 Pura 90 Pro Max 大陆国行 全网通 曜石黑 保修时长≥30天 16G+1T",
+    "model_id": "e16ca4df-0997-4265-93da-c6cd959997e2",
+    "model": "华为 Pura 90 Pro Max",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Pura X Max 典藏版-16GB+512GB-123",
+    "storage": "16GB+512GB",
+    "ppv": "S华为 Pura X Max 典藏版 大陆国行 全网通 16G+512G 幻夜黑 保修时长≥30天",
+    "model_id": "7cc9acaf-ffb6-48e8-ba89-5d5c4bb8dd00",
+    "model": "华为 Pura X Max 典藏版",
+    "brand": "华为",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "华为 Pura X Max 典藏版-16GB+1TB-124",
+    "storage": "16GB+1TB",
+    "ppv": "S华为 Pura X Max 典藏版 大陆国行 全网通 幻夜黑 保修时长≥30天 16G+1T",
+    "model_id": "7cc9acaf-ffb6-48e8-ba89-5d5c4bb8dd00",
+    "model": "华为 Pura X Max 典藏版",
+    "brand": "华为",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "华为 Pura 90-12GB+256GB-125",
+    "storage": "12GB+256GB",
+    "ppv": "S华为 Pura 90 大陆国行 全网通 12G+256G 雪域白",
+    "model_id": "bdf53161-fdae-4692-a8d1-00860458ebe0",
+    "model": "华为 Pura 90",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Pura 90-12GB+512GB-126",
+    "storage": "12GB+512GB",
+    "ppv": "S华为 Pura 90 大陆国行 全网通 12G+512G 雪域白",
+    "model_id": "bdf53161-fdae-4692-a8d1-00860458ebe0",
+    "model": "华为 Pura 90",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Pura 90-16GB+512GB-127",
+    "storage": "16GB+512GB",
+    "ppv": "S华为 Pura 90 大陆国行 全网通 16G+512G 雪域白",
+    "model_id": "bdf53161-fdae-4692-a8d1-00860458ebe0",
+    "model": "华为 Pura 90",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 畅享 90-128GB-128",
+    "storage": "128GB",
+    "ppv": "S华为 畅享 90 大陆国行 全网通 8G+128G 星空黑",
+    "model_id": "5632c5ae-e88c-40b7-95ae-393fb0d015c6",
+    "model": "华为 畅享 90",
+    "brand": "华为",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "华为 畅享 90-256GB-129",
+    "storage": "256GB",
+    "ppv": "S华为 畅享 90 大陆国行 全网通 8G+256G 星空黑",
+    "model_id": "5632c5ae-e88c-40b7-95ae-393fb0d015c6",
+    "model": "华为 畅享 90",
+    "brand": "华为",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "华为 畅享90 Plus-128GB-130",
+    "storage": "128GB",
+    "ppv": "S华为 畅享90 Plus 大陆国行 全网通 8G+128G 星空黑",
+    "model_id": "99dc3ce2-3638-43ff-a0b6-7a607ba5bde2",
+    "model": "华为 畅享90 Plus",
+    "brand": "华为",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "华为 畅享90 Plus-256GB-131",
+    "storage": "256GB",
+    "ppv": "S华为 畅享90 Plus 大陆国行 全网通 8G+256G 星空黑",
+    "model_id": "99dc3ce2-3638-43ff-a0b6-7a607ba5bde2",
+    "model": "华为 畅享90 Plus",
+    "brand": "华为",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "vivo X300s-12GB+256GB-132",
+    "storage": "12GB+256GB",
+    "ppv": "Svivo X300s 大陆国行 全网通 12G+256G 钛黑",
+    "model_id": "be82f7a8-f387-4b0b-ae6e-d95f81c08b4a",
+    "model": "vivo X300s",
+    "brand": "vivo",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "vivo X300s-12GB+512GB-133",
+    "storage": "12GB+512GB",
+    "ppv": "Svivo X300s 大陆国行 全网通 12G+512G 钛黑",
+    "model_id": "be82f7a8-f387-4b0b-ae6e-d95f81c08b4a",
+    "model": "vivo X300s",
+    "brand": "vivo",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "vivo X300s-16GB+512GB-134",
+    "storage": "16GB+512GB",
+    "ppv": "Svivo X300s 大陆国行 全网通 16G+512G 钛黑",
+    "model_id": "be82f7a8-f387-4b0b-ae6e-d95f81c08b4a",
+    "model": "vivo X300s",
+    "brand": "vivo",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "vivo X300s-16GB+1TB-135",
+    "storage": "16GB+1TB",
+    "ppv": "Svivo X300s 大陆国行 全网通 钛黑 16G+1T",
+    "model_id": "be82f7a8-f387-4b0b-ae6e-d95f81c08b4a",
+    "model": "vivo X300s",
+    "brand": "vivo",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "vivo X300 Ultra-12GB+256GB-136",
+    "storage": "12GB+256GB",
+    "ppv": "Svivo X300 Ultra 大陆国行 全网通 12G+256G 黑Ka",
+    "model_id": "70683395-12a0-4e43-be75-cceebd8254aa",
+    "model": "vivo X300 Ultra",
+    "brand": "vivo",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "vivo X300 Ultra-12GB+512GB-137",
+    "storage": "12GB+512GB",
+    "ppv": "Svivo X300 Ultra 大陆国行 全网通 12G+512G 黑Ka",
+    "model_id": "70683395-12a0-4e43-be75-cceebd8254aa",
+    "model": "vivo X300 Ultra",
+    "brand": "vivo",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "vivo X300 Ultra-16GB+512GB-138",
+    "storage": "16GB+512GB",
+    "ppv": "Svivo X300 Ultra 大陆国行 全网通 16G+512G 黑Ka",
+    "model_id": "70683395-12a0-4e43-be75-cceebd8254aa",
+    "model": "vivo X300 Ultra",
+    "brand": "vivo",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "vivo X300 Ultra-16GB+1TB-139",
+    "storage": "16GB+1TB",
+    "ppv": "Svivo X300 Ultra 大陆国行 全网通 16G+1T 黑Ka",
+    "model_id": "70683395-12a0-4e43-be75-cceebd8254aa",
+    "model": "vivo X300 Ultra",
+    "brand": "vivo",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "华为 Mate 80 Pro Max 风驰版-16GB+512GB-140",
+    "storage": "16GB+512GB",
+    "ppv": "S华为 Mate 80 Pro Max 风驰版 大陆国行 全网通 16G+512G 极夜黑 保修时长≥30天",
+    "model_id": "4505ddfa-7a50-498f-ac5b-d733b9748693",
+    "model": "华为 Mate 80 Pro Max 风驰版",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "华为 Mate 80 Pro Max 风驰版-16GB+1TB-141",
+    "storage": "16GB+1TB",
+    "ppv": "S华为 Mate 80 Pro Max 风驰版 大陆国行 全网通 极夜黑 保修时长≥30天 16G+1T",
+    "model_id": "4505ddfa-7a50-498f-ac5b-d733b9748693",
+    "model": "华为 Mate 80 Pro Max 风驰版",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "一加 15T-12GB+256GB-142",
+    "storage": "12GB+256GB",
+    "ppv": "S一加 15T 大陆国行 全网通 12G+256G 纯粹可可",
+    "model_id": "f8a45e5a-1272-4a04-87ba-89ef3767b3a9",
+    "model": "一加 15T",
+    "brand": "一加",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "一加 15T-16GB+256GB-143",
+    "storage": "16GB+256GB",
+    "ppv": "S一加 15T 大陆国行 全网通 16G+256G 纯粹可可",
+    "model_id": "f8a45e5a-1272-4a04-87ba-89ef3767b3a9",
+    "model": "一加 15T",
+    "brand": "一加",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "一加 15T-12GB+512GB-144",
+    "storage": "12GB+512GB",
+    "ppv": "S一加 15T 大陆国行 全网通 12G+512G 纯粹可可",
+    "model_id": "f8a45e5a-1272-4a04-87ba-89ef3767b3a9",
+    "model": "一加 15T",
+    "brand": "一加",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "一加 15T-16GB+512GB-145",
+    "storage": "16GB+512GB",
+    "ppv": "S一加 15T 大陆国行 全网通 16G+512G 纯粹可可",
+    "model_id": "f8a45e5a-1272-4a04-87ba-89ef3767b3a9",
+    "model": "一加 15T",
+    "brand": "一加",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "一加 15T-16GB+1TB-146",
+    "storage": "16GB+1TB",
+    "ppv": "S一加 15T 大陆国行 全网通 16G+1T 纯粹可可",
+    "model_id": "f8a45e5a-1272-4a04-87ba-89ef3767b3a9",
+    "model": "一加 15T",
+    "brand": "一加",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "华为 畅享 90 Pro Max-128GB-147",
+    "storage": "128GB",
+    "ppv": "S华为 畅享 90 Pro Max 大陆国行 全网通 8G+128G 曜金黑",
+    "model_id": "22dc7920-0383-411a-8a2d-d9c3fd0b2ad1",
+    "model": "华为 畅享 90 Pro Max",
+    "brand": "华为",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "华为 畅享 90 Pro Max-256GB-148",
+    "storage": "256GB",
+    "ppv": "S华为 畅享 90 Pro Max 大陆国行 全网通 8G+256G 曜金黑",
+    "model_id": "22dc7920-0383-411a-8a2d-d9c3fd0b2ad1",
+    "model": "华为 畅享 90 Pro Max",
+    "brand": "华为",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "华为 畅享 90 Pro Max-512GB-149",
+    "storage": "512GB",
+    "ppv": "S华为 畅享 90 Pro Max 大陆国行 全网通 8G+512G 曜金黑",
+    "model_id": "22dc7920-0383-411a-8a2d-d9c3fd0b2ad1",
+    "model": "华为 畅享 90 Pro Max",
+    "brand": "华为",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "OPPO Find N6-12GB+256GB-150",
+    "storage": "12GB+256GB",
+    "ppv": "SOPPO Find N6 大陆国行 全网通 12G+256G 深黑",
+    "model_id": "5c0abf06-2507-4428-bca2-c63a6c5acb61",
+    "model": "OPPO Find N6",
+    "brand": "OPPO",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "OPPO Find N6-16GB+512GB-151",
+    "storage": "16GB+512GB",
+    "ppv": "SOPPO Find N6 大陆国行 全网通 16G+512G 深黑",
+    "model_id": "5c0abf06-2507-4428-bca2-c63a6c5acb61",
+    "model": "OPPO Find N6",
+    "brand": "OPPO",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "OPPO Find N6-16GB+1TB-152",
+    "storage": "16GB+1TB",
+    "ppv": "SOPPO Find N6 大陆国行 全网通 16G+1T 深黑",
+    "model_id": "5c0abf06-2507-4428-bca2-c63a6c5acb61",
+    "model": "OPPO Find N6",
+    "brand": "OPPO",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Magic V6-12GB+256GB-153",
+    "storage": "12GB+256GB",
+    "ppv": "S荣耀 Magic V6 大陆国行 全网通 12G+256G 保修时长≥30天 雪域白",
+    "model_id": "9f1c823a-f392-4fca-bc62-ef4530dfe9b4",
+    "model": "荣耀 Magic V6",
+    "brand": "荣耀",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Magic V6-12GB+512GB-154",
+    "storage": "12GB+512GB",
+    "ppv": "S荣耀 Magic V6 大陆国行 全网通 12G+512G 保修时长≥30天 雪域白",
+    "model_id": "9f1c823a-f392-4fca-bc62-ef4530dfe9b4",
+    "model": "荣耀 Magic V6",
+    "brand": "荣耀",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Magic V6-16GB+512GB-155",
+    "storage": "16GB+512GB",
+    "ppv": "S荣耀 Magic V6 大陆国行 全网通 16G+512G 保修时长≥30天 雪域白",
+    "model_id": "9f1c823a-f392-4fca-bc62-ef4530dfe9b4",
+    "model": "荣耀 Magic V6",
+    "brand": "荣耀",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Magic V6-16GB+1TB-156",
+    "storage": "16GB+1TB",
+    "ppv": "S荣耀 Magic V6 大陆国行 全网通 保修时长≥30天 雪域白 16G+1T",
+    "model_id": "9f1c823a-f392-4fca-bc62-ef4530dfe9b4",
+    "model": "荣耀 Magic V6",
+    "brand": "荣耀",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "三星 Galaxy S26-12GB+256GB-157",
+    "storage": "12GB+256GB",
+    "ppv": "S三星 Galaxy S26 大陆国行 全网通 12G+256G 旷宇黑",
+    "model_id": "c7433147-9ff5-4db7-a0f2-4c854dda0ac7",
+    "model": "三星 Galaxy S26",
+    "brand": "三星",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "三星 Galaxy S26+-12GB+256GB-158",
+    "storage": "12GB+256GB",
+    "ppv": "S三星 Galaxy S26+ 大陆国行 全网通 12G+256G 旷宇黑",
+    "model_id": "129442ba-7e97-4b6a-8eb4-202f259ce5c5",
+    "model": "三星 Galaxy S26+",
+    "brand": "三星",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "三星 Galaxy S26+-12GB+512GB-159",
+    "storage": "12GB+512GB",
+    "ppv": "S三星 Galaxy S26+ 大陆国行 全网通 12G+512G 旷宇黑",
+    "model_id": "129442ba-7e97-4b6a-8eb4-202f259ce5c5",
+    "model": "三星 Galaxy S26+",
+    "brand": "三星",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "三星 Galaxy S26 Ultra-12GB+256GB-160",
+    "storage": "12GB+256GB",
+    "ppv": "S三星 Galaxy S26 Ultra 大陆国行 全网通 12G+256G 旷宇黑",
+    "model_id": "f02a85ef-d079-4580-a93c-1728f64cd601",
+    "model": "三星 Galaxy S26 Ultra",
+    "brand": "三星",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "三星 Galaxy S26 Ultra-12GB+512GB-161",
+    "storage": "12GB+512GB",
+    "ppv": "S三星 Galaxy S26 Ultra 大陆国行 全网通 12G+512G 旷宇黑",
+    "model_id": "f02a85ef-d079-4580-a93c-1728f64cd601",
+    "model": "三星 Galaxy S26 Ultra",
+    "brand": "三星",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "三星 Galaxy S26 Ultra-16GB+1TB-162",
+    "storage": "16GB+1TB",
+    "ppv": "S三星 Galaxy S26 Ultra 大陆国行 全网通 16G+1T 旷宇黑",
+    "model_id": "f02a85ef-d079-4580-a93c-1728f64cd601",
+    "model": "三星 Galaxy S26 Ultra",
+    "brand": "三星",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "iQOO 15 Ultra-16GB+256GB-163",
+    "storage": "16GB+256GB",
+    "ppv": "SiQOO 15 Ultra 大陆国行 全网通 16G+256G 2049(银色)",
+    "model_id": "0bf84a79-ecd4-43be-89c7-5c65e1b42971",
+    "model": "iQOO 15 Ultra",
+    "brand": "iQOO",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "iQOO 15 Ultra-16GB+512GB-164",
+    "storage": "16GB+512GB",
+    "ppv": "SiQOO 15 Ultra 大陆国行 全网通 16G+512G 2049(银色)",
+    "model_id": "0bf84a79-ecd4-43be-89c7-5c65e1b42971",
+    "model": "iQOO 15 Ultra",
+    "brand": "iQOO",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "iQOO 15 Ultra-16GB+1TB-165",
+    "storage": "16GB+1TB",
+    "ppv": "SiQOO 15 Ultra 大陆国行 全网通 16G+1T 2049(银色)",
+    "model_id": "0bf84a79-ecd4-43be-89c7-5c65e1b42971",
+    "model": "iQOO 15 Ultra",
+    "brand": "iQOO",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "iQOO 15 Ultra-24GB+1TB-166",
+    "storage": "24GB+1TB",
+    "ppv": "SiQOO 15 Ultra 大陆国行 全网通 24G+1T 2049(银色)",
+    "model_id": "0bf84a79-ecd4-43be-89c7-5c65e1b42971",
+    "model": "iQOO 15 Ultra",
+    "brand": "iQOO",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "REDMI Turbo 5-12GB+256GB-167",
+    "storage": "12GB+256GB",
+    "ppv": "SREDMI Turbo 5 大陆国行 全网通 12G+256G 暗影黑",
+    "model_id": "ff90b93c-4199-451a-810d-98905136a249",
+    "model": "REDMI Turbo 5",
+    "brand": "小米",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "REDMI Turbo 5-12GB+512GB-168",
+    "storage": "12GB+512GB",
+    "ppv": "SREDMI Turbo 5 大陆国行 全网通 12G+512G 暗影黑",
+    "model_id": "ff90b93c-4199-451a-810d-98905136a249",
+    "model": "REDMI Turbo 5",
+    "brand": "小米",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "REDMI Turbo 5-16GB+256GB-169",
+    "storage": "16GB+256GB",
+    "ppv": "SREDMI Turbo 5 大陆国行 全网通 16G+256G 暗影黑",
+    "model_id": "ff90b93c-4199-451a-810d-98905136a249",
+    "model": "REDMI Turbo 5",
+    "brand": "小米",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "REDMI Turbo 5-16GB+512GB-170",
+    "storage": "16GB+512GB",
+    "ppv": "SREDMI Turbo 5 大陆国行 全网通 16G+512G 暗影黑",
+    "model_id": "ff90b93c-4199-451a-810d-98905136a249",
+    "model": "REDMI Turbo 5",
+    "brand": "小米",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Magic8 Pro Air-12GB+256GB-171",
+    "storage": "12GB+256GB",
+    "ppv": "S荣耀 Magic8 Pro Air 大陆国行 全网通 12G+256G 保修时长≥30天 影黑",
+    "model_id": "1227d1e9-deb6-4869-bf5b-43f54f998f30",
+    "model": "荣耀 Magic8 Pro Air",
+    "brand": "荣耀",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "荣耀 Magic8 Pro Air-12GB+512GB-172",
+    "storage": "12GB+512GB",
+    "ppv": "S荣耀 Magic8 Pro Air 大陆国行 全网通 12G+512G 保修时长≥30天 影黑",
+    "model_id": "1227d1e9-deb6-4869-bf5b-43f54f998f30",
+    "model": "荣耀 Magic8 Pro Air",
+    "brand": "荣耀",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "荣耀 Magic8 Pro Air-16GB+512GB-173",
+    "storage": "16GB+512GB",
+    "ppv": "S荣耀 Magic8 Pro Air 大陆国行 全网通 16G+512G 保修时长≥30天 影黑",
+    "model_id": "1227d1e9-deb6-4869-bf5b-43f54f998f30",
+    "model": "荣耀 Magic8 Pro Air",
+    "brand": "荣耀",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "荣耀 Magic8 Pro Air-16GB+1TB-174",
+    "storage": "16GB+1TB",
+    "ppv": "S荣耀 Magic8 Pro Air 大陆国行 全网通 保修时长≥30天 影黑 16G+1T",
+    "model_id": "1227d1e9-deb6-4869-bf5b-43f54f998f30",
+    "model": "荣耀 Magic8 Pro Air",
+    "brand": "荣耀",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "真我 Neo8-12GB+256GB-175",
+    "storage": "12GB+256GB",
+    "ppv": "S真我 Neo8 大陆国行 全网通 12G+256G 起源白",
+    "model_id": "8b46bd1c-3d67-4055-8744-15b26a9c23f9",
+    "model": "真我 Neo8",
+    "brand": "真我",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "真我 Neo8-12GB+512GB-176",
+    "storage": "12GB+512GB",
+    "ppv": "S真我 Neo8 大陆国行 全网通 12G+512G 起源白",
+    "model_id": "8b46bd1c-3d67-4055-8744-15b26a9c23f9",
+    "model": "真我 Neo8",
+    "brand": "真我",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "真我 Neo8-16GB+512GB-177",
+    "storage": "16GB+512GB",
+    "ppv": "S真我 Neo8 大陆国行 全网通 16G+512G 起源白",
+    "model_id": "8b46bd1c-3d67-4055-8744-15b26a9c23f9",
+    "model": "真我 Neo8",
+    "brand": "真我",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "真我 Neo8-16GB+1TB-178",
+    "storage": "16GB+1TB",
+    "ppv": "S真我 Neo8 大陆国行 全网通 16G+1T 起源白",
+    "model_id": "8b46bd1c-3d67-4055-8744-15b26a9c23f9",
+    "model": "真我 Neo8",
+    "brand": "真我",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "努比亚 红魔 11 Air-12GB+256GB-179",
+    "storage": "12GB+256GB",
+    "ppv": "S努比亚 红魔 11 Air 大陆国行 全网通 12G+256G 量子黑",
+    "model_id": "30b0b810-864d-4c41-b400-4939aabed71b",
+    "model": "努比亚 红魔 11 Air",
+    "brand": "努比亚",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "摩托罗拉 Moto X70 Air Pro-12GB+256GB-180",
+    "storage": "12GB+256GB",
+    "ppv": "S摩托罗拉 Moto X70 Air Pro 大陆国行 全网通 12G+256G 梧桐金",
+    "model_id": "5706f984-b542-42c3-ba8f-551042ab0e5d",
+    "model": "摩托罗拉 Moto X70 Air Pro",
+    "brand": "摩托罗拉",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "摩托罗拉 Moto X70 Air Pro-16GB+512GB-181",
+    "storage": "16GB+512GB",
+    "ppv": "S摩托罗拉 Moto X70 Air Pro 大陆国行 全网通 16G+512G 梧桐金",
+    "model_id": "5706f984-b542-42c3-ba8f-551042ab0e5d",
+    "model": "摩托罗拉 Moto X70 Air Pro",
+    "brand": "摩托罗拉",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "摩托罗拉 Moto X70 Air Pro-16GB+1TB-182",
+    "storage": "16GB+1TB",
+    "ppv": "S摩托罗拉 Moto X70 Air Pro 大陆国行 全网通 16G+1T 梧桐金",
+    "model_id": "5706f984-b542-42c3-ba8f-551042ab0e5d",
+    "model": "摩托罗拉 Moto X70 Air Pro",
+    "brand": "摩托罗拉",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Magic8 RSR 保时捷设计-16GB+512GB-183",
+    "storage": "16GB+512GB",
+    "ppv": "S荣耀 Magic8 RSR 保时捷设计 大陆国行 全网通 16G+512G 板岩灰",
+    "model_id": "7ba6ce4a-58af-466e-9265-f37f7c72117b",
+    "model": "荣耀 Magic8 RSR 保时捷设计",
+    "brand": "荣耀",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "荣耀 Magic8 RSR 保时捷设计-24GB+1TB-184",
+    "storage": "24GB+1TB",
+    "ppv": "S荣耀 Magic8 RSR 保时捷设计 大陆国行 全网通 24G+1T 板岩灰",
+    "model_id": "7ba6ce4a-58af-466e-9265-f37f7c72117b",
+    "model": "荣耀 Magic8 RSR 保时捷设计",
+    "brand": "荣耀",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "一加 Turbo 6-12GB+256GB-185",
+    "storage": "12GB+256GB",
+    "ppv": "S一加 Turbo 6 大陆国行 全网通 12G+256G 独行黑",
+    "model_id": "a36c6f60-ad22-4b93-a0c3-a73b23555902",
+    "model": "一加 Turbo 6",
+    "brand": "一加",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "一加 Turbo 6-12GB+512GB-186",
+    "storage": "12GB+512GB",
+    "ppv": "S一加 Turbo 6 大陆国行 全网通 12G+512G 独行黑",
+    "model_id": "a36c6f60-ad22-4b93-a0c3-a73b23555902",
+    "model": "一加 Turbo 6",
+    "brand": "一加",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "一加 Turbo 6-16GB+256GB-187",
+    "storage": "16GB+256GB",
+    "ppv": "S一加 Turbo 6 大陆国行 全网通 16G+256G 独行黑",
+    "model_id": "a36c6f60-ad22-4b93-a0c3-a73b23555902",
+    "model": "一加 Turbo 6",
+    "brand": "一加",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "一加 Turbo 6-16GB+512GB-188",
+    "storage": "16GB+512GB",
+    "ppv": "S一加 Turbo 6 大陆国行 全网通 16G+512G 独行黑",
+    "model_id": "a36c6f60-ad22-4b93-a0c3-a73b23555902",
+    "model": "一加 Turbo 6",
+    "brand": "一加",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "小米 17 Ultra-12GB+512GB-189",
+    "storage": "12GB+512GB",
+    "ppv": "S小米 17 Ultra 大陆国行 白色 全网通 12G+512G 保修时长≥30天",
+    "model_id": "c7f5da6d-f6f2-4054-9d7c-7b15eedd2f09",
+    "model": "小米 17 Ultra",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "小米 17 Ultra-16GB+512GB-190",
+    "storage": "16GB+512GB",
+    "ppv": "S小米 17 Ultra 大陆国行 白色 全网通 16G+512G 保修时长≥30天",
+    "model_id": "c7f5da6d-f6f2-4054-9d7c-7b15eedd2f09",
+    "model": "小米 17 Ultra",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "小米 17 Ultra-16GB+1TB-191",
+    "storage": "16GB+1TB",
+    "ppv": "S小米 17 Ultra 大陆国行 白色 全网通 保修时长≥30天 16G+1T",
+    "model_id": "c7f5da6d-f6f2-4054-9d7c-7b15eedd2f09",
+    "model": "小米 17 Ultra",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "小米 17 Ultra 徕卡版-16GB+512GB-192",
+    "storage": "16GB+512GB",
+    "ppv": "S小米 17 Ultra 徕卡版 大陆国行 黑色 全网通 16G+512G 保修时长≥30天",
+    "model_id": "242d7aaa-a2b9-4565-9e38-09f325f4a6d2",
+    "model": "小米 17 Ultra 徕卡版",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "华为 nova 15-12G+256G-193",
+    "storage": "12G+256G",
+    "ppv": "S华为 nova 15 大陆国行 全网通 12G+256G 幻夜黑",
+    "model_id": "b1b0341c-5f0d-4dc2-9b3c-0fe78f6849cc",
+    "model": "华为 nova 15",
+    "brand": "华为",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "华为 nova 15 Pro-12GB+256GB-194",
+    "storage": "12GB+256GB",
+    "ppv": "S华为 nova 15 Pro 大陆国行 全网通 12G+256G 幻夜黑",
+    "model_id": "69ff37a3-d5b8-4151-97fa-61ff59653a3f",
+    "model": "华为 nova 15 Pro",
+    "brand": "华为",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "华为 nova 15 Pro-12GB+256GB 昆仑玻璃版-195",
+    "storage": "12GB+256GB 昆仑玻璃版",
+    "ppv": "S华为 nova 15 Pro 大陆国行 全网通 12G+256G 幻夜黑",
+    "model_id": "69ff37a3-d5b8-4151-97fa-61ff59653a3f",
+    "model": "华为 nova 15 Pro",
+    "brand": "华为",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "华为 nova 15 Pro-12GB+512GB 昆仑玻璃版-196",
+    "storage": "12GB+512GB 昆仑玻璃版",
+    "ppv": "S华为 nova 15 Pro 大陆国行 全网通 12G+512G 幻夜黑",
+    "model_id": "69ff37a3-d5b8-4151-97fa-61ff59653a3f",
+    "model": "华为 nova 15 Pro",
+    "brand": "华为",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "华为 nova 15 Ultra-12GB+256GB 昆仑玻璃版-197",
+    "storage": "12GB+256GB 昆仑玻璃版",
+    "ppv": "S华为 nova 15 Ultra 大陆国行 全网通 12G+256G 好搭紫 (昆仑玻璃)",
+    "model_id": "8a7e2018-1570-4a8f-aa8c-f2477fbe002a",
+    "model": "华为 nova 15 Ultra",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 nova 15 Ultra-12GB+512GB 昆仑玻璃版-198",
+    "storage": "12GB+512GB 昆仑玻璃版",
+    "ppv": "S华为 nova 15 Ultra 大陆国行 全网通 12G+512G 好搭紫 (昆仑玻璃)",
+    "model_id": "8a7e2018-1570-4a8f-aa8c-f2477fbe002a",
+    "model": "华为 nova 15 Ultra",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 nova 15 Ultra-12GB+1TB 玄武钢化昆仑玻璃版-199",
+    "storage": "12GB+1TB 玄武钢化昆仑玻璃版",
+    "ppv": "S华为 nova 15 Ultra 大陆国行 全网通 12G+1T 好搭紫 (昆仑玻璃)",
+    "model_id": "8a7e2018-1570-4a8f-aa8c-f2477fbe002a",
+    "model": "华为 nova 15 Ultra",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "荣耀 WIN-12GB+256GB-200",
+    "storage": "12GB+256GB",
+    "ppv": "S荣耀 WIN 大陆国行 全网通 12G+256G 快开黑",
+    "model_id": "c79e69f0-330b-4f34-8bc3-63d60b5e0690",
+    "model": "荣耀 WIN",
+    "brand": "荣耀",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "荣耀 WIN-16GB+512GB-201",
+    "storage": "16GB+512GB",
+    "ppv": "S荣耀 WIN 大陆国行 全网通 16G+512G 快开黑",
+    "model_id": "c79e69f0-330b-4f34-8bc3-63d60b5e0690",
+    "model": "荣耀 WIN",
+    "brand": "荣耀",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "荣耀 WIN-16GB+1TB-202",
+    "storage": "16GB+1TB",
+    "ppv": "S荣耀 WIN 大陆国行 全网通 16G+1T 快开黑",
+    "model_id": "c79e69f0-330b-4f34-8bc3-63d60b5e0690",
+    "model": "荣耀 WIN",
+    "brand": "荣耀",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "荣耀 WIN RT-12GB+256GB-203",
+    "storage": "12GB+256GB",
+    "ppv": "S荣耀 WIN RT 大陆国行 全网通 12G+256G 快开黑",
+    "model_id": "2725ce48-0172-40ce-a216-f6c4a3694bac",
+    "model": "荣耀 WIN RT",
+    "brand": "荣耀",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "荣耀 WIN RT-12GB+512GB-204",
+    "storage": "12GB+512GB",
+    "ppv": "S荣耀 WIN RT 大陆国行 全网通 12G+512G 快开黑",
+    "model_id": "2725ce48-0172-40ce-a216-f6c4a3694bac",
+    "model": "荣耀 WIN RT",
+    "brand": "荣耀",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "荣耀 WIN RT-16GB+256GB-205",
+    "storage": "16GB+256GB",
+    "ppv": "S荣耀 WIN RT 大陆国行 全网通 16G+256G 快开黑",
+    "model_id": "2725ce48-0172-40ce-a216-f6c4a3694bac",
+    "model": "荣耀 WIN RT",
+    "brand": "荣耀",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "荣耀 WIN RT-16GB+512GB-206",
+    "storage": "16GB+512GB",
+    "ppv": "S荣耀 WIN RT 大陆国行 全网通 16G+512G 快开黑",
+    "model_id": "2725ce48-0172-40ce-a216-f6c4a3694bac",
+    "model": "荣耀 WIN RT",
+    "brand": "荣耀",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "荣耀 WIN RT-16GB+1TB-207",
+    "storage": "16GB+1TB",
+    "ppv": "S荣耀 WIN RT 大陆国行 全网通 16G+1T 快开黑",
+    "model_id": "2725ce48-0172-40ce-a216-f6c4a3694bac",
+    "model": "荣耀 WIN RT",
+    "brand": "荣耀",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "vivo S50 Pro mini-12GB+256GB-208",
+    "storage": "12GB+256GB",
+    "ppv": "Svivo S50 Pro mini 大陆国行 全网通 12G+256G 深空黑",
+    "model_id": "9b4e3fb3-1c5f-4c8b-ad32-618a16170566",
+    "model": "vivo S50 Pro mini",
+    "brand": "vivo",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "vivo S50 Pro mini-12GB+512GB-209",
+    "storage": "12GB+512GB",
+    "ppv": "Svivo S50 Pro mini 大陆国行 全网通 12G+512G 深空黑",
+    "model_id": "9b4e3fb3-1c5f-4c8b-ad32-618a16170566",
+    "model": "vivo S50 Pro mini",
+    "brand": "vivo",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "vivo S50 Pro mini-16GB+512GB-210",
+    "storage": "16GB+512GB",
+    "ppv": "Svivo S50 Pro mini 大陆国行 全网通 16G+512G 深空黑",
+    "model_id": "9b4e3fb3-1c5f-4c8b-ad32-618a16170566",
+    "model": "vivo S50 Pro mini",
+    "brand": "vivo",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "华为 Mate 80 Pro Max-16GB+512GB-211",
+    "storage": "16GB+512GB",
+    "ppv": "S华为 Mate 80 Pro Max 大陆国行 全网通 16G+512G 极夜黑 保修时长≥30天",
+    "model_id": "bd623765-0072-4c2e-a402-03181dd0b963",
+    "model": "华为 Mate 80 Pro Max",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Mate 80 Pro Max-16GB+1TB-212",
+    "storage": "16GB+1TB",
+    "ppv": "S华为 Mate 80 Pro Max 大陆国行 全网通 极夜黑 保修时长≥30天 16G+1T",
+    "model_id": "bd623765-0072-4c2e-a402-03181dd0b963",
+    "model": "华为 Mate 80 Pro Max",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Mate 80 RS 非凡大师-20GB+512GB-213",
+    "storage": "20GB+512GB",
+    "ppv": "S华为 Mate 80 RS 非凡大师 大陆国行 全网通 玄黑 保修时长≥30天 20G+512G",
+    "model_id": "aa9d5c63-9eb7-4c59-91ad-ee94bb7ce764",
+    "model": "华为 Mate 80 RS 非凡大师",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Mate 80 RS 非凡大师-20GB+1TB-214",
+    "storage": "20GB+1TB",
+    "ppv": "S华为 Mate 80 RS 非凡大师 大陆国行 全网通 玄黑 保修时长≥30天 20G+1T",
+    "model_id": "aa9d5c63-9eb7-4c59-91ad-ee94bb7ce764",
+    "model": "华为 Mate 80 RS 非凡大师",
+    "brand": "华为",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "荣耀 500 Pro-12GB+256GB-215",
+    "storage": "12GB+256GB",
+    "ppv": "S荣耀 500 Pro 大陆国行 全网通 12G+256G 曜石黑 保修时长≥30天",
+    "model_id": "574de489-f9c3-4158-b0e8-b1bd0bcea0f3",
+    "model": "荣耀 500 Pro",
+    "brand": "荣耀",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "荣耀 500 Pro-12GB+512GB-216",
+    "storage": "12GB+512GB",
+    "ppv": "S荣耀 500 Pro 大陆国行 全网通 12G+512G 曜石黑 保修时长≥30天",
+    "model_id": "574de489-f9c3-4158-b0e8-b1bd0bcea0f3",
+    "model": "荣耀 500 Pro",
+    "brand": "荣耀",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "荣耀 500 Pro-16GB+512GB-217",
+    "storage": "16GB+512GB",
+    "ppv": "S荣耀 500 Pro 大陆国行 全网通 16G+512G 曜石黑 保修时长≥30天",
+    "model_id": "574de489-f9c3-4158-b0e8-b1bd0bcea0f3",
+    "model": "荣耀 500 Pro",
+    "brand": "荣耀",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "荣耀 500 Pro-16GB+1TB-218",
+    "storage": "16GB+1TB",
+    "ppv": "S荣耀 500 Pro 大陆国行 全网通 曜石黑 保修时长≥30天 16G+1T",
+    "model_id": "574de489-f9c3-4158-b0e8-b1bd0bcea0f3",
+    "model": "荣耀 500 Pro",
+    "brand": "荣耀",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "OPPO Reno15 Pro-12GB+256GB-219",
+    "storage": "12GB+256GB",
+    "ppv": "SOPPO Reno15 Pro 大陆国行 全网通 12G+256G 星光蝴蝶结",
+    "model_id": "b1034e32-7b4c-48ae-9057-90f8982116d7",
+    "model": "OPPO Reno15 Pro",
+    "brand": "OPPO",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "OPPO Reno15 Pro-12GB+512GB-220",
+    "storage": "12GB+512GB",
+    "ppv": "SOPPO Reno15 Pro 大陆国行 全网通 12G+512G 星光蝴蝶结",
+    "model_id": "b1034e32-7b4c-48ae-9057-90f8982116d7",
+    "model": "OPPO Reno15 Pro",
+    "brand": "OPPO",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "OPPO Reno15 Pro-16GB+512GB-221",
+    "storage": "16GB+512GB",
+    "ppv": "SOPPO Reno15 Pro 大陆国行 全网通 16G+512G 星光蝴蝶结",
+    "model_id": "b1034e32-7b4c-48ae-9057-90f8982116d7",
+    "model": "OPPO Reno15 Pro",
+    "brand": "OPPO",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "OPPO Reno15 Pro-16GB+1TB-222",
+    "storage": "16GB+1TB",
+    "ppv": "SOPPO Reno15 Pro 大陆国行 全网通 16G+1T 星光蝴蝶结",
+    "model_id": "b1034e32-7b4c-48ae-9057-90f8982116d7",
+    "model": "OPPO Reno15 Pro",
+    "brand": "OPPO",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "vivo Y500 Pro-8GB+128GB-223",
+    "storage": "8GB+128GB",
+    "ppv": "Svivo Y500 Pro 大陆国行 全网通 8G+128G 钛黑",
+    "model_id": "c68215d1-76a6-4245-baa0-0b12168d51f7",
+    "model": "vivo Y500 Pro",
+    "brand": "vivo",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "vivo Y500 Pro-8GB+256GB-224",
+    "storage": "8GB+256GB",
+    "ppv": "Svivo Y500 Pro 大陆国行 全网通 8G+256G 钛黑",
+    "model_id": "c68215d1-76a6-4245-baa0-0b12168d51f7",
+    "model": "vivo Y500 Pro",
+    "brand": "vivo",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "vivo Y500 Pro-12GB+256GB-225",
+    "storage": "12GB+256GB",
+    "ppv": "Svivo Y500 Pro 大陆国行 全网通 12G+256G 钛黑",
+    "model_id": "c68215d1-76a6-4245-baa0-0b12168d51f7",
+    "model": "vivo Y500 Pro",
+    "brand": "vivo",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "vivo Y500 Pro-12GB+512GB-226",
+    "storage": "12GB+512GB",
+    "ppv": "Svivo Y500 Pro 大陆国行 全网通 12G+512G 钛黑",
+    "model_id": "c68215d1-76a6-4245-baa0-0b12168d51f7",
+    "model": "vivo Y500 Pro",
+    "brand": "vivo",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "摩托罗拉 Moto X70 Air-12GB+256GB-231",
+    "storage": "12GB+256GB",
+    "ppv": "S摩托罗拉 Moto X70 Air 大陆国行 全网通 12G+256G 凌灰",
+    "model_id": "903af5c4-a413-4521-913b-c6bab3e3d0bb",
+    "model": "摩托罗拉 Moto X70 Air",
+    "brand": "摩托罗拉",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "REDMI K90 Pro Max-12GB+256GB-232",
+    "storage": "12GB+256GB",
+    "ppv": "SREDMI K90 Pro Max 大陆国行 黑色 全网通 12G+256G",
+    "model_id": "5ce5f2d4-95b5-4a5d-b4d2-f57610d7ce55",
+    "model": "REDMI K90 Pro Max",
+    "brand": "小米",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "REDMI K90 Pro Max-12GB+512GB-233",
+    "storage": "12GB+512GB",
+    "ppv": "SREDMI K90 Pro Max 大陆国行 黑色 全网通 12G+512G",
+    "model_id": "5ce5f2d4-95b5-4a5d-b4d2-f57610d7ce55",
+    "model": "REDMI K90 Pro Max",
+    "brand": "小米",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "REDMI K90 Pro Max-16GB+512GB-234",
+    "storage": "16GB+512GB",
+    "ppv": "SREDMI K90 Pro Max 大陆国行 黑色 全网通 16G+512G",
+    "model_id": "5ce5f2d4-95b5-4a5d-b4d2-f57610d7ce55",
+    "model": "REDMI K90 Pro Max",
+    "brand": "小米",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "REDMI K90 Pro Max-16GB+1TB-235",
+    "storage": "16GB+1TB",
+    "ppv": "SREDMI K90 Pro Max 大陆国行 黑色 全网通 16G+1T",
+    "model_id": "5ce5f2d4-95b5-4a5d-b4d2-f57610d7ce55",
+    "model": "REDMI K90 Pro Max",
+    "brand": "小米",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "真我 GT8-12GB+256GB-236",
+    "storage": "12GB+256GB",
+    "ppv": "S真我 GT8 大陆国行 全网通 12G+256G 怀特",
+    "model_id": "0f991076-4105-4a3a-8ea2-c877ff91fb61",
+    "model": "真我 GT8",
+    "brand": "真我",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "真我 GT8-12GB+512GB-237",
+    "storage": "12GB+512GB",
+    "ppv": "S真我 GT8 大陆国行 全网通 12G+512G 怀特",
+    "model_id": "0f991076-4105-4a3a-8ea2-c877ff91fb61",
+    "model": "真我 GT8",
+    "brand": "真我",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "真我 GT8-16GB+512GB-238",
+    "storage": "16GB+512GB",
+    "ppv": "S真我 GT8 大陆国行 全网通 16G+512G 怀特",
+    "model_id": "0f991076-4105-4a3a-8ea2-c877ff91fb61",
+    "model": "真我 GT8",
+    "brand": "真我",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "真我 GT8-16GB+1TB-239",
+    "storage": "16GB+1TB",
+    "ppv": "S真我 GT8 大陆国行 全网通 16G+1T 怀特",
+    "model_id": "0f991076-4105-4a3a-8ea2-c877ff91fb61",
+    "model": "真我 GT8",
+    "brand": "真我",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "真我 GT8 Pro-12GB+256GB-240",
+    "storage": "12GB+256GB",
+    "ppv": "S真我 GT8 Pro 大陆国行 全网通 12G+256G 怀特",
+    "model_id": "36492039-d381-41c7-96c5-d6917df7164c",
+    "model": "真我 GT8 Pro",
+    "brand": "真我",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "真我 GT8 Pro-12GB+512GB-241",
+    "storage": "12GB+512GB",
+    "ppv": "S真我 GT8 Pro 大陆国行 全网通 12G+512G 怀特",
+    "model_id": "36492039-d381-41c7-96c5-d6917df7164c",
+    "model": "真我 GT8 Pro",
+    "brand": "真我",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "真我 GT8 Pro-16GB+256GB-242",
+    "storage": "16GB+256GB",
+    "ppv": "S真我 GT8 Pro 大陆国行 全网通 16G+256G 怀特",
+    "model_id": "36492039-d381-41c7-96c5-d6917df7164c",
+    "model": "真我 GT8 Pro",
+    "brand": "真我",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "真我 GT8 Pro-16GB+512GB-243",
+    "storage": "16GB+512GB",
+    "ppv": "S真我 GT8 Pro 大陆国行 全网通 16G+512G 怀特",
+    "model_id": "36492039-d381-41c7-96c5-d6917df7164c",
+    "model": "真我 GT8 Pro",
+    "brand": "真我",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "真我 GT8 Pro-16GB+1TB-244",
+    "storage": "16GB+1TB",
+    "ppv": "S真我 GT8 Pro 大陆国行 全网通 16G+1T 怀特",
+    "model_id": "36492039-d381-41c7-96c5-d6917df7164c",
+    "model": "真我 GT8 Pro",
+    "brand": "真我",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "华为 nova Flip S-12GB+256GB-245",
+    "storage": "12GB+256GB",
+    "ppv": "S华为 nova Flip S 大陆国行 全网通 12G+256G 零度白",
+    "model_id": "312ac75f-4bfb-4df2-9776-220fcc4b433d",
+    "model": "华为 nova Flip S",
+    "brand": "华为",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "华为 nova Flip S-12GB+512GB-246",
+    "storage": "12GB+512GB",
+    "ppv": "S华为 nova Flip S 大陆国行 全网通 12G+512G 零度白",
+    "model_id": "312ac75f-4bfb-4df2-9776-220fcc4b433d",
+    "model": "华为 nova Flip S",
+    "brand": "华为",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "努比亚 红魔 11 Pro-12GB+256GB-247",
+    "storage": "12GB+256GB",
+    "ppv": "S努比亚 红魔 11 Pro 大陆国行 全网通 12G+256G 暗夜骑士",
+    "model_id": "4d6b1b9d-2c1c-4a8a-a0fb-a9455e427203",
+    "model": "努比亚 红魔 11 Pro",
+    "brand": "努比亚",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "努比亚 红魔 11 Pro-16GB+512GB-248",
+    "storage": "16GB+512GB",
+    "ppv": "S努比亚 红魔 11 Pro 大陆国行 全网通 16G+512G 暗夜骑士",
+    "model_id": "4d6b1b9d-2c1c-4a8a-a0fb-a9455e427203",
+    "model": "努比亚 红魔 11 Pro",
+    "brand": "努比亚",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "努比亚 红魔 11 Pro+-12GB+256GB-249",
+    "storage": "12GB+256GB",
+    "ppv": "S努比亚 红魔 11 Pro+ 大陆国行 全网通 12G+256G 氘锋透明银翼版",
+    "model_id": "575becdd-53b6-4469-aae3-2fa51c27701f",
+    "model": "努比亚 红魔 11 Pro+",
+    "brand": "努比亚",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "努比亚 红魔 11 Pro+-16GB+512GB-250",
+    "storage": "16GB+512GB",
+    "ppv": "S努比亚 红魔 11 Pro+ 大陆国行 全网通 16G+512G 氘锋透明银翼版",
+    "model_id": "575becdd-53b6-4469-aae3-2fa51c27701f",
+    "model": "努比亚 红魔 11 Pro+",
+    "brand": "努比亚",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "努比亚 红魔 11 Pro+-16GB+1TB-251",
+    "storage": "16GB+1TB",
+    "ppv": "S努比亚 红魔 11 Pro+ 大陆国行 全网通 16G+1T 氘锋透明银翼版",
+    "model_id": "575becdd-53b6-4469-aae3-2fa51c27701f",
+    "model": "努比亚 红魔 11 Pro+",
+    "brand": "努比亚",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "努比亚 红魔 11 Pro+-24GB+1TB-252",
+    "storage": "24GB+1TB",
+    "ppv": "S努比亚 红魔 11 Pro+ 大陆国行 全网通 氘锋透明银翼版 24G+1T",
+    "model_id": "575becdd-53b6-4469-aae3-2fa51c27701f",
+    "model": "努比亚 红魔 11 Pro+",
+    "brand": "努比亚",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Magic8 Pro-12GB+256GB-253",
+    "storage": "12GB+256GB",
+    "ppv": "S荣耀 Magic8 Pro 大陆国行 全网通 12G+256G 保修时长≥30天 雪域白",
+    "model_id": "3e850886-a890-43c2-946e-9d8c2eb11ff9",
+    "model": "荣耀 Magic8 Pro",
+    "brand": "荣耀",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Magic8 Pro-12GB+512GB-254",
+    "storage": "12GB+512GB",
+    "ppv": "S荣耀 Magic8 Pro 大陆国行 全网通 12G+512G 保修时长≥30天 雪域白",
+    "model_id": "3e850886-a890-43c2-946e-9d8c2eb11ff9",
+    "model": "荣耀 Magic8 Pro",
+    "brand": "荣耀",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Magic8 Pro-16GB+512GB-255",
+    "storage": "16GB+512GB",
+    "ppv": "S荣耀 Magic8 Pro 大陆国行 全网通 16G+512G 保修时长≥30天 雪域白",
+    "model_id": "3e850886-a890-43c2-946e-9d8c2eb11ff9",
+    "model": "荣耀 Magic8 Pro",
+    "brand": "荣耀",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Magic8 Pro-16GB+1TB-256",
+    "storage": "16GB+1TB",
+    "ppv": "S荣耀 Magic8 Pro 大陆国行 全网通 保修时长≥30天 雪域白 16G+1T",
+    "model_id": "3e850886-a890-43c2-946e-9d8c2eb11ff9",
+    "model": "荣耀 Magic8 Pro",
+    "brand": "荣耀",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "一加 Ace 6-12GB+256GB-257",
+    "storage": "12GB+256GB",
+    "ppv": "S一加 Ace 6 大陆国行 全网通 12G+256G 竞黑",
+    "model_id": "d4220603-405e-405f-b24a-9ae79630edba",
+    "model": "一加 Ace 6",
+    "brand": "一加",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "一加 Ace 6-12GB+512GB-258",
+    "storage": "12GB+512GB",
+    "ppv": "S一加 Ace 6 大陆国行 全网通 12G+512G 竞黑",
+    "model_id": "d4220603-405e-405f-b24a-9ae79630edba",
+    "model": "一加 Ace 6",
+    "brand": "一加",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "一加 Ace 6-16GB+256GB-259",
+    "storage": "16GB+256GB",
+    "ppv": "S一加 Ace 6 大陆国行 全网通 16G+256G 竞黑",
+    "model_id": "d4220603-405e-405f-b24a-9ae79630edba",
+    "model": "一加 Ace 6",
+    "brand": "一加",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "一加 Ace 6-16GB+512GB-260",
+    "storage": "16GB+512GB",
+    "ppv": "S一加 Ace 6 大陆国行 全网通 16G+512G 竞黑",
+    "model_id": "d4220603-405e-405f-b24a-9ae79630edba",
+    "model": "一加 Ace 6",
+    "brand": "一加",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "一加 Ace 6-16GB+1TB-261",
+    "storage": "16GB+1TB",
+    "ppv": "S一加 Ace 6 大陆国行 全网通 16G+1T 竞黑",
+    "model_id": "d4220603-405e-405f-b24a-9ae79630edba",
+    "model": "一加 Ace 6",
+    "brand": "一加",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "三星 W26-16GB+512GB-262",
+    "storage": "16GB+512GB",
+    "ppv": "S三星 W26 大陆国行 全网通 16G+512G 玄曜黑",
+    "model_id": "598f31ab-ff77-4b66-890e-e7f31c3d09d0",
+    "model": "三星 W26",
+    "brand": "三星",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "三星 W26-16GB+1TB-263",
+    "storage": "16GB+1TB",
+    "ppv": "S三星 W26 大陆国行 全网通 16G+1T 玄曜黑",
+    "model_id": "598f31ab-ff77-4b66-890e-e7f31c3d09d0",
+    "model": "三星 W26",
+    "brand": "三星",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "努比亚 Z80 Ultra-12GB+512GB-264",
+    "storage": "12GB+512GB",
+    "ppv": "S努比亚 Z80 Ultra 大陆国行 全网通 12G+512G 魅影黑",
+    "model_id": "ac6a5ce4-a2cd-4ef8-a873-d7293a426cb1",
+    "model": "努比亚 Z80 Ultra",
+    "brand": "努比亚",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "努比亚 Z80 Ultra-16GB+512GB-265",
+    "storage": "16GB+512GB",
+    "ppv": "S努比亚 Z80 Ultra 大陆国行 全网通 16G+512G 魅影黑",
+    "model_id": "ac6a5ce4-a2cd-4ef8-a873-d7293a426cb1",
+    "model": "努比亚 Z80 Ultra",
+    "brand": "努比亚",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "努比亚 Z80 Ultra-16GB+1TB-266",
+    "storage": "16GB+1TB",
+    "ppv": "S努比亚 Z80 Ultra 大陆国行 全网通 魅影黑 16G+1T",
+    "model_id": "ac6a5ce4-a2cd-4ef8-a873-d7293a426cb1",
+    "model": "努比亚 Z80 Ultra",
+    "brand": "努比亚",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "小米 17 Pro-12GB+256GB-267",
+    "storage": "12GB+256GB",
+    "ppv": "S小米 17 Pro 大陆国行 白色 全网通 12G+256G 保修时长≥30天",
+    "model_id": "8c12cb13-6300-4879-9666-95dd584dcb49",
+    "model": "小米 17 Pro",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "小米 17 Pro-12GB+512GB-268",
+    "storage": "12GB+512GB",
+    "ppv": "S小米 17 Pro 大陆国行 白色 全网通 12G+512G 保修时长≥30天",
+    "model_id": "8c12cb13-6300-4879-9666-95dd584dcb49",
+    "model": "小米 17 Pro",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "小米 17 Pro-16GB+512GB-269",
+    "storage": "16GB+512GB",
+    "ppv": "S小米 17 Pro 大陆国行 白色 全网通 16G+512G 保修时长≥30天",
+    "model_id": "8c12cb13-6300-4879-9666-95dd584dcb49",
+    "model": "小米 17 Pro",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "小米 17 Pro-16GB+1TB-270",
+    "storage": "16GB+1TB",
+    "ppv": "S小米 17 Pro 大陆国行 白色 全网通 保修时长≥30天 16G+1T",
+    "model_id": "8c12cb13-6300-4879-9666-95dd584dcb49",
+    "model": "小米 17 Pro",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "小米 17 Pro Max-12GB+512GB-271",
+    "storage": "12GB+512GB",
+    "ppv": "S小米 17 Pro Max 大陆国行 白色 全网通 12G+512G 保修时长≥30天",
+    "model_id": "844c8118-3770-4a5f-90cd-0bb868b125a0",
+    "model": "小米 17 Pro Max",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "小米 17 Pro Max-16GB+512GB-272",
+    "storage": "16GB+512GB",
+    "ppv": "S小米 17 Pro Max 大陆国行 白色 全网通 16G+512G 保修时长≥30天",
+    "model_id": "844c8118-3770-4a5f-90cd-0bb868b125a0",
+    "model": "小米 17 Pro Max",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "小米 17 Pro Max-16GB+1TB-273",
+    "storage": "16GB+1TB",
+    "ppv": "S小米 17 Pro Max 大陆国行 白色 全网通 保修时长≥30天 16G+1T",
+    "model_id": "844c8118-3770-4a5f-90cd-0bb868b125a0",
+    "model": "小米 17 Pro Max",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "华为 Mate XTs 非凡大师-16GB+256GB-274",
+    "storage": "16GB+256GB",
+    "ppv": "S华为 Mate XTs 非凡大师 大陆国行 全网通 16G+256G 玄黑 保修时长≥30天",
+    "model_id": "37dba941-9cdb-481b-9c92-898c233dd4f7",
+    "model": "华为 Mate XTs 非凡大师",
+    "brand": "华为",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "华为 Mate XTs 非凡大师-16GB+512GB-275",
+    "storage": "16GB+512GB",
+    "ppv": "S华为 Mate XTs 非凡大师 大陆国行 全网通 16G+512G 玄黑 保修时长≥30天",
+    "model_id": "37dba941-9cdb-481b-9c92-898c233dd4f7",
+    "model": "华为 Mate XTs 非凡大师",
+    "brand": "华为",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "华为 Mate XTs 非凡大师-16GB+1TB-276",
+    "storage": "16GB+1TB",
+    "ppv": "S华为 Mate XTs 非凡大师 大陆国行 全网通 玄黑 保修时长≥30天 16G+1T",
+    "model_id": "37dba941-9cdb-481b-9c92-898c233dd4f7",
+    "model": "华为 Mate XTs 非凡大师",
+    "brand": "华为",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Magic V Flip2-12GB+256GB-277",
+    "storage": "12GB+256GB",
+    "ppv": "S荣耀 Magic V Flip2 大陆国行 全网通 12G+256G 钛空灰 保修时长≥30天",
+    "model_id": "df6947fb-697b-4d98-9e11-32b908f82fc9",
+    "model": "荣耀 Magic V Flip2",
+    "brand": "荣耀",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Magic V Flip2-12GB+512GB-278",
+    "storage": "12GB+512GB",
+    "ppv": "S荣耀 Magic V Flip2 大陆国行 全网通 12G+512G 钛空灰 保修时长≥30天",
+    "model_id": "df6947fb-697b-4d98-9e11-32b908f82fc9",
+    "model": "荣耀 Magic V Flip2",
+    "brand": "荣耀",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Magic V Flip2-12GB+1TB-279",
+    "storage": "12GB+1TB",
+    "ppv": "S荣耀 Magic V Flip2 大陆国行 全网通 12G+1T 钛空灰 保修时长≥30天",
+    "model_id": "df6947fb-697b-4d98-9e11-32b908f82fc9",
+    "model": "荣耀 Magic V Flip2",
+    "brand": "荣耀",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "荣耀 Magic V Flip2-16GB+1TB 高定版-280",
+    "storage": "16GB+1TB 高定版",
+    "ppv": "S荣耀 Magic V Flip2 大陆国行 全网通 钛空灰 保修时长≥30天 16G+1T",
+    "model_id": "df6947fb-697b-4d98-9e11-32b908f82fc9",
+    "model": "荣耀 Magic V Flip2",
+    "brand": "荣耀",
+    "position": "折叠",
+    "version": 1
+  },
+  {
+    "id": "REDMI Note 15-8GB+128GB-281",
+    "storage": "8GB+128GB",
+    "ppv": "SREDMI Note 15 大陆国行 全网通 8G+128G 子夜黑",
+    "model_id": "7199b46c-94de-483b-af17-21383fde8525",
+    "model": "REDMI Note 15",
+    "brand": "小米",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "REDMI Note 15-8GB+256GB-282",
+    "storage": "8GB+256GB",
+    "ppv": "SREDMI Note 15 大陆国行 全网通 8G+256G 子夜黑",
+    "model_id": "7199b46c-94de-483b-af17-21383fde8525",
+    "model": "REDMI Note 15",
+    "brand": "小米",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "REDMI Note 15-12GB+256GB-283",
+    "storage": "12GB+256GB",
+    "ppv": "SREDMI Note 15 大陆国行 全网通 12G+256G 子夜黑",
+    "model_id": "7199b46c-94de-483b-af17-21383fde8525",
+    "model": "REDMI Note 15",
+    "brand": "小米",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "REDMI Note 15 Pro-8GB+256GB-284",
+    "storage": "8GB+256GB",
+    "ppv": "SREDMI Note 15 Pro 大陆国行 全网通 8G+256G 子夜黑",
+    "model_id": "fea681cf-8323-4f25-8d29-55d23e0a92c5",
+    "model": "REDMI Note 15 Pro",
+    "brand": "小米",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "REDMI Note 15 Pro-12GB+256GB-285",
+    "storage": "12GB+256GB",
+    "ppv": "SREDMI Note 15 Pro 大陆国行 全网通 12G+256G 子夜黑",
+    "model_id": "fea681cf-8323-4f25-8d29-55d23e0a92c5",
+    "model": "REDMI Note 15 Pro",
+    "brand": "小米",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "REDMI Note 15 Pro-12GB+512GB-286",
+    "storage": "12GB+512GB",
+    "ppv": "SREDMI Note 15 Pro 大陆国行 全网通 12G+512G 子夜黑",
+    "model_id": "fea681cf-8323-4f25-8d29-55d23e0a92c5",
+    "model": "REDMI Note 15 Pro",
+    "brand": "小米",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "REDMI Note 15 Pro+-12GB+256GB-287",
+    "storage": "12GB+256GB",
+    "ppv": "SREDMI Note 15 Pro+ 大陆国行 全网通 12G+256G 子夜黑",
+    "model_id": "45b6707b-089d-4892-9e0a-864f9a16d7a1",
+    "model": "REDMI Note 15 Pro+",
+    "brand": "小米",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "REDMI Note 15 Pro+-12GB+512GB-288",
+    "storage": "12GB+512GB",
+    "ppv": "SREDMI Note 15 Pro+ 大陆国行 全网通 12G+512G 子夜黑",
+    "model_id": "45b6707b-089d-4892-9e0a-864f9a16d7a1",
+    "model": "REDMI Note 15 Pro+",
+    "brand": "小米",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "REDMI Note 15 Pro+-16GB+512GB-289",
+    "storage": "16GB+512GB",
+    "ppv": "SREDMI Note 15 Pro+ 大陆国行 全网通 16G+512G 子夜黑",
+    "model_id": "45b6707b-089d-4892-9e0a-864f9a16d7a1",
+    "model": "REDMI Note 15 Pro+",
+    "brand": "小米",
+    "position": "低端",
+    "version": 1
+  },
+  {
+    "id": "c7994ecc-1f55-4eae-b52a-9d435d3eb77d",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "7e6f8134-aa49-4e88-9fb3-aa7de8d6772d",
+    "model": "小米 18 Pro",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "83286fcd-537e-4323-9b08-fe8076946ee7",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "7e6f8134-aa49-4e88-9fb3-aa7de8d6772d",
+    "model": "小米 18 Pro",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "d30bf33b-b05e-4042-a9d0-095979157a53",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "7e6f8134-aa49-4e88-9fb3-aa7de8d6772d",
+    "model": "小米 18 Pro",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "27cb8ee2-a0b1-4203-946c-d5af0ec53719",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "7e6f8134-aa49-4e88-9fb3-aa7de8d6772d",
+    "model": "小米 18 Pro",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "f132b2a6-c4ca-4f16-b575-81f18384df2d",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "a6f930c4-fdac-4a31-9119-af902ad4eceb",
+    "model": "小米 18 Pro Max",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "ed57edf9-a93a-409f-b1eb-ed47e996f0ed",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "a6f930c4-fdac-4a31-9119-af902ad4eceb",
+    "model": "小米 18 Pro Max",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "8d23ebae-1cca-4f3e-a8b3-931366f9e00d",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "a6f930c4-fdac-4a31-9119-af902ad4eceb",
+    "model": "小米 18 Pro Max",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "481738dc-683c-4ea1-9cf5-a96fd2964ad0",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "a6f930c4-fdac-4a31-9119-af902ad4eceb",
+    "model": "小米 18 Pro Max",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "08636f75-9547-458c-a200-0358868d8e16",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "c2f4bcfb-8e21-4e07-a630-1289a46e8851",
+    "model": "小米 17T",
+    "brand": "小米",
+    "position": "",
+    "version": 1
+  },
+  {
+    "id": "ddf9f241-27c9-46ed-a361-fa0f0aa8e0d5",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "c2f4bcfb-8e21-4e07-a630-1289a46e8851",
+    "model": "小米 17T",
+    "brand": "小米",
+    "position": "",
+    "version": 1
+  },
+  {
+    "id": "4ea0cc57-3655-4c5b-a794-623f980c06bb",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "0e871a2a-4559-4f6a-b553-ba5a1a8d0ef7",
+    "model": "小米 17T Pro",
+    "brand": "小米",
+    "position": "",
+    "version": 1
+  },
+  {
+    "id": "61d34a11-2d0f-4939-abe2-4e6ebde6f472",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "0e871a2a-4559-4f6a-b553-ba5a1a8d0ef7",
+    "model": "小米 17T Pro",
+    "brand": "小米",
+    "position": "",
+    "version": 1
+  },
+  {
+    "id": "cf05b784-145e-4ee6-9952-1583cd47f0e0",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "0e871a2a-4559-4f6a-b553-ba5a1a8d0ef7",
+    "model": "小米 17T Pro",
+    "brand": "小米",
+    "position": "",
+    "version": 1
+  },
+  {
+    "id": "91f26fef-fb38-4ac0-aac9-04855a3d63fe",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "242d7aaa-a2b9-4565-9e38-09f325f4a6d2",
+    "model": "小米 17 Ultra 徕卡版",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 2
+  },
+  {
+    "id": "925ed26b-f2dd-4b2c-92ff-a10d5b797caf",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "6aee1a71-23f6-4074-9bc5-7534e4ea7ea9",
+    "model": "REDMI K100 Pro",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "7075432f-624b-4cde-bf89-c6a5f32f8046",
+    "storage": "16GB+256GB",
+    "ppv": "",
+    "model_id": "6aee1a71-23f6-4074-9bc5-7534e4ea7ea9",
+    "model": "REDMI K100 Pro",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "08575beb-a33d-42dc-9289-ccd0365039f9",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "6aee1a71-23f6-4074-9bc5-7534e4ea7ea9",
+    "model": "REDMI K100 Pro",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "e86d7285-0831-4910-9e8e-a63d3faa4686",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "6aee1a71-23f6-4074-9bc5-7534e4ea7ea9",
+    "model": "REDMI K100 Pro",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "743ee8ae-c627-4fcc-9f62-b4f0ddf9b4ea",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "001cf5e7-e805-4d98-b382-04366fab9500",
+    "model": "REDMI K100 Pro Max",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "f1aa5d6a-8b62-4823-a419-ff3ed0af6f46",
+    "storage": "16GB+256GB",
+    "ppv": "",
+    "model_id": "001cf5e7-e805-4d98-b382-04366fab9500",
+    "model": "REDMI K100 Pro Max",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "f494b4e9-0db5-434a-aeb9-593c9276d7f7",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "001cf5e7-e805-4d98-b382-04366fab9500",
+    "model": "REDMI K100 Pro Max",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "6679877f-ba15-46e1-9948-32199a19a971",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "001cf5e7-e805-4d98-b382-04366fab9500",
+    "model": "REDMI K100 Pro Max",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "de7edabc-9508-4edd-bba1-7a3c28faaf4e",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "001cf5e7-e805-4d98-b382-04366fab9500",
+    "model": "REDMI K100 Pro Max",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "9e41ee82-ec34-40a8-9628-7d4f6658396a",
+    "storage": "8GB+128GB",
+    "ppv": "",
+    "model_id": "ee431ea9-805e-40b3-a118-5459797679db",
+    "model": "REDMI Note 17 Pro",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "60d234fe-b610-44c6-bf95-19453a210db8",
+    "storage": "8GB+256GB",
+    "ppv": "",
+    "model_id": "ee431ea9-805e-40b3-a118-5459797679db",
+    "model": "REDMI Note 17 Pro",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "8c0a8d3e-4662-4755-a5e4-797e5806746f",
+    "storage": "8GB+512GB",
+    "ppv": "",
+    "model_id": "ee431ea9-805e-40b3-a118-5459797679db",
+    "model": "REDMI Note 17 Pro",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "711b9f63-80f3-4e32-b412-4b2eca51ddc5",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "ee431ea9-805e-40b3-a118-5459797679db",
+    "model": "REDMI Note 17 Pro",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "0d832535-2aea-4d10-be10-ac9165c5e2a6",
+    "storage": "8GB+128GB",
+    "ppv": "",
+    "model_id": "8f6c0280-261f-4e32-a009-fe9baf5f6663",
+    "model": "REDMI Note 17",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "cdd0661f-3ba3-424f-9fb4-da7c216988b1",
+    "storage": "6GB+256GB",
+    "ppv": "",
+    "model_id": "8f6c0280-261f-4e32-a009-fe9baf5f6663",
+    "model": "REDMI Note 17",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "90001e63-a759-4498-bc1d-c6b746158dda",
+    "storage": "8GB+256GB",
+    "ppv": "",
+    "model_id": "8f6c0280-261f-4e32-a009-fe9baf5f6663",
+    "model": "REDMI Note 17",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "9ce2d2e3-cdfb-43a6-99d4-3722099111a5",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "a32fdcea-b720-4738-803a-989f095447e2",
+    "model": "REDMI Turbo 4",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "5ebd7842-291b-4615-9990-8ac60d9b8d9b",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "a32fdcea-b720-4738-803a-989f095447e2",
+    "model": "REDMI Turbo 4",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "cb4d71e6-d907-47a9-8400-8918f2b5af9f",
+    "storage": "16GB+256GB",
+    "ppv": "",
+    "model_id": "a32fdcea-b720-4738-803a-989f095447e2",
+    "model": "REDMI Turbo 4",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "b7c33bd8-7a01-47cb-94c5-900f306e0b46",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "a32fdcea-b720-4738-803a-989f095447e2",
+    "model": "REDMI Turbo 4",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "49a7b0cc-518d-40a1-8dbb-53a293576cac",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "62157a52-740e-4cd9-85e5-ba7a4280770e",
+    "model": "vivo S60",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "d6098143-1b8c-460e-9e1f-ce79319713bf",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "62157a52-740e-4cd9-85e5-ba7a4280770e",
+    "model": "vivo S60",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "438ebc55-99b3-4de3-9483-ecf31c72d65f",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "62157a52-740e-4cd9-85e5-ba7a4280770e",
+    "model": "vivo S60",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "ce600ef0-e2b7-4ae2-8c92-e47e29752597",
+    "storage": "8GB+256GB",
+    "ppv": "",
+    "model_id": "5762d629-258f-42bd-a991-cf9547629a50",
+    "model": "vivo S60 元气版",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "7d4a3456-4600-43fc-b704-266cc45c123d",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "5762d629-258f-42bd-a991-cf9547629a50",
+    "model": "vivo S60 元气版",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "2f8f7adf-93da-4fb6-8dc7-bc67305fb63d",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "5762d629-258f-42bd-a991-cf9547629a50",
+    "model": "vivo S60 元气版",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "27e8b5e8-19d6-485d-bcbc-51163e8b8a57",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "0c8b46b7-0080-4f59-b5ce-3dbeb83db958",
+    "model": "vivo X Fold6",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "043746be-8bdc-4917-b207-c0e7a7794261",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "0c8b46b7-0080-4f59-b5ce-3dbeb83db958",
+    "model": "vivo X Fold6",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "61509cdf-9d1f-4790-bc8a-fd7be47de403",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "0c8b46b7-0080-4f59-b5ce-3dbeb83db958",
+    "model": "vivo X Fold6",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "f7dcbc65-30d3-47c2-9c2a-3f1acb3ccecf",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "0c8b46b7-0080-4f59-b5ce-3dbeb83db958",
+    "model": "vivo X Fold6",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "059b12ff-453f-4a9c-8526-b32f983bb1e7",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "eeff7ba0-0ca6-486e-9a81-2d1987d3cde2",
+    "model": "vivo X500 Pro",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "3b1bfc08-0f49-4807-8d1b-d0ae6a63a38e",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "eeff7ba0-0ca6-486e-9a81-2d1987d3cde2",
+    "model": "vivo X500 Pro",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "d25b3c2f-1c40-43dc-b745-879fbb1043b9",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "eeff7ba0-0ca6-486e-9a81-2d1987d3cde2",
+    "model": "vivo X500 Pro",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "6fdb1eaf-44eb-401e-8f2f-df472af26344",
+    "storage": "12GB+1TB",
+    "ppv": "",
+    "model_id": "eeff7ba0-0ca6-486e-9a81-2d1987d3cde2",
+    "model": "vivo X500 Pro",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "52762da2-4f92-4d77-8fe0-158caca6897c",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "eeff7ba0-0ca6-486e-9a81-2d1987d3cde2",
+    "model": "vivo X500 Pro",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "a431a3d6-fc58-44af-9af7-6c4e840c2a7e",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "9ac336c8-425c-471e-b6dd-35aeb53d0d23",
+    "model": "vivo X300 Pro",
+    "brand": "vivo",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "92e6266f-579f-4c42-acfc-eaac36818e77",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "a3d837d0-f019-46b2-9ed0-faad8b69d4af",
+    "model": "vivo X500 Pro Max",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "d5e30b53-42ef-483a-b17c-acb971d99d85",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "a3d837d0-f019-46b2-9ed0-faad8b69d4af",
+    "model": "vivo X500 Pro Max",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "1645e455-f166-4d3c-987c-329b9edcda5f",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "a3d837d0-f019-46b2-9ed0-faad8b69d4af",
+    "model": "vivo X500 Pro Max",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "7e70c82a-2a1c-4e7d-9e35-988801c6be73",
+    "storage": "12GB+1TB",
+    "ppv": "",
+    "model_id": "a3d837d0-f019-46b2-9ed0-faad8b69d4af",
+    "model": "vivo X500 Pro Max",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "b79e0daf-59a5-469f-b633-e53b63874627",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "a3d837d0-f019-46b2-9ed0-faad8b69d4af",
+    "model": "vivo X500 Pro Max",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "c63a5133-225c-4dcd-b72a-ab5100d98081",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "6675bea2-82f7-4559-bc3a-52ff45113509",
+    "model": "vivo X500",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "683e9b4b-6bea-4402-88e5-01a76c927f62",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "6675bea2-82f7-4559-bc3a-52ff45113509",
+    "model": "vivo X500",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "a3b6ff4d-1743-4349-b4fe-7351013e2d62",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "6675bea2-82f7-4559-bc3a-52ff45113509",
+    "model": "vivo X500",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "1fc569d6-ec89-4e85-a77c-a9826e48b9e3",
+    "storage": "12GB+1TB",
+    "ppv": "",
+    "model_id": "6675bea2-82f7-4559-bc3a-52ff45113509",
+    "model": "vivo X500",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "fcb65946-af95-4663-bdfb-7e911c4b75f5",
+    "storage": "8GB+128GB",
+    "ppv": "",
+    "model_id": "77982f04-180c-4ee3-9ba9-612732614126",
+    "model": "vivo Y600 Pro",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "5e8067f7-6321-4ce7-a7ed-db4704e4e12c",
+    "storage": "8GB+256GB",
+    "ppv": "",
+    "model_id": "77982f04-180c-4ee3-9ba9-612732614126",
+    "model": "vivo Y600 Pro",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "40b868ac-aaf0-4aaf-8f54-1918721eb54f",
+    "storage": "8GB+512GB",
+    "ppv": "",
+    "model_id": "77982f04-180c-4ee3-9ba9-612732614126",
+    "model": "vivo Y600 Pro",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "851b4699-ab33-44b9-9f86-96137326c76a",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "77982f04-180c-4ee3-9ba9-612732614126",
+    "model": "vivo Y600 Pro",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "8ff896e7-7a4b-46d0-a2bd-38f1c88e6a02",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "77982f04-180c-4ee3-9ba9-612732614126",
+    "model": "vivo Y600 Pro",
+    "brand": "vivo",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "63d2dce8-2826-4e2f-9e52-f5b3230a03c9",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "0c111788-1a6d-4122-b376-6b6909b11b4a",
+    "model": "iQOO Neo11 至尊版",
+    "brand": "iQOO",
+    "position": "",
+    "version": 1
+  },
+  {
+    "id": "a12aac37-a4fa-4f18-8ad0-77c01b0f5fd5",
+    "storage": "16GB+256GB",
+    "ppv": "",
+    "model_id": "0c111788-1a6d-4122-b376-6b6909b11b4a",
+    "model": "iQOO Neo11 至尊版",
+    "brand": "iQOO",
+    "position": "",
+    "version": 1
+  },
+  {
+    "id": "cb3b7ffa-c034-4e00-a635-d857c20b01a7",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "0c111788-1a6d-4122-b376-6b6909b11b4a",
+    "model": "iQOO Neo11 至尊版",
+    "brand": "iQOO",
+    "position": "",
+    "version": 1
+  },
+  {
+    "id": "03887257-cc2d-4c52-84d9-4849df9acbbd",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "0c111788-1a6d-4122-b376-6b6909b11b4a",
+    "model": "iQOO Neo11 至尊版",
+    "brand": "iQOO",
+    "position": "",
+    "version": 1
+  },
+  {
+    "id": "fda4f6c9-3791-46c8-b98b-9ff48cdb682a",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "cca75a81-dac6-4839-b9a7-b435df50964d",
+    "model": "iQOO Z10 Turbo",
+    "brand": "iQOO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "8f94793e-c48e-49ef-8f6e-3a80fb458b31",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "cca75a81-dac6-4839-b9a7-b435df50964d",
+    "model": "iQOO Z10 Turbo",
+    "brand": "iQOO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "dd84abc6-f930-485f-9b3a-16c3253cf3c6",
+    "storage": "16GB+256GB",
+    "ppv": "",
+    "model_id": "cca75a81-dac6-4839-b9a7-b435df50964d",
+    "model": "iQOO Z10 Turbo",
+    "brand": "iQOO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "c1ad3ded-0f3a-4af3-b841-cce45ace189b",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "cca75a81-dac6-4839-b9a7-b435df50964d",
+    "model": "iQOO Z10 Turbo",
+    "brand": "iQOO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "d5b73f6c-7e10-4484-aa08-503ce5a08933",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "8800701f-6f4b-428a-9038-47082e228e93",
+    "model": "iQOO 16",
+    "brand": "iQOO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "16d081de-3fee-4731-bac9-ac37ac8be2f3",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "8800701f-6f4b-428a-9038-47082e228e93",
+    "model": "iQOO 16",
+    "brand": "iQOO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "5a314be1-24fe-4642-b3e4-58e552d2b001",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "8800701f-6f4b-428a-9038-47082e228e93",
+    "model": "iQOO 16",
+    "brand": "iQOO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "55c074a1-5054-4ed3-9bfe-18ed01edefd8",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "8800701f-6f4b-428a-9038-47082e228e93",
+    "model": "iQOO 16",
+    "brand": "iQOO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "a4a15248-fa19-4903-bfca-58222b08423d",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "50288f54-2f9a-400b-b6f1-53d60387a3eb",
+    "model": "荣耀 Magic V Flip",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "cd771376-3c8b-4a70-9c03-ce7581ec641c",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "50288f54-2f9a-400b-b6f1-53d60387a3eb",
+    "model": "荣耀 Magic V Flip",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "5c73cf13-eda5-4bbc-a1b5-9017a4fa8f2d",
+    "storage": "12GB+1TB",
+    "ppv": "",
+    "model_id": "50288f54-2f9a-400b-b6f1-53d60387a3eb",
+    "model": "荣耀 Magic V Flip",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "afe2ebcb-20af-4069-80b8-47fc70af8df3",
+    "storage": "16GB+1TB 高定版",
+    "ppv": "",
+    "model_id": "50288f54-2f9a-400b-b6f1-53d60387a3eb",
+    "model": "荣耀 Magic V Flip",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "515bc974-c8d6-4e0b-90b5-5f30b0b183e6",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "8087f356-25af-4c0e-9296-d6d60e61c914",
+    "model": "荣耀 Magic V5",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "382ecd67-3038-4146-855c-0efa9e81715c",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "8087f356-25af-4c0e-9296-d6d60e61c914",
+    "model": "荣耀 Magic V5",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "ce7e07d4-71de-4fdc-8a98-4db10156590f",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "8087f356-25af-4c0e-9296-d6d60e61c914",
+    "model": "荣耀 Magic V5",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "faa4e46f-edac-4bd1-8fb8-a6844c9ad54e",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "53c4c31d-4608-4b6e-a90e-54b3d75c0daf",
+    "model": "荣耀 Magic9",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "d958c37d-9ad1-45f2-97eb-7e2a1ed753cf",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "53c4c31d-4608-4b6e-a90e-54b3d75c0daf",
+    "model": "荣耀 Magic9",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "3e59b8e5-2911-420d-9ce1-c6e2fc177dbd",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "53c4c31d-4608-4b6e-a90e-54b3d75c0daf",
+    "model": "荣耀 Magic9",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "494c96ce-d9f1-474a-9214-087e881dd51e",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "53c4c31d-4608-4b6e-a90e-54b3d75c0daf",
+    "model": "荣耀 Magic9",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "bb08e40d-8ba2-4c36-8b7d-f96a1a98320f",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "2980b3bf-331f-4506-ade5-b8dd799c526d",
+    "model": "荣耀 Magic9 超能版",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "aba8dae4-0324-4e28-8631-1c9b08c844e1",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "2980b3bf-331f-4506-ade5-b8dd799c526d",
+    "model": "荣耀 Magic9 超能版",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "a7c6ae48-1181-40cd-8a62-e51bc7be3022",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "2980b3bf-331f-4506-ade5-b8dd799c526d",
+    "model": "荣耀 Magic9 超能版",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "b094064c-14a6-4841-b676-b00dffcc7860",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "d99ad4e2-30be-44c1-9e5d-7f0811512168",
+    "model": "荣耀 Magic9 Pro Max",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "c5e5f250-d309-4464-95a7-15eee89e3b5d",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "d99ad4e2-30be-44c1-9e5d-7f0811512168",
+    "model": "荣耀 Magic9 Pro Max",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "6324caf5-38be-4c11-9d05-00c4f9523d6d",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "d99ad4e2-30be-44c1-9e5d-7f0811512168",
+    "model": "荣耀 Magic9 Pro Max",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "620d2318-8505-4b2c-8ae6-6fac2a072c86",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "d99ad4e2-30be-44c1-9e5d-7f0811512168",
+    "model": "荣耀 Magic9 Pro Max",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "8f99f39b-fb53-4efb-970f-57f1c1905860",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "06eb64e1-a6c0-424e-8334-6a11448e95d1",
+    "model": "荣耀 WIN RT2",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "fb61c92d-7daa-41d5-8620-b855f9161fb4",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "06eb64e1-a6c0-424e-8334-6a11448e95d1",
+    "model": "荣耀 WIN RT2",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "c5455e48-d4a5-42c3-b755-6a17b52d3392",
+    "storage": "16GB+256GB",
+    "ppv": "",
+    "model_id": "06eb64e1-a6c0-424e-8334-6a11448e95d1",
+    "model": "荣耀 WIN RT2",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "1d8ceeff-3e75-4b34-b90d-528b0eab4376",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "06eb64e1-a6c0-424e-8334-6a11448e95d1",
+    "model": "荣耀 WIN RT2",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "67644b5f-77da-4ee5-83ec-bd701c104c0a",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "734e0e07-6f39-470b-8368-7d6e711fa077",
+    "model": "荣耀 WIN2",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "fdf4c151-5c5b-4c92-9e3f-0aad85e06c6a",
+    "storage": "16GB+256GB",
+    "ppv": "",
+    "model_id": "734e0e07-6f39-470b-8368-7d6e711fa077",
+    "model": "荣耀 WIN2",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "f209b66a-7d54-434a-a5f2-10144ae2b16e",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "734e0e07-6f39-470b-8368-7d6e711fa077",
+    "model": "荣耀 WIN2",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "03f90270-db5c-48b6-ad53-2976b5a6b403",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "734e0e07-6f39-470b-8368-7d6e711fa077",
+    "model": "荣耀 WIN2",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "5310c046-9223-4223-96a3-0d202a53b4e9",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "734e0e07-6f39-470b-8368-7d6e711fa077",
+    "model": "荣耀 WIN2",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "1c954b47-b207-4392-a22f-f9e3bb73dbd3",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "c79e69f0-330b-4f34-8bc3-63d60b5e0690",
+    "model": "荣耀 WIN",
+    "brand": "荣耀",
+    "position": "中端",
+    "version": 1
+  },
+  {
+    "id": "41a4fc52-9092-48ee-ba6b-6e6840a9de34",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "2e9a6150-f046-4412-bc20-48c0e431497a",
+    "model": "荣耀 600 Pro",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "df238a05-7152-4559-8b4a-fb717ca2f765",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "2e9a6150-f046-4412-bc20-48c0e431497a",
+    "model": "荣耀 600 Pro",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "9507c3cb-e5b2-476e-b00b-6d1449795a57",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "2e9a6150-f046-4412-bc20-48c0e431497a",
+    "model": "荣耀 600 Pro",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "c6c7a7d5-dad2-4607-b684-94b6b1618fd9",
+    "storage": "8GB+256GB",
+    "ppv": "",
+    "model_id": "e594fcca-0812-444e-b258-ddf361c268f8",
+    "model": "荣耀 600 元气版",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "b15633f3-d1c5-4ff5-a6a0-0faf583ec4ea",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "e594fcca-0812-444e-b258-ddf361c268f8",
+    "model": "荣耀 600 元气版",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "902576c4-ee94-4243-a249-4981c3523c74",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "e594fcca-0812-444e-b258-ddf361c268f8",
+    "model": "荣耀 600 元气版",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "659f3a2e-c87d-40e3-b1a6-8eaa698d4f91",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "004b5b34-23de-4186-9a3f-9c986560c338",
+    "model": "荣耀 600 超级版",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "6531feeb-99bf-433a-8d1c-cfe847731f6e",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "004b5b34-23de-4186-9a3f-9c986560c338",
+    "model": "荣耀 600 超级版",
+    "brand": "荣耀",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "12916473-bb45-48a9-8a43-86d726fb47db",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "690167fd-9232-4484-bf78-9284d4e7f340",
+    "model": "OPPO Find N5",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "a15754c1-9e2e-4ee9-858d-e48f65994173",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "690167fd-9232-4484-bf78-9284d4e7f340",
+    "model": "OPPO Find N5",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "ce52e683-cee0-46ea-b5be-c9f96578a9ab",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "5a9da3be-0f31-4ff4-8143-5194bcd7eb9b",
+    "model": "OPPO Find X10",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "fa155cf1-d598-41fd-912f-60f35c7d21b8",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "5a9da3be-0f31-4ff4-8143-5194bcd7eb9b",
+    "model": "OPPO Find X10",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "d2855983-8ce4-430f-91d8-641977d820e4",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "5a9da3be-0f31-4ff4-8143-5194bcd7eb9b",
+    "model": "OPPO Find X10",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "26a33262-cd4a-4343-b397-0338cb9f7d83",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "5a9da3be-0f31-4ff4-8143-5194bcd7eb9b",
+    "model": "OPPO Find X10",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "cf6a5306-ff46-447b-88f4-0a31fcd61147",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "df1997a8-cdb3-4255-b54c-48fbe1827ebd",
+    "model": "OPPO Find X10 Pro Max",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "501cbb2b-3bec-4ac5-be66-687dc15ffad0",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "df1997a8-cdb3-4255-b54c-48fbe1827ebd",
+    "model": "OPPO Find X10 Pro Max",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "ef860313-fddd-4ef3-a8d7-59a16fd9a37e",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "df1997a8-cdb3-4255-b54c-48fbe1827ebd",
+    "model": "OPPO Find X10 Pro Max",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "b2ca8b0d-96db-4ad3-9c63-97d270ff6549",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "df1997a8-cdb3-4255-b54c-48fbe1827ebd",
+    "model": "OPPO Find X10 Pro Max",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "9a49f82f-c265-46c7-b395-04b773b4e682",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "8d58599e-3974-4e5c-8c99-6172df55860b",
+    "model": "OPPO Reno16 Pro",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "f79923e5-df05-4abe-9e6d-a5c45f655312",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "8d58599e-3974-4e5c-8c99-6172df55860b",
+    "model": "OPPO Reno16 Pro",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "79437d05-2f16-4bfd-8516-fe388f275028",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "8d58599e-3974-4e5c-8c99-6172df55860b",
+    "model": "OPPO Reno16 Pro",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "f9371db9-ecfb-4da8-aefe-3b0a2721b974",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "bab74e3e-66c0-4195-a51d-c88be23c67d5",
+    "model": "OPPO Reno16",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "b5654f70-68f0-409c-9de6-52092f3321ca",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "bab74e3e-66c0-4195-a51d-c88be23c67d5",
+    "model": "OPPO Reno16",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "5ce08f04-3ff7-44c0-a542-26b5a7dc1597",
+    "storage": "16GB+256GB",
+    "ppv": "",
+    "model_id": "bab74e3e-66c0-4195-a51d-c88be23c67d5",
+    "model": "OPPO Reno16",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "d08418c0-4d9f-4564-908d-7ddd17cfd367",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "bab74e3e-66c0-4195-a51d-c88be23c67d5",
+    "model": "OPPO Reno16",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "98bcb0c7-0486-4a4c-a465-6b2d0a85ebb3",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "bab74e3e-66c0-4195-a51d-c88be23c67d5",
+    "model": "OPPO Reno16",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "9c71fddd-ddfc-4ab3-83bc-e33c85dcbb66",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "0c204a8f-f3a7-4153-8413-513a15a22e24",
+    "model": "一加 16",
+    "brand": "一加",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "09c83105-1af8-467a-b913-e72a0812d830",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "0c204a8f-f3a7-4153-8413-513a15a22e24",
+    "model": "一加 16",
+    "brand": "一加",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "3c5f3aeb-baf0-4e00-970c-6c2c346f4070",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "0c204a8f-f3a7-4153-8413-513a15a22e24",
+    "model": "一加 16",
+    "brand": "一加",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "1a6bbd65-7986-40f9-b7e2-0ab5c226a117",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "0c204a8f-f3a7-4153-8413-513a15a22e24",
+    "model": "一加 16",
+    "brand": "一加",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "563668e3-80c6-451c-bb0f-acbe524bbea7",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "880df712-c2b7-4f6f-bdba-829e92bb6764",
+    "model": "华为 Mate 90 Pro",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "8c1bc566-a778-4e10-b3c4-f365eca4c74e",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "880df712-c2b7-4f6f-bdba-829e92bb6764",
+    "model": "华为 Mate 90 Pro",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "0d3c9b5d-e4fe-4948-bf80-0d8033db73f7",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "880df712-c2b7-4f6f-bdba-829e92bb6764",
+    "model": "华为 Mate 90 Pro",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "77a98e6a-2f97-4152-9c69-04971ce502dc",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "880df712-c2b7-4f6f-bdba-829e92bb6764",
+    "model": "华为 Mate 90 Pro",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "47aa33e3-068d-4c7b-8168-89928d9bb921",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "9c9b254a-057c-4498-88fd-6199fd22c859",
+    "model": "华为 Mate 90 Pro Max",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "edd9702a-5e06-4ed7-8a42-a1a8b0f3e036",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "9c9b254a-057c-4498-88fd-6199fd22c859",
+    "model": "华为 Mate 90 Pro Max",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "78a1db45-d19f-4824-bf39-7cbfa995e208",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "a435fc66-0f44-41b6-8788-e0cac20c3bd4",
+    "model": "华为 Mate 90 Pro Max 典藏版",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "672e458b-4f0c-44a6-a5e6-051e4c20d4bc",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "a435fc66-0f44-41b6-8788-e0cac20c3bd4",
+    "model": "华为 Mate 90 Pro Max 典藏版",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "287b04f3-3351-4147-a678-23c61f3a8cf5",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "2527dd3c-b425-4abd-b1d7-12a9f3e3ad56",
+    "model": "华为 Mate 90 RS 非凡大师",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "56484dba-7230-403f-aa94-db686cea595b",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "2527dd3c-b425-4abd-b1d7-12a9f3e3ad56",
+    "model": "华为 Mate 90 RS 非凡大师",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "32e3dcd5-ef88-4c24-90d7-d5c0d26f7650",
+    "storage": "16GB+2TB",
+    "ppv": "",
+    "model_id": "2527dd3c-b425-4abd-b1d7-12a9f3e3ad56",
+    "model": "华为 Mate 90 RS 非凡大师",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "e01fa691-07a7-44a5-8733-d5a208595736",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "f2cad5cd-7cf2-4bfd-af7c-2eb135800e90",
+    "model": "华为 Mate 90",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "6bf6de4c-7a4c-40be-bdbf-f7a334ad7b0d",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "f2cad5cd-7cf2-4bfd-af7c-2eb135800e90",
+    "model": "华为 Mate 90",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "338efeff-c517-464c-a5c3-0b909a4f9a51",
+    "storage": "12GB+1TB",
+    "ppv": "",
+    "model_id": "f2cad5cd-7cf2-4bfd-af7c-2eb135800e90",
+    "model": "华为 Mate 90",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "309a7621-d3a4-4354-b2f5-72c5b329bbae",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "bc070e3d-92d9-46d6-8d29-8a3f299eff3f",
+    "model": "华为 Pura 80 Pro",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "c2a422f3-e0c0-4091-92e6-b1a8f6b1fe84",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "bc070e3d-92d9-46d6-8d29-8a3f299eff3f",
+    "model": "华为 Pura 80 Pro",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "8f3c4ce5-4601-4977-907d-a185c17d9404",
+    "storage": "12GB+1TB",
+    "ppv": "",
+    "model_id": "bc070e3d-92d9-46d6-8d29-8a3f299eff3f",
+    "model": "华为 Pura 80 Pro",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "ac45f131-9983-4108-9b06-e3c259d54ce0",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "ef562613-6b77-4ea4-8af7-db3f881ecaec",
+    "model": "华为 Pura 80 Pro+",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "68fd1b08-1525-4f59-9f5d-f938ac0ead87",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "ef562613-6b77-4ea4-8af7-db3f881ecaec",
+    "model": "华为 Pura 80 Pro+",
+    "brand": "华为",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "68047be5-e35c-4eb6-9c5f-dbc23754e304",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "c256d19e-9c63-478d-8b1e-02cbcfba31c1",
+    "model": "华为 Pura 80 Ultra",
+    "brand": "华为",
+    "position": "",
+    "version": 1
+  },
+  {
+    "id": "3e32bf59-ed07-42c7-ad42-65b7ec8275ca",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "c256d19e-9c63-478d-8b1e-02cbcfba31c1",
+    "model": "华为 Pura 80 Ultra",
+    "brand": "华为",
+    "position": "",
+    "version": 1
+  },
+  {
+    "id": "a88487f9-27c2-4be5-b5f4-7a35ef77e71c",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "081cb070-ea25-44ea-98d0-da656521e117",
+    "model": "三星 Galaxy S25+",
+    "brand": "三星",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "0b91c4b4-62d4-45e0-91ff-c04a649ac5e8",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "081cb070-ea25-44ea-98d0-da656521e117",
+    "model": "三星 Galaxy S25+",
+    "brand": "三星",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "341bbe23-4438-4883-b90f-dcc07322ef4e",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "4fafba25-2e19-41d9-84bf-e688faf04936",
+    "model": "三星 Galaxy S25 Ultra",
+    "brand": "三星",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "6acc85a8-9e96-43bb-94ef-648e58fb7c10",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "4fafba25-2e19-41d9-84bf-e688faf04936",
+    "model": "三星 Galaxy S25 Ultra",
+    "brand": "三星",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "4a7ca1f2-cf05-4016-9cd2-70f74d4b71c6",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "4fafba25-2e19-41d9-84bf-e688faf04936",
+    "model": "三星 Galaxy S25 Ultra",
+    "brand": "三星",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "d340ab04-531c-4df1-adcf-ea96bb665412",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "2db49ee6-ad31-4c46-8158-c59ddc5927a5",
+    "model": "三星 Galaxy S25",
+    "brand": "三星",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "9d845b47-d5b5-4faa-8c25-112497d3a2a1",
+    "storage": "12GB+512GB",
+    "ppv": "",
+    "model_id": "2db49ee6-ad31-4c46-8158-c59ddc5927a5",
+    "model": "三星 Galaxy S25",
+    "brand": "三星",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "88b037e7-7f69-44b7-86b0-377168e0f90c",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "30b0b810-864d-4c41-b400-4939aabed71b",
+    "model": "努比亚 红魔 11 Air",
+    "brand": "努比亚",
+    "position": "中端",
+    "version": 2
+  },
+  {
+    "id": "dc0f1764-6714-48c4-ad27-7fecb53360cf",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "1e2a7e45-f721-4566-857f-dffbd8969c7d",
+    "model": "努比亚 红魔 12 Pro+",
+    "brand": "努比亚",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "6335ca20-dc43-4011-8661-8eef77dc8573",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "1e2a7e45-f721-4566-857f-dffbd8969c7d",
+    "model": "努比亚 红魔 12 Pro+",
+    "brand": "努比亚",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "f24e1fb2-8186-4589-8167-f5841a59c3d4",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "1e2a7e45-f721-4566-857f-dffbd8969c7d",
+    "model": "努比亚 红魔 12 Pro+",
+    "brand": "努比亚",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "5fa172fb-3960-42a3-a14d-7aafd4f941b5",
+    "storage": "16GB+1TB",
+    "ppv": "",
+    "model_id": "690167fd-9232-4484-bf78-9284d4e7f340",
+    "model": "OPPO Find N5",
+    "brand": "OPPO",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "78fdb790-c5a9-4763-a89d-20195dd8488d",
+    "storage": "6GB+128GB",
+    "ppv": "",
+    "model_id": "8f6c0280-261f-4e32-a009-fe9baf5f6663",
+    "model": "REDMI Note 17",
+    "brand": "小米",
+    "position": "",
+    "version": 0
+  },
+  {
+    "id": "10698416-33fb-430f-887c-b75f72a29732",
+    "storage": "16GB+512GB",
+    "ppv": "",
+    "model_id": "b525a700-b2e4-4d06-a32b-a4296f0fb55c",
+    "model": "小米 17 Max",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "46943556-a880-4492-b581-3b8b5129e86e",
+    "storage": "12GB+256GB",
+    "ppv": "",
+    "model_id": "b525a700-b2e4-4d06-a32b-a4296f0fb55c",
+    "model": "小米 17 Max",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 1
+  },
+  {
+    "id": "fdb104e4-ae3a-406b-b089-b60669dbaece",
+    "storage": "16GB+256GB",
+    "ppv": "",
+    "model_id": "b525a700-b2e4-4d06-a32b-a4296f0fb55c",
+    "model": "小米 17 Max",
+    "brand": "小米",
+    "position": "旗舰",
+    "version": 1
+  }
+]

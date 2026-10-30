@@ -5,7 +5,7 @@ import XLSX from 'xlsx';
 export const DEFAULT_SOURCE_NAME = '新机售价监控.xlsx';
 
 const KNOWN_BRANDS = ['REDMI', 'iQOO', 'OPPO', 'vivo', '华为', '荣耀', '一加', '小米'];
-const CHANGE_SUMMARY_MIN_AMOUNT = 11;
+const CHANGE_SUMMARY_THRESHOLD = 20;
 const LIST_PRICE_ATTRIBUTION_IGNORE_DIFF = 10;
 const SERIES_PIVOT_IGNORE_AMOUNT = 10;
 
@@ -718,8 +718,8 @@ export function buildChangeSummaryReport(skuList) {
   };
 
   skuList.forEach((sku) => {
-    const hasListChange = Math.abs(sku.listPriceDiff) >= CHANGE_SUMMARY_MIN_AMOUNT;
-    const hasCouponChange = Math.abs(sku.couponDiff) >= CHANGE_SUMMARY_MIN_AMOUNT;
+    const hasListChange = Math.abs(sku.listPriceDiff) > CHANGE_SUMMARY_THRESHOLD;
+    const hasCouponChange = Math.abs(sku.couponDiff) > CHANGE_SUMMARY_THRESHOLD;
 
     if (!hasListChange || !hasCouponChange) {
       return;
@@ -743,8 +743,8 @@ export function buildChangeSummaryReport(skuList) {
       return;
     }
 
-    const hasListChange = Math.abs(sku.listPriceDiff) >= CHANGE_SUMMARY_MIN_AMOUNT;
-    const hasCouponChange = Math.abs(sku.couponDiff) >= CHANGE_SUMMARY_MIN_AMOUNT;
+    const hasListChange = Math.abs(sku.listPriceDiff) > CHANGE_SUMMARY_THRESHOLD;
+    const hasCouponChange = Math.abs(sku.couponDiff) > CHANGE_SUMMARY_THRESHOLD;
 
     if (hasListChange && !hasCouponChange) {
       ensureRangeItem(sku.listPriceDiff > 0 ? listOnlyUpMap : listOnlyDownMap, sku, sku.listPriceDiff);

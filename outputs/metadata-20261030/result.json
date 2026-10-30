@@ -1,0 +1,30 @@
+{
+  "scope": "localhost:8001 and current project preview database",
+  "updatedAt": "2026-10-30T09:53:05.238376+00:00",
+  "sourceFile": "/Users/dudu_1/Downloads/C2B_high_level_price_analyze_20261028.xlsx",
+  "sourceSha256": "a42ac420ec7a0d700d8bbce83e0b2c2e7534d1346b90fccb2c0673f3de80c165",
+  "activeModels": 130,
+  "activeSkus": 453,
+  "positionsAdded": 47,
+  "missingPositions": 0,
+  "ppvsAdded": 170,
+  "ppvCoverage": 452,
+  "missingPpvs": [
+    {
+      "model": "REDMI Note 17",
+      "storage": "6GB+256GB",
+      "reason": "仅S等级国行展示机；用户明确保留缺失"
+    }
+  ],
+  "rules": [
+    "PPV=等级名称+sku名称，等级必须严格等于S",
+    "型号+RAM+ROM匹配；只统一空格、大小写、括号、GB/G、TB/T和已知品牌别名",
+    "原记录只有ROM时，要求对应型号ROM的RAM唯一；保留原RAM字段写法",
+    "优先保留已有且源表一致的大陆国行记录；排除展示机及不对应的特别版本",
+    "定位保留系统现有四类及同系列前后代口径；官网营销旗舰字样不直接替换系统已有分类"
+  ],
+  "priceDataUnchanged": true,
+  "sourceWorkbookUnchanged": true,
+  "frontendApiVerified": true,
+  "pendingChangesOnRerun": 0
+}

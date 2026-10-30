@@ -1,0 +1,16 @@
+{
+  "dataDir": "/Users/dudu_1/.codex/worktrees/6a6f/【GTM】新机售价监控分析系统/data/preview-20261027",
+  "apply": true,
+  "modelChanges": 0,
+  "ppvChanges": 2,
+  "archive": "/Users/dudu_1/.codex/worktrees/6a6f/【GTM】新机售价监控分析系统/data/preview-20261027/.archive/metadata-b77e85f7-60d7-4ae8-a7cc-deaf332f742c",
+  "priceDataUnchanged": true,
+  "requestId": "b77e85f7-60d7-4ae8-a7cc-deaf332f742c",
+  "missingPositions": 0,
+  "missingPpvs": [
+    {
+      "model": "REDMI Note 17",
+      "storage": "6GB+256GB"
+    }
+  ]
+}

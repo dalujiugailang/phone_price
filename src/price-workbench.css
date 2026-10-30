@@ -3,3 +3,5 @@
 .pw-history-fields{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px 12px;margin:14px 0;font-size:12px;line-height:1.6}.pw-history-fields dt{color:#8c96a4}.pw-history-fields dd{margin:0;color:#53647b;overflow-wrap:anywhere}.pw-history-fields dd p{margin:0 0 4px}.pw-history-title{font-size:11px;line-height:1.7;color:#8c96a4}.pw-observation>.pw-links{margin:10px 0}.pw-observation>.pw-observation{margin-left:12px}
 
 .pw-price-cell.is-checked input{background:#eff7ff;border-color:#79b5eb;color:#235d8c}.pw-price-cell.is-checked .pw-cell-state,.pw-price-cell.is-checked .pw-cell-issue{color:#327db5}
+
+.pw-price-table tr.pw-jump-target>td{background:#fff7ed}.pw-price-table tr.pw-jump-target>td:first-child{box-shadow:inset 3px 0 #f97316}
