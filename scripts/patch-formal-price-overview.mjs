@@ -1,0 +1,5 @@
+import fs from 'node:fs';const file=process.argv[2];let s=fs.readFileSync(file,'utf8');function replace(a,b){if(!s.includes(a))throw Error('Source changed: '+a.slice(0,80));s=s.replace(a,b);}
+replace('    if (sku.strictDates?.includes(date)) return;\n','');
+replace('    const last = sku.snapshots[sku.snapshots.length - 1];\n    const prev = sku.snapshots[sku.snapshots.length - 2] ?? last;', '    const normalizedSnapshots = getAggregationSnapshots(sku,dataset.dates);\n    const last = normalizedSnapshots.at(-1);\n    const prev = normalizedSnapshots.at(-2) ?? last;');
+replace('当日生效价格 {dataset.skus.filter((sku) => sku.snapshots.some((s) => s.date === dates.at(-1) && s.finalPrice > 0)).length} / {dataset.skus.length} 个 SKU。待核验和未采集项不进入当日均价；环比仅比较相邻日期都有生效报价的样本。','正式汇总价格覆盖 {dataset.skus.filter((sku) => sku.snapshots.some((s) => s.date === dates.at(-1) && s.finalPrice > 0)).length} / {dataset.skus.length} 个 SKU。仅已推数仓的数据参与分析；缺价沿用最近一次正式报价，直到下一次报价推送。');
+fs.writeFileSync(file,s);console.log('Patched formal overview carry-forward');
