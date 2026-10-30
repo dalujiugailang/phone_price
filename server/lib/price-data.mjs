@@ -68,9 +68,8 @@ function toSnapshotMetric(header) {
 }
 
 function sortDateLabels(left, right) {
-  const [leftMonth, leftDay] = left.split('.').map(Number);
-  const [rightMonth, rightDay] = right.split('.').map(Number);
-  return leftMonth === rightMonth ? leftDay - rightDay : leftMonth - rightMonth;
+  const iso = (value) => value.includes('-') ? value : `2026-${value.split('.')[0].padStart(2,'0')}-${value.split('.')[1].padStart(2,'0')}`;
+  return iso(left).localeCompare(iso(right));
 }
 
 function inferBrand(modelName) {
@@ -422,6 +421,7 @@ export function datasetFromRawEditorDraft(draft, fallbackDataset = null, sourceN
           }
 
           const finalPrice = parseNumber(raw.finalPrice);
+          if (row.strictDates?.includes(date) && finalPrice <= 0) return null;
           const listPrice = parseNumber(raw.listPrice);
           const coupon = parseNumber(raw.coupon);
           const biPrice = parseNumber(raw.biPrice);
@@ -445,6 +445,7 @@ export function datasetFromRawEditorDraft(draft, fallbackDataset = null, sourceN
 
       return {
         id: String(row.id || `${model}-${storage}-${index + 1}`),
+        strictDates: row.strictDates,
         brand,
         model,
         series: String(row.series ?? '').trim() || inferSeries(model, brand),
@@ -495,6 +496,7 @@ function getAggregationSnapshots(sku, dates) {
       previousSnapshot = snapshot;
       continue;
     }
+    if (sku.strictDates?.includes(date)) continue;
     if (previousSnapshot) {
       normalizedSnapshots.push({ ...previousSnapshot, date });
     }
@@ -525,11 +527,14 @@ export function buildAnalysis(dataset) {
   const processed = dataset.skus.map((sku) => {
     const last = sku.snapshots[sku.snapshots.length - 1];
     const prev = sku.snapshots[sku.snapshots.length - 2] ?? last;
-    const recentChange = last ? last.finalPrice - prev.finalPrice : 0;
-    const totalChange = last ? last.finalPrice - sku.launchPrice : 0;
+    const strict = sku.strictDates?.includes(dataset.dates.at(-1) ?? '');
+    const current = !strict || last?.date === dataset.dates.at(-1);
+    const comparable = current && (!strict || (prev !== last && prev?.date === dataset.dates.at(-2)));
+    const recentChange = comparable && last ? last.finalPrice - prev.finalPrice : 0;
+    const totalChange = last && sku.launchPrice > 0 ? last.finalPrice - sku.launchPrice : 0;
     const recentChangePct = prev?.finalPrice ? (recentChange / prev.finalPrice) * 100 : 0;
-    const listPriceDiff = normalizeListPriceDiffForAttribution((last?.listPrice ?? 0) - (prev?.listPrice ?? 0));
-    const couponDiff = (last?.coupon ?? 0) - (prev?.coupon ?? 0);
+    const listPriceDiff = comparable ? normalizeListPriceDiffForAttribution((last?.listPrice ?? 0) - (prev?.listPrice ?? 0)) : 0;
+    const couponDiff = comparable ? (last?.coupon ?? 0) - (prev?.coupon ?? 0) : 0;
     const attribution = buildAttribution(listPriceDiff, couponDiff, recentChange, sku.snapshots.length);
 
     return {
@@ -540,8 +545,8 @@ export function buildAnalysis(dataset) {
       listPriceDiff,
       couponDiff,
       changeDirection: attribution.changeDirection,
-      reason: attribution.reason,
-      reasonDetails: attribution.reasonDetails,
+      reason: !current ? '当日无生效报价' : !comparable ? '无相邻日期可比报价' : attribution.reason,
+      reasonDetails: !current ? ['当日无生效报价'] : !comparable ? ['无相邻日期可比报价'] : attribution.reasonDetails,
     };
   });
   const aggregationSkus = processed
@@ -550,6 +555,7 @@ export function buildAnalysis(dataset) {
 
   const brandMap = new Map();
   aggregationSkus.forEach(({ sku, snapshots }) => {
+    if (sku.strictDates?.includes(dataset.dates.at(-1) ?? '') && snapshots.at(-2)?.date !== dataset.dates.at(-2)) return;
     const recentChange = getSnapshotRecentChange(snapshots);
     const previousPrice = snapshots.at(-2)?.finalPrice ?? snapshots.at(-1)?.finalPrice ?? 0;
     const recentChangePct = previousPrice ? (recentChange / previousPrice) * 100 : 0;
@@ -586,8 +592,8 @@ export function buildAnalysis(dataset) {
     };
 
     positionCurrent.skuCount += 1;
-    positionCurrent.launchPrices.push(sku.launchPrice);
-    current.launchPrices.push(sku.launchPrice);
+    if (sku.launchPrice > 0) positionCurrent.launchPrices.push(sku.launchPrice);
+    if (sku.launchPrice > 0) current.launchPrices.push(sku.launchPrice);
 
     snapshots.forEach((snapshot) => {
       if (!positionCurrent.snapshotPrices[snapshot.date]) {
@@ -619,7 +625,7 @@ export function buildAnalysis(dataset) {
 
   const positionAnalysis = sortPositionPivotRows(
     Array.from(positionMap.entries()).map(([position, data]) => {
-      const avgLaunch = data.launchPrices.reduce((sum, value) => sum + value, 0) / data.launchPrices.length;
+      const avgLaunch = data.launchPrices.length ? data.launchPrices.reduce((sum, value) => sum + value, 0) / data.launchPrices.length : 0;
       const snapshotAvgs = dataset.dates
         .filter((date) => data.snapshotPrices[date]?.length)
         .map((date) => ({
@@ -639,7 +645,7 @@ export function buildAnalysis(dataset) {
         snapshotAvgs,
         diff,
         diffPct,
-        trendData: [{ date: '发布', avgPrice: avgLaunch }, ...snapshotAvgs],
+        trendData: [...(avgLaunch > 0 ? [{ date: '发布', avgPrice: avgLaunch }] : []), ...snapshotAvgs],
         directionSummary: data.directionSummary,
       };
     }),
@@ -647,7 +653,7 @@ export function buildAnalysis(dataset) {
 
   const seriesAnalysis = sortSeriesPivotRows(
     Array.from(seriesMap.entries()).map(([model, data]) => {
-      const avgLaunch = data.launchPrices.reduce((sum, value) => sum + value, 0) / data.launchPrices.length;
+      const avgLaunch = data.launchPrices.length ? data.launchPrices.reduce((sum, value) => sum + value, 0) / data.launchPrices.length : 0;
       const snapshotAvgs = dataset.dates
         .filter((date) => data.snapshotPrices[date]?.length)
         .map((date) => ({
@@ -667,7 +673,7 @@ export function buildAnalysis(dataset) {
         snapshotAvgs,
         diff,
         diffPct,
-        trendData: [{ date: '发布', avgPrice: avgLaunch }, ...snapshotAvgs],
+        trendData: [...(avgLaunch > 0 ? [{ date: '发布', avgPrice: avgLaunch }] : []), ...snapshotAvgs],
         directionSummary: data.directionSummary,
       };
     }),
@@ -830,7 +836,7 @@ export function querySkus(dataset, args = {}) {
 }
 
 export function exportAllData({ workbookPath, databasePath, sourceName = DEFAULT_SOURCE_NAME }) {
-  const dataset = parseWorkbookFile(workbookPath, sourceName);
+  const dataset = loadCurrentPriceDataset({ workbookPath, databasePath, sourceName });
   const draft = readRawEditorDraft(databasePath);
   const summary = buildAnalysis(dataset);
 

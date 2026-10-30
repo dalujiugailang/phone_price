@@ -12,6 +12,7 @@ export interface PriceSnapshot {
 
 export interface SKUData {
   id: string;
+  strictDates?: string[];
   brand: string;
   model: string;
   series: string;

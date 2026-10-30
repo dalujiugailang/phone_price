@@ -3,6 +3,10 @@ CREATE TABLE IF NOT EXISTS warehouse_config (
   config_value VARCHAR NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS price_collection_dates (
+  price_date DATE PRIMARY KEY
+);
+
 CREATE TABLE IF NOT EXISTS warehouse_refresh_log (
   refreshed_at TIMESTAMP NOT NULL,
   new_price_source VARCHAR NOT NULL,

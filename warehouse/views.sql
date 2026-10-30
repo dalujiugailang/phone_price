@@ -2,6 +2,9 @@ CREATE OR REPLACE VIEW mart_new_price_trend AS
 WITH price_dates AS (
   SELECT DISTINCT price_date, date_label
   FROM fact_new_sku_price_daily
+  UNION
+  SELECT price_date, CASE WHEN YEAR(price_date) = 2026 THEN CAST(MONTH(price_date) AS VARCHAR) || '.' || LPAD(CAST(DAY(price_date) AS VARCHAR), 2, '0') ELSE CAST(price_date AS VARCHAR) END
+  FROM price_collection_dates
 ),
 sku_dates AS (
   SELECT
@@ -29,16 +32,19 @@ raw_rows AS (
     f.list_price AS raw_list_price,
     f.coupon AS raw_coupon,
     f.is_delisted,
-    MAX(CASE WHEN f.final_price > 0 THEN sd.price_date END)
+    CASE WHEN strict.price_date IS NOT NULL
+      THEN CASE WHEN f.final_price > 0 THEN sd.price_date END
+      ELSE MAX(CASE WHEN f.final_price > 0 THEN sd.price_date END)
       OVER (
         PARTITION BY sd.sku_key
         ORDER BY sd.price_date
         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-      ) AS effective_source_date
+      ) END AS effective_source_date
   FROM sku_dates sd
   LEFT JOIN fact_new_sku_price_daily f
     ON f.sku_key = sd.sku_key
    AND f.price_date = sd.price_date
+  LEFT JOIN price_collection_dates strict ON strict.price_date = sd.price_date
 )
 SELECT
   r.price_date,
@@ -112,6 +118,9 @@ sku_changes AS (
         t.effective_final_price
       ) AS sku_change,
     CASE
+      WHEN t.price_date IN (SELECT price_date FROM price_collection_dates)
+        AND LAG(t.effective_final_price) OVER (PARTITION BY t.sku_key ORDER BY t.price_date) IS NULL
+      THEN NULL
       WHEN COALESCE(
         LAG(t.effective_final_price) OVER (
           PARTITION BY t.sku_key

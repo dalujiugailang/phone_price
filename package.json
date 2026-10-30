@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port=3000 --host=0.0.0.0",
+    "dev": "vite --port=8001 --host=0.0.0.0 --strictPort",
+    "preview:api": "node scripts/dev-preview.mjs",
     "backend": "node server/index.mjs",
     "mcp": "node server/mcp-server.mjs",
     "start": "node server/index.mjs",
@@ -43,6 +44,8 @@
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "autoprefixer": "^10.4.21",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
