@@ -70,6 +70,7 @@ function toNumber(value) {
 }
 
 function toIsoDate(dateLabel, year = priceDataYear) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(dateLabel))) return String(dateLabel);
   const matched = String(dateLabel ?? '').trim().match(/^(\d{1,2})\.(\d{1,2})$/);
   if (!matched) {
     return null;
@@ -439,7 +440,18 @@ async function main() {
   const { dataset: priceDataset, rows: priceRows } = readNewPrice();
   const weeklyRows = readWeeklySales();
   const marketRows = readMarketTrend();
-  const dimensions = buildDimensions(priceRows, weeklyRows, marketRows);
+  const catalogRows = priceDataset.skus.map((sku) => ({
+    skuKey: skuKey(sku.brand, sku.model, sku.storage),
+    productKey: productKey(sku.brand, sku.model),
+    brandName: sku.brand,
+    seriesName: sku.series,
+    modelName: sku.model,
+    modelPosition: sku.position || '',
+    storage: sku.storage,
+    ppv: sku.ppv || '',
+    launchPrice: sku.launchPrice > 0 ? toNumber(sku.launchPrice) : null,
+  }));
+  const dimensions = buildDimensions(catalogRows, weeklyRows, marketRows);
 
   const instance = await DuckDBInstance.create(warehousePath);
   const connection = await instance.connect();
@@ -622,6 +634,9 @@ async function main() {
 
     await connection.run('BEGIN TRANSACTION');
     try {
+      await connection.run('DELETE FROM price_collection_dates');
+      const strictDates = [...new Set(priceDataset.skus.flatMap((sku) => sku.strictDates || []))].map((d) => toIsoDate(d)).filter(Boolean);
+      for (const date of strictDates) await connection.run(`INSERT INTO price_collection_dates VALUES (CAST('${date}' AS DATE))`);
       await connection.run(`
         DELETE FROM dim_brand;
         INSERT INTO dim_brand
@@ -811,7 +826,7 @@ async function main() {
       SELECT
         (SELECT COUNT(*) FROM dim_sku) AS sku_count,
         (SELECT COUNT(*) FROM dim_product) AS product_count,
-        (SELECT COUNT(*) FROM fact_used_s_grade_price_daily WHERE sku_key IS NOT NULL) AS matched_s_ppv_count,
+        (SELECT COUNT(DISTINCT sku_key) FROM fact_used_s_grade_price_daily WHERE sku_key IS NOT NULL) AS matched_s_ppv_count,
         (SELECT COUNT(DISTINCT ppv) FROM bridge_ppv_sku_mapping WHERE mapping_status = '映射冲突') AS ambiguous_ppv_count,
         (SELECT COUNT(*) FROM bridge_ppv_sku_mapping WHERE mapping_status = '映射冲突') AS ambiguous_sku_count,
         (SELECT COUNT(*) FROM "新旧机风险表" WHERE "BI出货价" IS NOT NULL) AS risk_row_count,

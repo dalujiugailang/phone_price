@@ -89,7 +89,7 @@ async function main() {
       SELECT
         (SELECT COUNT(*) FROM dim_sku) AS sku_count,
         (SELECT COUNT(*) FROM fact_used_s_grade_price_daily) AS s_ppv_count,
-        (SELECT COUNT(*) FROM fact_used_s_grade_price_daily WHERE sku_key IS NOT NULL) AS matched_s_ppv_count,
+        (SELECT COUNT(DISTINCT sku_key) FROM fact_used_s_grade_price_daily WHERE sku_key IS NOT NULL) AS matched_s_ppv_count,
         (SELECT COUNT(DISTINCT ppv) FROM bridge_ppv_sku_mapping WHERE mapping_status = '映射冲突') AS ambiguous_ppv_count,
         (SELECT COUNT(*) FROM bridge_ppv_sku_mapping WHERE mapping_status = '映射冲突') AS ambiguous_sku_count,
         (SELECT COUNT(*) FROM "新机价格走势表") AS price_trend_rows,
@@ -115,7 +115,7 @@ async function main() {
     `);
     const priceDataYear = rowsToObjects(configReader)[0]?.config_value ?? '2026';
     const [latestMonth, latestDay] = dataset.dates.at(-1).split('.');
-    const latestDate = `${priceDataYear}-${latestMonth.padStart(2, '0')}-${latestDay.padStart(2, '0')}`;
+    const latestDate = dataset.dates.at(-1).includes('-') ? dataset.dates.at(-1) : `${priceDataYear}-${latestMonth.padStart(2, '0')}-${latestDay.padStart(2, '0')}`;
     const aggregateReader = await connection.runAndReadAll(`
       SELECT
         "聚合维度" AS dimension_type,

@@ -618,7 +618,7 @@ function StructuredOutput({ output, evidence = [] }: { output: ExpertOutput; evi
 export function IndustryExpertPanel() {
   const [brief, setBrief] = useState<ExpertBrief | null>(null);
   const [sessions, setSessions] = useState<ExpertSession[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState(createId);
+  const [activeSessionId, setActiveSessionId] = useState<string>(createId);
   const [taskTitle, setTaskTitle] = useState('新分析任务');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');

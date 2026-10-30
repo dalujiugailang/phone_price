@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
 import path from 'node:path';
+import fs from 'node:fs';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
@@ -27,7 +28,8 @@ export function createWarehouseRefreshManager({
 
   async function refresh(reason = 'manual') {
     if (activeRefresh) {
-      return activeRefresh;
+      await activeRefresh;
+      return refresh(reason);
     }
     if (!enabled) {
       return status;
@@ -46,6 +48,9 @@ export function createWarehouseRefreshManager({
         ...process.env,
         PRICE_MONITOR_DATA_DIR: dataDir,
         GTM_WAREHOUSE_PATH: warehousePath,
+        ...(fs.existsSync(path.join(dataDir, 'published-price-draft.sqlite'))
+          ? { PRICE_MONITOR_DRAFT_DB_PATH: path.join(dataDir, 'published-price-draft.sqlite') }
+          : {}),
       },
       maxBuffer: 2 * 1024 * 1024,
     })

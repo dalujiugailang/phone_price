@@ -334,3 +334,72 @@
   max-width: 28px;
   max-height: 18px;
 }
+
+/* Muse-inspired navigation: quiet monochrome rail with expressive icons. */
+.app-shell { --rail-width: 88px; padding-left: var(--rail-width); transition: padding-left 240ms ease; }
+.app-shell:has(.navigation-rail.is-expanded) { --rail-width: 216px; }
+.navigation-rail { position: fixed; inset: 0 auto 0 0; z-index: 60; width: var(--rail-width); display: flex; flex-direction: column; align-items: center; background: #fcfcfc; border-right: 1px solid #e5e5e5; padding: 28px 12px 22px; transition: width 240ms ease; }
+.rail-brand { height: 48px; width: 100%; display: flex; align-items: center; gap: 14px; padding-left: 19px; flex-shrink: 0; color: #171717; }
+.rail-brand svg { flex-shrink: 0; }
+.rail-brand > span { display: none; white-space: nowrap; font-size: 10px; font-weight: 700; letter-spacing: .12em; }
+.rail-links { display: flex; flex-direction: column; justify-content: center; gap: 10px; flex: 1; width: 100%; min-height: 0; }
+.rail-link { position: relative; display: flex; align-items: center; width: 100%; min-height: 52px; padding: 0 6px; border: 0; border-radius: 16px; background: transparent; color: #626262; cursor: pointer; text-align: left; }
+.rail-icon { display: flex; width: 52px; height: 52px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 50%; transition: background 200ms ease, color 200ms ease; }
+.rail-link:hover, .rail-link.is-active { color: #111; }
+.rail-link:hover .rail-icon { background: #f2f2f2; }
+.rail-link.is-active .rail-icon { background: #ededed; }
+.rail-link.is-active::before { content: ''; position: absolute; left: -12px; top: 19px; width: 3px; height: 14px; background: #222; border-radius: 0 4px 4px 0; }
+.rail-label { display: none; white-space: nowrap; font-size: 13px; font-weight: 550; }
+.rail-tooltip { position: absolute; top: 50%; left: calc(100% + 16px); transform: translate(-5px, -50%); padding: 12px 16px; border: 1px solid #ededed; border-radius: 14px; background: #fff; box-shadow: 0 8px 30px #0000000d; white-space: nowrap; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 150ms ease, transform 150ms ease, visibility 150ms ease; }
+.rail-tooltip strong { display: block; font-size: 13px; font-weight: 600; color: #171717; }
+.rail-tooltip small { display: block; margin-top: 3px; font-size: 11px; color: #888; }
+.rail-link:hover .rail-tooltip, .rail-link:focus-visible .rail-tooltip { opacity: 1; visibility: visible; transform: translate(0, -50%); }
+.rail-toggle { display: flex; align-items: center; gap: 14px; min-height: 48px; width: 100%; padding: 0 19px; border-radius: 14px; cursor: pointer; color: #333; flex-shrink: 0; }
+.rail-toggle:hover { background: #f0f0f0; }
+.rail-toggle svg { flex-shrink: 0; }
+.rail-link:focus-visible, .rail-toggle:focus-visible { outline: 2px solid #c26a34; outline-offset: 3px; }
+.is-expanded .rail-label, .is-expanded .rail-brand > span { display: block; }
+.is-expanded .rail-link { gap: 8px; }
+.is-expanded .rail-link.is-active { background: #f1f1f1; }
+.is-expanded .rail-tooltip { display: none; }
+@media (max-height: 720px) { .navigation-rail { padding-top: 12px; padding-bottom: 12px; } .rail-links { gap: 3px; } .rail-link { min-height: 44px; } .rail-icon { height: 44px; } }
+@media (max-width: 767px) { .app-shell { --rail-width: 68px; } .navigation-rail { padding-left: 6px; padding-right: 6px; } .rail-brand { padding-left: 15px; } .rail-link { padding: 0 2px; } .rail-link.is-active::before { left: -6px; } .rail-toggle { padding-left: 15px; } .app-header { padding: 16px; } .app-header > div { flex-wrap: wrap; } .app-header input { max-width: 100%; width: 260px; } .app-shell main { padding: 16px; } }
+@media (prefers-reduced-motion: reduce) { .app-shell, .navigation-rail, .rail-icon, .rail-icon svg, .rail-tooltip { transition: none; } .rail-link.is-active .rail-icon svg { animation: none; } .rail-link:hover .rail-icon svg { transform: none; } }
+
+/* Only interior SVG parts animate; the icon silhouette stays anchored. */
+.nav-art .nav-draw { stroke-dasharray: 1; stroke-dashoffset: 0; }
+.nav-art .nav-bar { transform-origin: 12px 20px; }
+.nav-art .nav-tile { fill: currentColor; fill-opacity: 0; }
+.nav-art .nav-scan { opacity: 0; }
+.rail-link:is(:hover, :focus-visible, .is-active) .nav-draw { animation: nav-write 950ms ease both; animation-delay: var(--part-delay, 0ms); }
+.rail-link:is(:hover, :focus-visible, .is-active) .nav-bar { animation: nav-grow 850ms cubic-bezier(.22,.7,.3,1) both; animation-delay: var(--part-delay, 0ms); }
+.rail-link:is(:hover, :focus-visible, .is-active) .nav-tile { animation: nav-tile-light 1100ms ease both; }
+.rail-link:is(:hover, :focus-visible, .is-active) .nav-alert { animation: nav-alert-light 1000ms ease both; }
+.rail-link:is(:hover, :focus-visible, .is-active) .nav-scan { animation: nav-scan-data 1200ms ease both; }
+.rail-link:is(:hover, :focus-visible, .is-active) .nav-flow { animation: nav-signal-light 1200ms ease both; }
+.rail-link:is(:hover, :focus-visible, .is-active) .nav-row { animation: nav-row-read 1000ms ease both; }
+.rail-link:is(:hover, :focus-visible, .is-active) .nav-arrow { animation: nav-signal-light 1000ms ease both; animation-delay: 250ms; }
+.rail-link:is(:hover, :focus-visible, .is-active) .nav-signal { animation: nav-signal-light 1200ms ease both; }
+.rail-link:is(:hover, :focus-visible, .is-active) .nav-part-late { animation-delay: 180ms; }
+@keyframes nav-write { 0% { stroke-dashoffset: 1; opacity: .3; } 100% { stroke-dashoffset: 0; opacity: 1; } }
+@keyframes nav-grow { 0% { transform: scaleY(.15); opacity: .3; } 100% { transform: scaleY(1); opacity: 1; } }
+@keyframes nav-tile-light { 0%, 100% { fill-opacity: 0; } 45% { fill-opacity: .25; } }
+@keyframes nav-alert-light { 0%, 100% { opacity: 1; } 30%, 65% { opacity: .2; } 45%, 80% { opacity: 1; } }
+@keyframes nav-scan-data { 0% { opacity: 0; transform: translateY(-1px); } 20%, 75% { opacity: .7; } 100% { opacity: 0; transform: translateY(9px); } }
+@keyframes nav-signal-light { 0%, 100% { opacity: 1; } 25%, 60% { opacity: .15; } 45%, 80% { opacity: 1; } }
+@keyframes nav-row-read { 0% { transform: translateY(0); } 50% { transform: translateY(4px); } 100% { transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .rail-link .nav-art * { animation: none !important; } }
+
+/* Pair the interior animation with the original gentle icon gestures. */
+.rail-icon > .nav-art { transition: transform 240ms cubic-bezier(.2,.8,.2,1); }
+.rail-link:is(:hover, :focus-visible) .rail-icon > .nav-art { transform: translateY(-3px) rotate(-7deg); }
+.rail-link--marketTrend:is(:hover, :focus-visible) .rail-icon > .nav-art,
+.rail-link--weeklySales:is(:hover, :focus-visible) .rail-icon > .nav-art { transform: translateY(-4px) scale(1.08); }
+.rail-link--industryExpert:is(:hover, :focus-visible) .rail-icon > .nav-art { transform: rotate(12deg) scale(1.08); }
+.rail-link:active .rail-icon > .nav-art { transform: scale(.88); }
+.rail-link.is-active .rail-icon { animation: rail-select 360ms ease; }
+@keyframes rail-select { 0% { transform: scale(.8); } 65% { transform: scale(1.12); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .rail-link .rail-icon { animation: none; }
+  .rail-link .rail-icon > .nav-art { transition: none; transform: none; }
+}

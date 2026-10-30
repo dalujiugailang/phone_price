@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-29",
+  "linkCollection": true,
+  "matched": true,
+  "concurrentConflictProtected": true,
+  "warehouseVerified": true,
+  "prices": {
+    "list_price": 5498,
+    "coupon": 550,
+    "final_price": 4448
+  },
+  "warehouse": {
+    "enabled": true,
+    "running": false,
+    "warehousePath": "/validation/e2e-data/warehouse/check.duckdb",
+    "lastReason": "release-e2e",
+    "lastStartedAt": "2026-10-29T01:40:07.397Z",
+    "lastCompletedAt": "2026-10-29T01:40:09.618Z",
+    "lastError": null,
+    "intervalMinutes": 15
+  }
+}

@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import path from 'node:path';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
@@ -14,6 +15,7 @@ import {
   parseWorkbookFile,
   querySkus,
   readRawEditorDraft,
+  loadCurrentPriceDataset,
 } from './lib/price-data.mjs';
 import { getAllowedOrigins, getMcpTokens, isAllowedOrigin, isAuthorizedRequest } from './lib/mcp-auth.mjs';
 
@@ -23,16 +25,17 @@ const projectRoot = path.resolve(__dirname, '..');
 const dataDir = process.env.PRICE_MONITOR_DATA_DIR || path.join(projectRoot, 'data');
 const workbookPath = process.env.PRICE_MONITOR_WORKBOOK_PATH || path.join(projectRoot, DEFAULT_SOURCE_NAME);
 const databasePath = path.join(dataDir, 'raw-editor-draft.sqlite');
+const currentDatabasePath = () => fs.existsSync(path.join(dataDir, 'published-price-draft.sqlite')) ? path.join(dataDir, 'published-price-draft.sqlite') : databasePath;
 const port = Number(process.env.MCP_PORT || 8790);
 const host = process.env.MCP_HOST || '127.0.0.1';
 
 function loadDataset() {
-  return parseWorkbookFile(workbookPath, DEFAULT_SOURCE_NAME);
+  return loadCurrentPriceDataset({workbookPath, databasePath:currentDatabasePath(), sourceName:DEFAULT_SOURCE_NAME});
 }
 
 function loadDraft() {
   try {
-    return readRawEditorDraft(databasePath);
+    return readRawEditorDraft(currentDatabasePath());
   } catch (error) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
       return null;
@@ -183,7 +186,7 @@ function createServer() {
       annotations: readOnlyAnnotations,
     },
     async () => {
-      return toToolResult(exportAllData({ workbookPath, databasePath }));
+      return toToolResult(exportAllData({ workbookPath, databasePath:currentDatabasePath() }));
     },
   );
 

@@ -9,6 +9,9 @@ import XLSX from 'xlsx';
 import { registerIndustryExpertRoutes } from './lib/industry-expert.mjs';
 import { createWarehouseRefreshManager } from './lib/warehouse-refresh.mjs';
 import { registerWeeklySalesRoutes } from './lib/weekly-sales.mjs';
+import { createPriceWorkbench } from './lib/price-workbench.mjs';
+import { createMaishouProvider } from './lib/maishou-provider.mjs';
+import { registerPriceWorkbenchRoutes } from './lib/price-workbench-routes.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,6 +52,13 @@ const marketTrendBrandGroups = new Map([
 app.use(express.json({ limit: '10mb' }));
 
 const warehouseRefresh = createWarehouseRefreshManager({ projectRoot, dataDir });
+const workbench = createPriceWorkbench({
+  dataDir,
+  legacyDatabasePath: databasePath,
+  provider: createMaishouProvider({ dataDir }),
+  onPublished: () => warehouseRefresh.refresh('published-price'),
+});
+registerPriceWorkbenchRoutes(app, workbench);
 const weeklySalesService = registerWeeklySalesRoutes(app, {
   dataDir,
   applyMarketWeeks: applyAutomatedMarketWeeks,
@@ -112,6 +122,7 @@ async function readLegacyDraftFile() {
 }
 
 function readDraftFromDatabase() {
+  if (workbench.db.prepare('SELECT id FROM skus LIMIT 1').get()) return workbench.getDraft();
   const statement = ensureRawDatabase().prepare(`
     SELECT dates_json, rows_json, saved_at
     FROM raw_editor_drafts

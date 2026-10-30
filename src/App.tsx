@@ -10,6 +10,10 @@ import {
   FileText,
   Info,
   LayoutDashboard,
+  ShieldAlert,
+  ChartNoAxesCombined,
+  PanelLeftClose,
+  Menu,
   Minus,
   Search,
   Table as TableIcon,
@@ -36,8 +40,82 @@ import { loadWorkbookData, PriceSnapshot, SKUData, WorkbookDataset } from './dat
 import { IndustryExpertPanel } from './IndustryExpertPanel';
 import { getNewMachinePpvMapping } from './ppvMapping';
 import { WeeklySalesPanel } from './WeeklySalesPanel';
+import { PriceWorkbench } from './PriceWorkbench';
 
 type ViewMode = 'dashboard' | 'summary' | 'risk' | 'marketTrend' | 'weeklySales' | 'industryExpert' | 'table' | 'raw';
+const NAV_ITEMS: Array<{ id: ViewMode; label: string; description: string; icon: typeof LayoutDashboard }> = [
+  { id: 'dashboard', label: '概览', description: '价格表现与核心指标', icon: LayoutDashboard },
+  { id: 'summary', label: '汇总', description: '价格变动与原因汇总', icon: FileText },
+  { id: 'risk', label: 'S等级风险', description: '售价风险分析', icon: ShieldAlert },
+  { id: 'raw', label: '采价工作台', description: '采集爬价、核验与数据管理', icon: Database },
+  { id: 'table', label: '明细', description: '逐条查看商品价格', icon: TableIcon },
+  { id: 'marketTrend', label: '市场趋势', description: '市场总量与品牌份额', icon: TrendingUp },
+  { id: 'weeklySales', label: '新品周销', description: '新品周度销售表现', icon: ChartNoAxesCombined },
+  { id: 'industryExpert', label: '3C行业专家', description: '行业分析与智能问答', icon: BrainCircuit },
+];
+
+function AnimatedNavIcon({ view }: { view: ViewMode }) {
+  const line = (d: string, delay = 0) => <path d={d} pathLength={1} className="nav-draw" style={{ '--part-delay': `${delay}ms` } as React.CSSProperties} />;
+  const bar = (x: number, height: number, delay: number) => <path d={`M${x} 20v-${height}`} className="nav-bar" style={{ '--part-delay': `${delay}ms` } as React.CSSProperties} />;
+  return (
+    <svg className={`nav-art nav-art--${view}`} width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {view === 'dashboard' && <>
+        <rect x="3" y="3" width="7" height="10" rx="1.5" /><rect x="14" y="11" width="7" height="10" rx="1.5" />
+        <rect className="nav-tile" x="14" y="3" width="7" height="4" rx="1.2" /><rect className="nav-tile nav-part-late" x="3" y="17" width="7" height="4" rx="1.2" />
+      </>}
+      {view === 'summary' && <>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6" />
+        {line('M8 12h8')}{line('M8 16h8', 120)}{line('M8 19h5', 240)}
+      </>}
+      {view === 'risk' && <>
+        <path d="M12 3c3 2 5 3 8 3v6c0 5-5 8-8 10-3-2-8-5-8-10V6c3 0 5-1 8-3Z" />
+        <path className="nav-alert" d="M12 8v5" /><circle className="nav-alert nav-part-late" cx="12" cy="16.5" r=".7" fill="currentColor" stroke="none" />
+      </>}
+      {view === 'raw' && <>
+        <ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v14c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0" />
+        <path className="nav-scan" d="M7 9h10" /><path className="nav-flow" d="M8 17h3m3 0h2" />
+      </>}
+      {view === 'table' && <>
+        <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 3v18" />
+        {line('M12 13h6')}{line('M12 17h6', 180)}<path className="nav-row" d="M4 13h4" />
+      </>}
+      {view === 'marketTrend' && <>
+        <path d="M3 4v16h18" />{line('M6 15l5-5 4 3 6-8')}<path className="nav-arrow" d="M17 5h4v4" />
+      </>}
+      {view === 'weeklySales' && <>
+        <path d="M3 3v17h18" />{bar(7, 6, 0)}{bar(12, 10, 120)}{bar(17, 15, 240)}
+      </>}
+      {view === 'industryExpert' && <>
+        <path d="M12 4C9 0 5 3 5 6c-4 1-4 6-1 8-2 4 2 8 5 6 1 2 3 1 3-1V4Zm0 0c3-4 7-1 7 2 4 1 4 6 1 8 2 4-2 8-5 6-1 2-3 1-3-1" />
+        {line('M7 8h2v4h6V8h2')}{line('M8 16h2m4 0h2', 180)}
+        <circle className="nav-signal" cx="9" cy="8" r="1" fill="currentColor" stroke="none" /><circle className="nav-signal nav-part-late" cx="15" cy="16" r="1" fill="currentColor" stroke="none" />
+      </>}
+    </svg>
+  );
+}
+
+function NavigationRail({ view, onChange }: { view: ViewMode; onChange: (view: ViewMode) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <aside className={`navigation-rail ${expanded ? 'is-expanded' : ''}`} aria-label="主导航">
+      <div className="rail-brand" aria-label="新机售价监控系统"><BarChart3 size={25} strokeWidth={1.8} /><span>PRICE MONITOR</span></div>
+      <nav className="rail-links" aria-label="功能分栏">
+        {NAV_ITEMS.map(({ id, label, description }) => (
+          <button key={id} type="button" className={`rail-link rail-link--${id} ${view === id ? 'is-active' : ''}`}
+            onClick={() => onChange(id)} aria-label={label} aria-current={view === id ? 'page' : undefined}>
+            <span className="rail-icon"><AnimatedNavIcon view={id} /></span>
+            <span className="rail-label">{label}</span>
+            <span className="rail-tooltip" aria-hidden="true"><strong>{label}</strong><small>{description}</small></span>
+          </button>
+        ))}
+      </nav>
+      <button type="button" className="rail-toggle" onClick={() => setExpanded(!expanded)} aria-expanded={expanded} aria-label={expanded ? '收起导航' : '展开导航'}>
+        {expanded ? <PanelLeftClose size={25} strokeWidth={1.7} /> : <Menu size={25} strokeWidth={1.7} />}<span className="rail-label">收起导航</span>
+      </button>
+    </aside>
+  );
+}
+
 type PositionPivotScope = 'all' | 'stable' | 'new526';
 
 const CHANGE_SUMMARY_MIN_AMOUNT = 11;
@@ -154,6 +232,7 @@ interface ChangeSummaryReport {
 
 interface RawEditorRow {
   id: string;
+  strictDates?: string[];
   model: string;
   brand: string;
   storage: string;
@@ -297,9 +376,8 @@ const MARKET_TREND_COLORS: Record<string, string> = {
 };
 
 function sortDateLabels(left: string, right: string) {
-  const [leftMonth, leftDay] = left.split('.').map(Number);
-  const [rightMonth, rightDay] = right.split('.').map(Number);
-  return leftMonth === rightMonth ? leftDay - rightDay : leftMonth - rightMonth;
+  const iso = (value: string) => value.includes('-') ? value : `2026-${value.split('.')[0].padStart(2, '0')}-${value.split('.')[1].padStart(2, '0')}`;
+  return iso(left).localeCompare(iso(right));
 }
 
 function compareDateLabels(left: string, right: string) {
@@ -877,6 +955,7 @@ function getAggregationSnapshots(sku: SKUData, dates: string[]) {
       return;
     }
 
+
     if (previousSnapshot) {
       normalizedSnapshots.push({ ...previousSnapshot, date });
     }
@@ -947,7 +1026,7 @@ function buildPositionAnalysisForSkus(skuList: AnalysisSKU[], dates: string[], i
     };
 
     positionCurrent.skuCount += 1;
-    positionCurrent.launchPrices.push(sku.launchPrice);
+    if (sku.launchPrice > 0) positionCurrent.launchPrices.push(sku.launchPrice);
     normalizedSnapshots.forEach((snapshot) => {
       if (!positionCurrent.snapshotPrices[snapshot.date]) {
         positionCurrent.snapshotPrices[snapshot.date] = [];
@@ -970,7 +1049,7 @@ function buildPositionAnalysisForSkus(skuList: AnalysisSKU[], dates: string[], i
 
   return sortPositionPivotRows(
     Array.from(positionMap.entries()).map(([position, data]) => {
-      const avgLaunch = data.launchPrices.reduce((sum, value) => sum + value, 0) / data.launchPrices.length;
+      const avgLaunch = data.launchPrices.length ? data.launchPrices.reduce((sum, value) => sum + value, 0) / data.launchPrices.length : 0;
       const snapshotAvgs = dates
         .filter((date) => data.snapshotPrices[date]?.length)
         .map((date) => ({
@@ -1519,7 +1598,7 @@ function buildDatasetFromRawEditorRows(
   sourceName: string,
 ): WorkbookDataset {
   const skus = rows
-    .map((row, index) => {
+    .map<SKUData | null>((row, index) => {
       const model = row.model.trim();
       const storage = row.storage.trim();
 
@@ -1540,6 +1619,7 @@ function buildDatasetFromRawEditorRows(
           }
 
           const finalPrice = parseNumericInput(snapshot.finalPrice);
+          if (row.strictDates?.includes(date) && finalPrice <= 0) return null;
           const listPrice = parseNumericInput(snapshot.listPrice);
           const coupon = parseNumericInput(snapshot.coupon);
           const biPrice = parseNumericInput(snapshot.biPrice ?? '');
@@ -1567,13 +1647,14 @@ function buildDatasetFromRawEditorRows(
         .filter((item): item is PriceSnapshot => item !== null);
 
       return {
-        id: `${model}-${storage}-${index + 1}`,
+        id: row.id || `${model}-${storage}-${index + 1}`,
+        strictDates: row.strictDates,
         brand,
         model,
         series,
         storage,
-        position: position || ppvMapping?.position || '',
-        ppv: ppv || ppvMapping?.ppv || '',
+        position: row.strictDates ? position : position || ppvMapping?.position || '',
+        ppv: row.strictDates ? ppv : ppv || ppvMapping?.ppv || '',
         launchPrice: parseNumericInput(row.launchPrice),
         snapshots,
       };
@@ -1599,13 +1680,17 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
   }
 
   const processed = dataset.skus.map<AnalysisSKU>((sku) => {
-    const last = sku.snapshots[sku.snapshots.length - 1];
-    const prev = sku.snapshots[sku.snapshots.length - 2] ?? last;
-    const recentChange = last ? last.finalPrice - prev.finalPrice : 0;
-    const totalChange = last ? last.finalPrice - sku.launchPrice : 0;
+    const normalizedSnapshots = getAggregationSnapshots(sku,dataset.dates);
+    const last = normalizedSnapshots.at(-1);
+    const prev = normalizedSnapshots.at(-2) ?? last;
+    const strict = sku.strictDates?.includes(dataset.dates.at(-1) ?? '');
+    const current = !strict || last?.date === dataset.dates.at(-1);
+    const comparable = current && (!strict || (prev !== last && prev?.date === dataset.dates.at(-2)));
+    const recentChange = comparable && last ? last.finalPrice - prev.finalPrice : 0;
+    const totalChange = last && sku.launchPrice > 0 ? last.finalPrice - sku.launchPrice : 0;
     const recentChangePct = prev?.finalPrice ? (recentChange / prev.finalPrice) * 100 : 0;
-    const listPriceDiff = normalizeListPriceDiffForAttribution((last?.listPrice ?? 0) - (prev?.listPrice ?? 0));
-    const couponDiff = (last?.coupon ?? 0) - (prev?.coupon ?? 0);
+    const listPriceDiff = comparable ? normalizeListPriceDiffForAttribution((last?.listPrice ?? 0) - (prev?.listPrice ?? 0)) : 0;
+    const couponDiff = comparable ? (last?.coupon ?? 0) - (prev?.coupon ?? 0) : 0;
     const attribution = buildAttribution(listPriceDiff, couponDiff, recentChange, sku.snapshots.length);
 
     return {
@@ -1616,8 +1701,8 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
       listPriceDiff,
       couponDiff,
       changeDirection: attribution.changeDirection,
-      reason: attribution.reason,
-      reasonDetails: attribution.reasonDetails,
+      reason: !current ? '当日无生效报价' : !comparable ? '无相邻日期可比报价' : attribution.reason,
+      reasonDetails: !current ? ['当日无生效报价'] : !comparable ? ['无相邻日期可比报价'] : attribution.reasonDetails,
     };
   });
   const aggregationSkus = processed
@@ -1626,6 +1711,7 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
 
   const brandMap = new Map<string, { changePctTotal: number; count: number }>();
   aggregationSkus.forEach(({ sku, snapshots }) => {
+    if (sku.strictDates?.includes(dataset.dates.at(-1) ?? '') && snapshots.at(-2)?.date !== dataset.dates.at(-2)) return;
     const recentChange = getSnapshotRecentChange(snapshots);
     const previousPrice = snapshots[snapshots.length - 2]?.finalPrice ?? snapshots.at(-1)?.finalPrice ?? 0;
     const recentChangePct = previousPrice ? (recentChange / previousPrice) * 100 : 0;
@@ -1694,8 +1780,8 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
     };
 
     positionCurrent.skuCount += 1;
-    positionCurrent.launchPrices.push(sku.launchPrice);
-    current.launchPrices.push(sku.launchPrice);
+    if (sku.launchPrice > 0) positionCurrent.launchPrices.push(sku.launchPrice);
+    if (sku.launchPrice > 0) current.launchPrices.push(sku.launchPrice);
     snapshots.forEach((snapshot) => {
       if (!positionCurrent.snapshotPrices[snapshot.date]) {
         positionCurrent.snapshotPrices[snapshot.date] = [];
@@ -1728,7 +1814,7 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
 
   const positionAnalysis = sortPositionPivotRows(
     Array.from(positionMap.entries()).map(([position, data]) => {
-      const avgLaunch = data.launchPrices.reduce((sum, value) => sum + value, 0) / data.launchPrices.length;
+      const avgLaunch = data.launchPrices.length ? data.launchPrices.reduce((sum, value) => sum + value, 0) / data.launchPrices.length : 0;
       const snapshotAvgs = dataset.dates
         .filter((date) => data.snapshotPrices[date]?.length)
         .map((date) => ({
@@ -1749,7 +1835,7 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
         snapshotAvgs,
         diff,
         diffPct,
-        trendData: [{ date: '发布', avgPrice: avgLaunch }, ...snapshotAvgs],
+        trendData: [...(avgLaunch > 0 ? [{ date: '发布', avgPrice: avgLaunch }] : []), ...snapshotAvgs],
         directionSummary: data.directionSummary,
       };
     }),
@@ -1757,7 +1843,7 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
 
   const seriesAnalysis = sortSeriesPivotRows(
     Array.from(seriesMap.entries()).map(([model, data]) => {
-      const avgLaunch = data.launchPrices.reduce((sum, value) => sum + value, 0) / data.launchPrices.length;
+      const avgLaunch = data.launchPrices.length ? data.launchPrices.reduce((sum, value) => sum + value, 0) / data.launchPrices.length : 0;
       const snapshotAvgs = dataset.dates
         .filter((date) => data.snapshotPrices[date]?.length)
         .map((date) => ({
@@ -1778,7 +1864,7 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
         snapshotAvgs,
         diff,
         diffPct,
-        trendData: [{ date: '发布', avgPrice: avgLaunch }, ...snapshotAvgs],
+        trendData: [...(avgLaunch > 0 ? [{ date: '发布', avgPrice: avgLaunch }] : []), ...snapshotAvgs],
         directionSummary: data.directionSummary,
       };
     }),
@@ -1797,7 +1883,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [view, setView] = useState<ViewMode>('dashboard');
+  const [view, setView] = useState<ViewMode>(() => new URLSearchParams(window.location.search).get('view') === 'raw' ? 'raw' : 'dashboard');
   const [positionPivotScope, setPositionPivotScope] = useState<PositionPivotScope>('stable');
   const [attributionFilter, setAttributionFilter] = useState('all');
   const [rawEditorDates, setRawEditorDates] = useState<string[]>([]);
@@ -1819,6 +1905,25 @@ export default function App() {
   const marketTrendAutosaveTimerRef = useRef<number | null>(null);
   const lastSavedRawDraftSignatureRef = useRef('');
   const lastSavedMarketTrendSignatureRef = useRef('');
+
+  useEffect(() => {
+    const events = new EventSource('/api/workbench/events');
+    let timer: number;
+    events.onmessage = (event) => {
+      if (JSON.parse(event.data).type !== 'published') return;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        loadRawEditorDraftFromApi().then((draft) => {
+          if (!draft) return;
+          lastSavedRawDraftSignatureRef.current = JSON.stringify({ dates: draft.dates, rows: draft.rows });
+          setRawEditorDates(draft.dates);
+          setRawEditorRows(draft.rows);
+          setSourceDataset(buildDatasetFromRawEditorRows(draft.rows, draft.dates, '每日采价生效数据'));
+        }).catch(() => setError('生效数据刷新失败，请刷新页面重试'));
+      }, 250);
+    };
+    return () => { window.clearTimeout(timer); events.close(); };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -1922,46 +2027,8 @@ export default function App() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!hasHydratedRawDraftRef.current || isLoading) {
-      return;
-    }
+  // Price edits now use versioned field patches; never autosave the entire raw table.
 
-    const nextSignature = JSON.stringify({
-      dates: rawEditorDates,
-      rows: rawEditorRows,
-    });
-
-    if (nextSignature === lastSavedRawDraftSignatureRef.current) {
-      return;
-    }
-
-    if (rawDraftAutosaveTimerRef.current) {
-      window.clearTimeout(rawDraftAutosaveTimerRef.current);
-    }
-
-    rawDraftAutosaveTimerRef.current = window.setTimeout(() => {
-      const nextDraft: RawEditorDraft = {
-        dates: rawEditorDates,
-        rows: rawEditorRows,
-        savedAt: new Date().toISOString(),
-      };
-
-      persistRawEditorDraft(nextDraft)
-        .then(() => {
-          lastSavedRawDraftSignatureRef.current = nextSignature;
-        })
-        .catch(() => {
-          setRawEditorMessage((currentMessage) => currentMessage ?? '草稿自动保存失败，请点击“更新结果”重试');
-        });
-    }, RAW_DRAFT_AUTOSAVE_MS);
-
-    return () => {
-      if (rawDraftAutosaveTimerRef.current) {
-        window.clearTimeout(rawDraftAutosaveTimerRef.current);
-      }
-    };
-  }, [isLoading, rawEditorDates, rawEditorRows]);
 
   useEffect(() => {
     if (!hasHydratedMarketTrendRef.current || !marketTrendPayload) {
@@ -2088,7 +2155,8 @@ export default function App() {
     () =>
       analysis.skuList
         .map((sku) => {
-          const latestSnapshot = sku.snapshots.at(-1) ?? null;
+          const candidate = sku.snapshots.at(-1) ?? null;
+          const latestSnapshot = sku.strictDates?.includes(dates.at(-1) ?? '') && candidate?.date !== dates.at(-1) ? null : candidate;
           const biPrice = sku.ppv ? biPriceMap.get(sku.ppv) ?? latestSnapshot?.biPrice ?? null : latestSnapshot?.biPrice ?? null;
           const diff = latestSnapshot && biPrice ? biPrice - latestSnapshot.finalPrice : null;
 
@@ -2123,6 +2191,7 @@ export default function App() {
   );
   const riskBiPriceCount = useMemo(() => riskRows.filter((row) => row.biPrice).length, [riskRows]);
 
+  const displayDates = useMemo(() => [...dates].reverse(), [dates]);
   const latestDate = dates.at(-1) ?? '--';
   const previousDate = dates.at(-2) ?? latestDate;
   const brandCount = dataset?.brands.length ?? 0;
@@ -2130,9 +2199,10 @@ export default function App() {
     const brands = Array.from(new Set(analysis.seriesAnalysis.map((series) => series.brand))).sort(compareText);
     return new Map(brands.map((brand, index) => [brand, index]));
   }, [analysis.seriesAnalysis]);
+  const comparableSkus = analysis.skuList.filter((sku) => !sku.strictDates?.includes(latestDate) || (sku.snapshots.at(-1)?.date === latestDate && sku.snapshots.at(-2)?.date === previousDate));
   const avgVolatility =
-    analysis.skuList.length > 0
-      ? (analysis.skuList.reduce((sum, sku) => sum + Math.abs(sku.recentChangePct), 0) / analysis.skuList.length).toFixed(2)
+    comparableSkus.length > 0
+      ? (comparableSkus.reduce((sum, sku) => sum + Math.abs(sku.recentChangePct), 0) / comparableSkus.length).toFixed(2)
       : '0.00';
   const latestRangeLabel = dates.length > 0 ? `${dates[0]} - ${latestDate}` : '--';
   const tableColumnCount = dates.length * 3 + 4;
@@ -2459,7 +2529,7 @@ export default function App() {
       const workbookCellsWritten = Number(persisted?.workbook?.cellsWritten ?? persisted?.workbook?.rowsWritten ?? 0);
       const workbookRowsAppended = Number(persisted?.workbook?.rowsAppended ?? 0);
       setRiskMessage(
-        `已确认落数 ${confirmedRows.length} 条，已写回 Excel ${workbookCellsWritten} 格${workbookRowsAppended ? `，新增 ${workbookRowsAppended} 行` : ''}：${new Date(confirmedAt).toLocaleTimeString('zh-CN', {
+        persisted?.storage === 'workbench' ? `已保存 ${persisted.cellsWritten} 个 BI 字段变更，可在风险报告中导出。` : `已确认落数 ${confirmedRows.length} 条，已写回 Excel ${workbookCellsWritten} 格${workbookRowsAppended ? `，新增 ${workbookRowsAppended} 行` : ''}：${new Date(confirmedAt).toLocaleTimeString('zh-CN', {
           hour: '2-digit',
           minute: '2-digit',
         })}`,
@@ -2534,8 +2604,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] text-[#1A1C1E] font-sans selection:bg-orange-100">
-      <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 px-6 py-4 backdrop-blur-md">
+    <div className="app-shell min-h-screen bg-[#F8F9FA] text-[#1A1C1E] font-sans selection:bg-orange-100">
+      <NavigationRail view={view} onChange={setView} />
+      <header className="app-header sticky top-0 z-40 border-b border-gray-200 bg-white/80 px-6 py-4 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-600 text-white shadow-lg shadow-orange-200">
@@ -2544,7 +2615,7 @@ export default function App() {
             <div>
               <h1 className="text-xl font-bold tracking-tight">新机售价监控系统</h1>
               <p className="text-xs font-medium uppercase tracking-wider text-gray-500">
-                Excel Driven Price Monitoring Dashboard
+                {NAV_ITEMS.find((item) => item.id === view)?.label} · PRICE MONITORING
               </p>
             </div>
           </div>
@@ -2560,76 +2631,7 @@ export default function App() {
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex rounded-xl bg-gray-100 p-1">
-                <button
-                  onClick={() => setView('dashboard')}
-                  className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
-                    view === 'dashboard' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <LayoutDashboard size={16} /> 概览
-                </button>
-                <button
-                  onClick={() => setView('summary')}
-                  className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
-                    view === 'summary' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <FileText size={16} /> 汇总
-                </button>
-                <button
-                  onClick={() => setView('risk')}
-                  className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
-                    view === 'risk' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <Upload size={16} /> S等级风险
-                </button>
-                <button
-                  onClick={() => setView('raw')}
-                  className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
-                    view === 'raw' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <Database size={16} /> 原始数据
-                </button>
-                <button
-                  onClick={() => setView('table')}
-                  className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
-                    view === 'table' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <TableIcon size={16} /> 明细
-                </button>
-              </div>
-              <div className="flex rounded-xl bg-gray-100 p-1">
-                <button
-                  onClick={() => setView('marketTrend')}
-                  className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
-                    view === 'marketTrend' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <BarChart3 size={16} /> 市场趋势
-                </button>
-                <button
-                  onClick={() => setView('weeklySales')}
-                  className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
-                    view === 'weeklySales' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <BarChart3 size={16} /> 新品周销
-                </button>
-                <button
-                  onClick={() => setView('industryExpert')}
-                  className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
-                    view === 'industryExpert' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <BrainCircuit size={16} /> 3C行业专家agent
-                </button>
-              </div>
-            </div>
+
           </div>
         </div>
       </header>
@@ -2659,6 +2661,11 @@ export default function App() {
           />
         ) : view === 'dashboard' ? (
           <>
+            {dataset?.skus.some((sku) => sku.strictDates?.includes(dates.at(-1) ?? '')) ? (
+              <div className="mb-5 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-xs text-amber-700">
+                {dates.at(-1)} 正式汇总价格覆盖 {dataset.skus.filter((sku) => sku.snapshots.some((s) => s.date === dates.at(-1) && s.finalPrice > 0)).length} / {dataset.skus.length} 个 SKU。仅已推数仓的数据参与分析；缺价沿用最近一次正式报价，直到下一次报价推送。
+              </div>
+            ) : null}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
               <MetricCard
                 label="监控 SKU 总数"
@@ -2798,7 +2805,7 @@ export default function App() {
                         均价走势
                       </th>
                       <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">发布均价</th>
-                      {dates.map((date) => (
+                      {displayDates.map((date) => (
                         <th key={date} className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">
                           {date} 均价
                         </th>
@@ -2832,7 +2839,7 @@ export default function App() {
                             <SeriesTrendChart points={position.trendData} diffPct={displayChange.diffPct} />
                           </td>
                           <td className="px-6 py-2.5 text-sm text-gray-500">{formatPrice(position.avgLaunch)}</td>
-                          {dates.map((date) => {
+                          {displayDates.map((date) => {
                             const point = position.snapshotAvgs.find((item) => item.date === date);
                             return (
                               <td key={`${position.position}-${date}`} className="px-6 py-2.5 text-sm font-medium">
@@ -2889,7 +2896,7 @@ export default function App() {
                         均价走势
                       </th>
                       <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">发布均价</th>
-                      {dates.map((date) => (
+                      {displayDates.map((date) => (
                         <th key={date} className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">
                           {date} 均价
                         </th>
@@ -2935,7 +2942,7 @@ export default function App() {
                             <SeriesTrendChart points={series.trendData} diffPct={displayChange.diffPct} />
                           </td>
                           <td className="px-6 py-2.5 text-sm text-gray-500">{formatPrice(series.avgLaunch)}</td>
-                          {dates.map((date) => {
+                          {displayDates.map((date) => {
                             const point = series.snapshotAvgs.find((item) => item.date === date);
                             return (
                               <td key={`${series.model}-${date}`} className="px-6 py-2.5 text-sm font-medium">
@@ -2996,20 +3003,15 @@ export default function App() {
             onDownload={handleDownloadMarketTrend}
           />
         ) : view === 'raw' ? (
-          <RawDataPanel
-            dates={rawEditorDates}
-            rawEditorRows={rawEditorRows}
-            rawEditorMessage={rawEditorMessage}
-            rawEditorDateInput={rawEditorDateInput}
-            onApply={handleApplyRawEdits}
-            onSaveModelConfigs={handleSaveRawModelConfigs}
-            onDateInputChange={setRawEditorDateInput}
-            onAddDateColumns={handleAddRawDateColumns}
-            onCellChange={handleRawCellChange}
-            onSnapshotChange={handleRawSnapshotChange}
-            onBulkPaste={handleRawBulkPaste}
-            onDownload={handleDownloadRawData}
-          />
+          <PriceWorkbench onPublished={() => {
+            loadRawEditorDraftFromApi().then((draft) => {
+              if (!draft) return;
+              lastSavedRawDraftSignatureRef.current = JSON.stringify({ dates: draft.dates, rows: draft.rows });
+              setRawEditorDates(draft.dates);
+              setRawEditorRows(draft.rows);
+              setSourceDataset(buildDatasetFromRawEditorRows(draft.rows, draft.dates, '每日采价生效数据'));
+            }).catch((error) => setError(error instanceof Error ? error.message : '分析数据刷新失败'));
+          }} />
         ) : (
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
             <div className="flex flex-col gap-4 border-b border-gray-100 p-6 lg:flex-row lg:items-start lg:justify-between">
@@ -3052,7 +3054,7 @@ export default function App() {
                     <th rowSpan={2} className="border-b border-r border-gray-100 px-4 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">
                       发售价
                     </th>
-                    {dates.map((date) => (
+                    {displayDates.map((date) => (
                       <th
                         key={date}
                         colSpan={3}
@@ -3066,7 +3068,7 @@ export default function App() {
                     </th>
                   </tr>
                   <tr className="bg-gray-50/50">
-                    {dates.map((date) => (
+                    {displayDates.map((date) => (
                       <React.Fragment key={`${date}-sub`}>
                         <th className="border-b border-gray-100 px-2 py-2 text-[10px] font-bold uppercase text-gray-400">国补后</th>
                         <th className="border-b border-gray-100 px-2 py-2 text-[10px] font-bold uppercase text-gray-400">挂牌价</th>
@@ -3105,7 +3107,7 @@ export default function App() {
                           <td className="border-r border-gray-100 px-4 py-4 text-sm text-gray-400">
                             {formatPrice(sku.launchPrice)}
                           </td>
-                          {dates.map((date) => {
+                          {displayDates.map((date) => {
                             const snapshot = sku.snapshots.find((item) => item.date === date);
                             const isLast = date === latestDate;
 
