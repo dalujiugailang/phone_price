@@ -41,6 +41,7 @@ import { IndustryExpertPanel } from './IndustryExpertPanel';
 import { getNewMachinePpvMapping } from './ppvMapping';
 import { WeeklySalesPanel } from './WeeklySalesPanel';
 import { PriceWorkbench } from './PriceWorkbench';
+import { ChangeSummaryPanel } from './ChangeSummaryPanel';
 import { SkuVolatilityRanking } from './SkuVolatilityRanking';
 import { buildBrandPivot } from './brandPivot';
 
@@ -120,7 +121,6 @@ function NavigationRail({ view, onChange }: { view: ViewMode; onChange: (view: V
 
 type PositionPivotScope = 'all' | 'stable' | 'new526';
 
-const CHANGE_SUMMARY_THRESHOLD = 20;
 const NEW_BATCH_START_DATE = '5.26';
 const POSITION_PIVOT_SCOPE_OPTIONS: Array<{ value: PositionPivotScope; label: string }> = [
   { value: 'all', label: '全量' },
@@ -202,34 +202,6 @@ interface RiskAnalysisRow {
   biPrice: number | null;
   diff: number | null;
   riskLevel: RiskLevel;
-}
-
-interface ChangeSummaryRangeItem {
-  model: string;
-  storages: string[];
-  amounts: number[];
-}
-
-interface ChangeSummaryMixedItem {
-  model: string;
-  entries: Array<{
-    storage: string;
-    listPriceDiff: number;
-    couponDiff: number;
-  }>;
-}
-
-interface ChangeSummaryReport {
-  listOnlyUp: ChangeSummaryRangeItem[];
-  listOnlyDown: ChangeSummaryRangeItem[];
-  mixed: {
-    listUpCouponUp: ChangeSummaryMixedItem[];
-    listUpCouponDown: ChangeSummaryMixedItem[];
-    listDownCouponUp: ChangeSummaryMixedItem[];
-    listDownCouponDown: ChangeSummaryMixedItem[];
-  };
-  couponOnlyDown: ChangeSummaryRangeItem[];
-  couponOnlyUp: ChangeSummaryRangeItem[];
 }
 
 interface RawEditorRow {
@@ -1359,7 +1331,7 @@ const SeriesTrendChart = React.memo(function SeriesTrendChart({ points, diffPct,
     return <div className="h-20 w-full rounded-xl" />;
   }
 
-  const displayPoints = [...points].reverse();
+  const displayPoints = points;
   const values = displayPoints.map((point) => point.avgPrice);
   const maxValue = Math.max(...values);
   const minValue = Math.min(...values);
@@ -1382,7 +1354,7 @@ const SeriesTrendChart = React.memo(function SeriesTrendChart({ points, diffPct,
 
   return (
     <div className="rounded-xl px-2 py-1.5">
-      <svg viewBox={compact ? "0 0 168 46" : "0 0 168 72"} className="h-20 w-full overflow-visible" role="img" aria-label="均价走势，从左到右：最新 → 最早 → 发布">
+      <svg viewBox={compact ? "0 0 168 46" : "0 0 168 72"} className="h-20 w-full overflow-visible" role="img" aria-label="均价走势，从左到右：发布 → 最新">
         <line x1={leftAxisX} y1={6} x2={leftAxisX} y2={bottomY} stroke="#D6D9DD" strokeWidth="1.5" />
         <line x1={leftAxisX} y1={bottomY} x2={rightEdge} y2={bottomY} stroke="#E7E2D7" strokeWidth="1" />
         <path d={path} fill="none" stroke={stroke} strokeWidth={compact ? 2 : 3} strokeLinecap="round" strokeLinejoin="round" />
@@ -1396,125 +1368,8 @@ const SeriesTrendChart = React.memo(function SeriesTrendChart({ points, diffPct,
   );
 });
 
-function formatStorageCompact(storage: string) {
-  return storage.replace(/GB/g, '').replace(/\s+/g, '');
-}
-
 function getAttributionCombination(reasonDetails: string[]) {
   return reasonDetails.join(' + ');
-}
-
-function formatAmountRange(amounts: number[]) {
-  const normalized = [...new Set(amounts.map((value) => Math.abs(Math.round(value))))].sort((left, right) => left - right);
-  if (normalized.length === 0) {
-    return '0元';
-  }
-
-  const min = normalized[0];
-  const max = normalized[normalized.length - 1];
-  return min === max ? `${min}元` : `${min}-${max}元`;
-}
-
-function sortRangeItems(items: ChangeSummaryRangeItem[]) {
-  return [...items].sort((left, right) => {
-    const magnitudeDiff =
-      Math.max(...right.amounts.map((amount) => Math.abs(amount))) - Math.max(...left.amounts.map((amount) => Math.abs(amount)));
-    if (magnitudeDiff !== 0) {
-      return magnitudeDiff;
-    }
-
-    return compareText(left.model, right.model);
-  });
-}
-
-function sortMixedItems(items: ChangeSummaryMixedItem[]) {
-  return [...items].sort((left, right) => compareText(left.model, right.model));
-}
-
-function buildChangeSummaryReport(skuList: AnalysisSKU[]): ChangeSummaryReport {
-  const listOnlyUpMap = new Map<string, ChangeSummaryRangeItem>();
-  const listOnlyDownMap = new Map<string, ChangeSummaryRangeItem>();
-  const couponOnlyDownMap = new Map<string, ChangeSummaryRangeItem>();
-  const couponOnlyUpMap = new Map<string, ChangeSummaryRangeItem>();
-  const mixedModelSet = new Set<string>();
-  const mixedMaps = {
-    listUpCouponUp: new Map<string, ChangeSummaryMixedItem>(),
-    listUpCouponDown: new Map<string, ChangeSummaryMixedItem>(),
-    listDownCouponUp: new Map<string, ChangeSummaryMixedItem>(),
-    listDownCouponDown: new Map<string, ChangeSummaryMixedItem>(),
-  };
-
-  const ensureRangeItem = (targetMap: Map<string, ChangeSummaryRangeItem>, sku: AnalysisSKU, amount: number) => {
-    const current = targetMap.get(sku.model) ?? { model: sku.model, storages: [], amounts: [] };
-    current.storages.push(sku.storage);
-    current.amounts.push(amount);
-    targetMap.set(sku.model, current);
-  };
-
-  const ensureMixedItem = (
-    targetMap: Map<string, ChangeSummaryMixedItem>,
-    sku: AnalysisSKU,
-  ) => {
-    const current = targetMap.get(sku.model) ?? { model: sku.model, entries: [] };
-    current.entries.push({
-      storage: sku.storage,
-      listPriceDiff: sku.listPriceDiff,
-      couponDiff: sku.couponDiff,
-    });
-    targetMap.set(sku.model, current);
-  };
-
-  skuList.forEach((sku) => {
-    const hasListChange = Math.abs(sku.listPriceDiff) > CHANGE_SUMMARY_THRESHOLD;
-    const hasCouponChange = Math.abs(sku.couponDiff) > CHANGE_SUMMARY_THRESHOLD;
-
-    if (!hasListChange || !hasCouponChange) {
-      return;
-    }
-
-    mixedModelSet.add(sku.model);
-
-    if (sku.listPriceDiff > 0 && sku.couponDiff > 0) {
-      ensureMixedItem(mixedMaps.listUpCouponUp, sku);
-    } else if (sku.listPriceDiff > 0 && sku.couponDiff < 0) {
-      ensureMixedItem(mixedMaps.listUpCouponDown, sku);
-    } else if (sku.listPriceDiff < 0 && sku.couponDiff > 0) {
-      ensureMixedItem(mixedMaps.listDownCouponUp, sku);
-    } else {
-      ensureMixedItem(mixedMaps.listDownCouponDown, sku);
-    }
-  });
-
-  skuList.forEach((sku) => {
-    if (mixedModelSet.has(sku.model)) {
-      return;
-    }
-
-    const hasListChange = Math.abs(sku.listPriceDiff) > CHANGE_SUMMARY_THRESHOLD;
-    const hasCouponChange = Math.abs(sku.couponDiff) > CHANGE_SUMMARY_THRESHOLD;
-
-    if (hasListChange && !hasCouponChange) {
-      ensureRangeItem(sku.listPriceDiff > 0 ? listOnlyUpMap : listOnlyDownMap, sku, sku.listPriceDiff);
-      return;
-    }
-
-    if (!hasListChange && hasCouponChange) {
-      ensureRangeItem(sku.couponDiff > 0 ? couponOnlyUpMap : couponOnlyDownMap, sku, sku.couponDiff);
-    }
-  });
-
-  return {
-    listOnlyUp: sortRangeItems(Array.from(listOnlyUpMap.values())),
-    listOnlyDown: sortRangeItems(Array.from(listOnlyDownMap.values())),
-    mixed: {
-      listUpCouponUp: sortMixedItems(Array.from(mixedMaps.listUpCouponUp.values())),
-      listUpCouponDown: sortMixedItems(Array.from(mixedMaps.listUpCouponDown.values())),
-      listDownCouponUp: sortMixedItems(Array.from(mixedMaps.listDownCouponUp.values())),
-      listDownCouponDown: sortMixedItems(Array.from(mixedMaps.listDownCouponDown.values())),
-    },
-    couponOnlyDown: sortRangeItems(Array.from(couponOnlyDownMap.values())),
-    couponOnlyUp: sortRangeItems(Array.from(couponOnlyUpMap.values())),
-  };
 }
 
 function datasetToRawEditorRows(dataset: WorkbookDataset | null): RawEditorRow[] {
@@ -1653,6 +1508,7 @@ function buildDatasetFromRawEditorRows(
             finalPrice,
             listPrice,
             coupon,
+            couponKnown: snapshot.coupon.trim() !== '' && Number.isFinite(Number(snapshot.coupon.replace(/,/g, ''))),
             biPrice: biPrice || undefined,
             isDelisted: isDelisted || undefined,
           };
@@ -2180,7 +2036,6 @@ export default function App() {
     () => analysis.skuList.map(sku => ({ ...sku, snapshots: getAggregationSnapshots(sku, dates) })),
     [analysis.skuList, dates],
   );
-  const changeSummaryReport = useMemo(() => buildChangeSummaryReport(analysis.skuList), [analysis.skuList]);
   const biPriceMap = useMemo(() => new Map(biPriceRows.map((row) => [row.ppv, row.biPrice])), [biPriceRows]);
   const riskRows = useMemo<RiskAnalysisRow[]>(
     () =>
@@ -2779,7 +2634,7 @@ export default function App() {
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-6">
                 <div>
                   <h2 className="text-lg font-bold">机型定位透视表 (汇总层)</h2>
-                  <p className="mt-1 text-xs text-gray-500">日期与均价走势从左到右：最新 → 最早；默认最近15次，可展开全量；发布均价置于末列</p>
+                  <p className="mt-1 text-xs text-gray-500">日期列最新在前；走势从左到右：发布 → 最新；默认最近15次，可展开全量；发布均价置于末列</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
@@ -2849,7 +2704,7 @@ export default function App() {
                           <td
                             className={`sticky left-[260px] z-10 min-w-[210px] border-r border-gray-100 px-4 py-2 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.03)] ${stickyClassName}`}
                           >
-                            <SeriesTrendChart points={position.trendData.filter(point => rangeDates.position.includes(point.date) || (fullDates.position && point.date === '发布'))} diffPct={displayChange.diffPct} />
+                            <SeriesTrendChart points={position.trendData.filter(point => rangeDates.position.includes(point.date) || point.date === '发布')} diffPct={displayChange.diffPct} />
                           </td>
                           <td className="px-6 py-2.5">
                             <span
@@ -2890,7 +2745,7 @@ export default function App() {
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-6">
                 <div>
                   <h2 className="text-lg font-bold">品牌透视表 (汇总层)</h2>
-                  <p className="mt-1 text-xs text-gray-500">日期与均价走势从左到右：最新 → 最早；默认最近15次，可展开全量；发布均价置于末列。全量 SKU 等权平均。</p>
+                  <p className="mt-1 text-xs text-gray-500">日期列最新在前；走势从左到右：发布 → 最新；默认最近15次，可展开全量；发布均价置于末列。全量 SKU 等权平均。</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   {dateRangeControl('brand')}
@@ -2952,7 +2807,7 @@ export default function App() {
                           <td
                             className={`sticky left-[260px] z-10 min-w-[210px] border-r border-gray-100 px-4 py-2 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.03)] ${stickyClassName}`}
                           >
-                            <SeriesTrendChart points={brand.trendData.filter(point => rangeDates.brand.includes(point.date) || (fullDates.brand && point.date === '发布'))} diffPct={displayChange.diffPct} />
+                            <SeriesTrendChart points={brand.trendData.filter(point => rangeDates.brand.includes(point.date) || point.date === '发布')} diffPct={displayChange.diffPct} />
                           </td>
                           <td className="px-6 py-2.5">
                             <span
@@ -2993,7 +2848,7 @@ export default function App() {
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-6">
                 <div>
                   <h2 className="text-lg font-bold">型号系列透视表 (汇总层)</h2>
-                  <p className="mt-1 text-xs text-gray-500">日期与均价走势从左到右：最新 → 最早；默认最近15次，可展开全量；发布均价置于末列</p>
+                  <p className="mt-1 text-xs text-gray-500">日期列最新在前；走势从左到右：发布 → 最新；默认最近15次，可展开全量；发布均价置于末列</p>
                 </div>
                 <div className="flex gap-2">
                   {dateRangeControl('series')}
@@ -3046,7 +2901,7 @@ export default function App() {
                           <td
                             className={`sticky left-[298px] z-10 min-w-[210px] border-r border-gray-100 px-4 py-2 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.03)] ${stickyClassName}`}
                           >
-                            <SeriesTrendChart compact points={series.trendData.filter(point => rangeDates.series.includes(point.date) || (fullDates.series && point.date === '发布'))} diffPct={displayChange.diffPct} />
+                            <SeriesTrendChart compact points={series.trendData.filter(point => rangeDates.series.includes(point.date) || point.date === '发布')} diffPct={displayChange.diffPct} />
                           </td>
                           <td className="px-6 py-2.5">
                             <span
@@ -3084,7 +2939,7 @@ export default function App() {
             </div>
           </>
         ) : view === 'summary' ? (
-          <ReportSummaryPanel previousDate={previousDate} latestDate={latestDate} report={changeSummaryReport} />
+          <ChangeSummaryPanel previousDate={previousDate} latestDate={latestDate} skus={analysis.skuList} />
         ) : view === 'risk' ? (
           <RiskMonitorPanel
             latestDate={latestDate}
@@ -3278,151 +3133,6 @@ export default function App() {
           </div>
         )}
       </main>
-    </div>
-  );
-}
-
-function SummaryRangeList({
-  items,
-  verb,
-}: {
-  items: ChangeSummaryRangeItem[];
-  verb: string;
-}) {
-  if (items.length === 0) {
-    return <p className="text-sm text-gray-400">本期无相关变动</p>;
-  }
-
-  return (
-    <ol className="space-y-3 text-sm leading-6 text-gray-700">
-      {items.map((item, index) => (
-        <li key={item.model} className="flex gap-2">
-          <span className="font-semibold text-gray-500">{index + 1}.</span>
-          <span>
-            <span className="font-semibold text-gray-900">{item.model}</span>
-            {verb}
-            <span className="font-semibold text-gray-900"> {formatAmountRange(item.amounts)}</span>
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-function SummaryMixedList({
-  items,
-}: {
-  items: ChangeSummaryMixedItem[];
-}) {
-  if (items.length === 0) {
-    return <p className="text-sm text-gray-400">本期无相关变动</p>;
-  }
-
-  return (
-    <div className="space-y-4">
-      {items.map((item) => (
-        <div key={item.model} className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
-          <h4 className="text-sm font-bold text-gray-900">{item.model}</h4>
-          <ul className="mt-3 space-y-2 text-sm text-gray-700">
-            {item.entries.map((entry) => (
-              <li key={`${item.model}-${entry.storage}`} className="flex gap-2">
-                <span className="text-gray-400">-</span>
-                <span>
-                  <span className="font-semibold text-gray-900">{formatStorageCompact(entry.storage)}</span>
-                  {` 挂牌价${entry.listPriceDiff > 0 ? '升高' : '降低'} ${Math.abs(Math.round(entry.listPriceDiff))} 元，`}
-                  {`优惠券${entry.couponDiff > 0 ? '升高' : '降低'} ${Math.abs(Math.round(entry.couponDiff))} 元`}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function SummarySection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-      <div className="mt-4">{children}</div>
-    </section>
-  );
-}
-
-function ReportSummaryPanel({
-  previousDate,
-  latestDate,
-  report,
-}: {
-  previousDate: string;
-  latestDate: string;
-  report: ChangeSummaryReport;
-}) {
-  return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-orange-100 bg-gradient-to-r from-orange-50 to-amber-50 p-6 shadow-sm">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.28em] text-orange-500">Latest Summary</p>
-            <h2 className="mt-2 text-2xl font-black tracking-tight text-gray-900">价格及优惠券变动汇总</h2>
-            <p className="mt-2 text-sm text-gray-600">基于最新窗口 {previousDate} -&gt; {latestDate} 自动生成</p>
-          </div>
-        </div>
-      </section>
-
-      <SummarySection title="一、挂牌价变化">
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div>
-            <h4 className="mb-3 text-sm font-bold text-orange-600">挂牌价升高</h4>
-            <SummaryRangeList items={report.listOnlyUp} verb=" 挂牌价升高 " />
-          </div>
-          <div>
-            <h4 className="mb-3 text-sm font-bold text-blue-600">挂牌价降低</h4>
-            <SummaryRangeList items={report.listOnlyDown} verb=" 挂牌价降低 " />
-          </div>
-        </div>
-      </SummarySection>
-
-      <SummarySection title="二、挂牌价变化 + 优惠券变化">
-        <div className="grid gap-6 xl:grid-cols-2">
-          <div>
-            <h4 className="mb-3 text-sm font-bold text-orange-600">挂牌价升高 + 优惠券升高</h4>
-            <SummaryMixedList items={report.mixed.listUpCouponUp} />
-          </div>
-          <div>
-            <h4 className="mb-3 text-sm font-bold text-orange-600">挂牌价升高 + 优惠券降低</h4>
-            <SummaryMixedList items={report.mixed.listUpCouponDown} />
-          </div>
-          <div>
-            <h4 className="mb-3 text-sm font-bold text-blue-600">挂牌价降低 + 优惠券升高</h4>
-            <SummaryMixedList items={report.mixed.listDownCouponUp} />
-          </div>
-          <div>
-            <h4 className="mb-3 text-sm font-bold text-blue-600">挂牌价降低 + 优惠券降低</h4>
-            <SummaryMixedList items={report.mixed.listDownCouponDown} />
-          </div>
-        </div>
-      </SummarySection>
-
-      <SummarySection title="三、优惠券变化">
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div>
-            <h4 className="mb-3 text-sm font-bold text-blue-600">优惠券降低</h4>
-            <SummaryRangeList items={report.couponOnlyDown} verb=" 优惠券降低 " />
-          </div>
-          <div>
-            <h4 className="mb-3 text-sm font-bold text-orange-600">优惠券升高</h4>
-            <SummaryRangeList items={report.couponOnlyUp} verb=" 优惠券升高 " />
-          </div>
-        </div>
-      </SummarySection>
     </div>
   );
 }

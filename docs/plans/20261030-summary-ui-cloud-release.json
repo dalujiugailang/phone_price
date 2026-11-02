@@ -1,0 +1,51 @@
+{
+  "change": "summary-model-sku-ui-original-style",
+  "image": "sha256:2801db60ed5ea73506304d3a3a0dba63a8fc2715d246c52c6e516f208b7d658f",
+  "tablesUnchanged": {
+    "models": true,
+    "skus": true,
+    "daily": true,
+    "revisions": true,
+    "formal_price_publications": true
+  },
+  "health": {
+    "ok": true,
+    "warehouse": {
+      "enabled": true,
+      "running": false,
+      "warehousePath": "/app/data/warehouse/gtm_warehouse.duckdb",
+      "lastReason": "startup",
+      "lastStartedAt": "2026-10-30T10:25:23.314Z",
+      "lastCompletedAt": "2026-10-30T10:25:27.064Z",
+      "lastError": null,
+      "intervalMinutes": 15
+    },
+    "scheduleEnabled": true
+  },
+  "outbox": [
+    [
+      0,
+      null
+    ]
+  ],
+  "archive": "/www/wwwroot/gtm-price-monitor/.archive/release-20261030-summary-ui",
+  "releasedAt": "2026-10-30T10:26:54.210313+00:00",
+  "url": "https://gtmdudu.xyz/",
+  "containerHealth": "healthy",
+  "frontendAsset": "index-DLAwvn4M.js",
+  "originalWhiteOrangeStyle": true,
+  "threshold": "abs(change) > 20",
+  "browserChecks": {
+    "modelRows": 60,
+    "modelSelection": true,
+    "skuDetails": true,
+    "categoryFilter": true,
+    "directionFilter": true,
+    "search": true,
+    "skuWorkbenchJump": true
+  },
+  "testsPassed": 5,
+  "typecheck": "passed",
+  "build": "passed",
+  "scope": "Summary UI only; other uncommitted local changes excluded; cloud backend preserved"
+}

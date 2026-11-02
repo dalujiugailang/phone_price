@@ -5,6 +5,7 @@ export interface VolatilitySKU {
   brand: string;
   model: string;
   storage: string;
+  launchPrice?: number;
   snapshots: PriceSnapshot[];
   reasonDetails: string[];
 }

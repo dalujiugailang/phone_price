@@ -5,6 +5,7 @@ export interface PriceSnapshot {
   date: string;
   listPrice: number;
   coupon: number;
+  couponKnown?: boolean;
   finalPrice: number;
   biPrice?: number;
   isDelisted?: boolean;
