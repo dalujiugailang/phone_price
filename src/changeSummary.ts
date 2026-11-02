@@ -1,3 +1,5 @@
+import type { PriceSnapshot } from './data';
+
 export const SUMMARY_THRESHOLD = 20;
 export type SummaryCategory = 'list' | 'mixed' | 'coupon';
 export type ComboDirection = 'up-up' | 'up-down' | 'down-up' | 'down-down';
@@ -8,6 +10,8 @@ export interface SummarySku {
   listPriceDiff: number;
   couponDiff: number;
   finalPriceDiff?: number | null;
+  launchPrice?: number;
+  snapshots?: PriceSnapshot[];
 }
 export interface SummaryModel {
   key: string;

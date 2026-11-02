@@ -10,8 +10,8 @@
 .sku-race-live{font-size:10px;font-weight:600;line-height:1.4;letter-spacing:0;color:#ea580c;background:#fff7ed;border-color:#ffedd5}
 .sku-race-chart{background:#fff;padding:0;border:0;margin-top:12px;color:#374151}
 .sku-race-chart .sku-race-rows{margin-top:0}
-.sku-race-chart .sku-race-row{background:#f9fafb;border:1px solid #f3f4f6;border-radius:10px;padding:4px 8px}
-.sku-race-chart .sku-race-row:hover,.sku-race-chart .sku-race-row:focus-visible{background:#fffaf5;border-color:#ffedd5}
+.sku-race-chart .sku-race-row{background:transparent;border:1px solid transparent;border-radius:10px;padding:4px 8px}
+.sku-race-chart .sku-race-row:hover{background:#f9fafb;border-color:#f3f4f6}
 .sku-race-chart .sku-race-name{color:#111827}
 .sku-race-chart .sku-race-rank{color:#9ca3af;font-weight:600}
 .sku-race-chart .sku-race-row:nth-child(-n+3) .sku-race-rank{color:#ea580c}

@@ -3060,7 +3060,7 @@ export default function App() {
             </div>
           </>
         ) : view === 'summary' ? (
-          <ChangeSummaryPanel previousDate={previousDate} latestDate={latestDate} skus={analysis.skuList} />
+          <ChangeSummaryPanel previousDate={previousDate} latestDate={latestDate} skus={volatilitySkus} />
         ) : view === 'risk' ? (
           <RiskMonitorPanel
             latestDate={latestDate}
