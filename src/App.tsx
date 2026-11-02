@@ -43,7 +43,7 @@ import { WeeklySalesPanel } from './WeeklySalesPanel';
 import { PriceWorkbench } from './PriceWorkbench';
 import { ChangeSummaryPanel } from './ChangeSummaryPanel';
 import { SkuVolatilityRanking } from './SkuVolatilityRanking';
-import { buildBrandPivot } from './brandPivot';
+import { buildBrandPivot, buildGenerationPivot } from './brandPivot';
 
 type ViewMode = 'dashboard' | 'summary' | 'risk' | 'marketTrend' | 'weeklySales' | 'industryExpert' | 'table' | 'raw';
 const NAV_ITEMS: Array<{ id: ViewMode; label: string; description: string; icon: typeof LayoutDashboard }> = [
@@ -131,6 +131,7 @@ const POSITION_PIVOT_SCOPE_OPTIONS: Array<{ value: PositionPivotScope; label: st
 interface AnalysisSKU extends SKUData {
   totalChange: number;
   recentChange: number;
+  finalPriceDiff: number | null;
   recentChangePct: number;
   listPriceDiff: number;
   couponDiff: number;
@@ -1568,6 +1569,7 @@ function buildAnalysis(dataset: WorkbookDataset | null): AnalysisResult {
       ...sku,
       totalChange,
       recentChange,
+      finalPriceDiff: comparable && last && prev && last.finalPrice > 0 && prev.finalPrice > 0 ? recentChange : null,
       recentChangePct,
       listPriceDiff,
       couponDiff,
@@ -1757,7 +1759,7 @@ export default function App() {
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const [view, setView] = useState<ViewMode>(() => new URLSearchParams(window.location.search).get('view') === 'raw' ? 'raw' : 'dashboard');
   const [detailBrand, setDetailBrand] = useState('all');
-  const [fullDates, setFullDates] = useState({ position: false, brand: false, series: false, detail: false });
+  const [fullDates, setFullDates] = useState({ position: false, brand: false, generation: false, series: false, detail: false });
   const [positionPivotScope, setPositionPivotScope] = useState<PositionPivotScope>('stable');
   const [attributionFilter, setAttributionFilter] = useState('all');
   const [rawEditorDates, setRawEditorDates] = useState<string[]>([]);
@@ -1955,6 +1957,21 @@ export default function App() {
     () => buildBrandPivot(analysis.skuList.map(sku => ({ ...sku, snapshots: getAggregationSnapshots(sku, dates) })), dates),
     [analysis.skuList, dates],
   );
+  const [generationModels, setGenerationModels] = useState<{ name: string; generation: string }[] | null>(null);
+  const [generationError, setGenerationError] = useState(false);
+  useEffect(() => {
+    const controller = new AbortController();
+    setGenerationError(false);
+    fetch('/api/workbench/models', { signal: controller.signal }).then(response => {
+      if (!response.ok) throw new Error('代际配置读取失败');
+      return response.json();
+    }).then(setGenerationModels).catch(() => { if (!controller.signal.aborted) setGenerationError(true); });
+    return () => controller.abort();
+  }, [sourceDataset]);
+  const generationPivotAnalysis = useMemo(() => {
+    if (!generationModels) return [];
+    return buildGenerationPivot(analysis.skuList.map(sku => ({ ...sku, snapshots: getAggregationSnapshots(sku, dates) })), dates, generationModels);
+  }, [generationModels, analysis.skuList, dates]);
   const attributionOptions = useMemo(() => {
     const optionMap = new Map<string, number>();
 
@@ -2079,7 +2096,7 @@ export default function App() {
 
   const displayDates = useMemo(() => [...dates].reverse(), [dates]);
   const rangeDates = useMemo(() => Object.fromEntries(Object.entries(fullDates).map(([key, full]) => [key, full ? displayDates : displayDates.slice(0, 15)])) as Record<keyof typeof fullDates, string[]>, [displayDates, fullDates]);
-  const dateRangeControl = (key: keyof typeof fullDates) => <button type="button" className="date-range-toggle" aria-label={`${{position:'机型定位',brand:'品牌',series:'型号系列',detail:'明细'}[key]}日期范围`} aria-pressed={fullDates[key]} onClick={() => setFullDates(current => ({...current,[key]:!current[key]}))}>{fullDates[key] ? '收起至最近15次' : `展示全量（${dates.length}次）`}</button>;
+  const dateRangeControl = (key: keyof typeof fullDates) => <button type="button" className="date-range-toggle" aria-label={`${{position:'机型定位',brand:'品牌',generation:'代际',series:'型号系列',detail:'明细'}[key]}日期范围`} aria-pressed={fullDates[key]} onClick={() => setFullDates(current => ({...current,[key]:!current[key]}))}>{fullDates[key] ? '收起至最近15次' : `展示全量（${dates.length}次）`}</button>;
   const latestDate = dates.at(-1) ?? '--';
   const previousDate = dates.at(-2) ?? latestDate;
   const brandCount = dataset?.brands.length ?? 0;
@@ -2828,6 +2845,110 @@ export default function App() {
                             {brand.directionSummary.up}涨 / {brand.directionSummary.down}跌 / {brand.directionSummary.flat}平
                           </td>
                           {rangeDates.brand.map((date) => {
+                            const point = brand.snapshotAvgs.find((item) => item.date === date);
+                            return (
+                              <td key={`${brand.brand}-${date}`} className="px-6 py-2.5 text-sm font-medium">
+                                {point ? formatPrice(point.avgPrice) : '--'}
+                              </td>
+                            );
+                          })}
+                          <td className="px-6 py-2.5 text-sm text-gray-500">{formatPrice(brand.avgLaunch)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="mb-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-6">
+                <div>
+                  <h2 className="text-lg font-bold">代际透视表 (汇总层)</h2>
+                  <p className="mt-1 text-xs text-gray-500">日期列最新在前；走势从左到右：发布 → 最新；默认最近15次，可展开全量；发布均价置于末列。沿用工作台当前代际配置（N / N-1 / N-2 / 更早），全量 SKU 等权平均。</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  {dateRangeControl('generation')}
+                  <span className="rounded bg-orange-50 px-2 py-1 text-[10px] font-bold uppercase text-orange-600">
+                    {rangeDates.generation.at(-1)} - {rangeDates.generation[0]} Data
+                  </span>
+                </div>
+              </div>
+              {generationError ? <p className="p-6 text-sm text-orange-600">代际配置读取失败，请刷新重试</p> : !generationModels ? <p className="p-6 text-sm text-gray-500">正在读取代际配置…</p> : null}
+              <div className="overflow-x-auto">
+                <table className="min-w-max border-collapse text-left">
+                  <thead>
+                    <tr className="bg-gray-50/50">
+                      <th className="sticky left-0 z-30 min-w-[150px] border-r border-gray-100 bg-gray-50/95 px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">
+                        代际
+                      </th>
+                      <th className="sticky left-[150px] z-20 min-w-[110px] border-r border-gray-100 bg-gray-50/95 px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">
+                        SKU 数
+                      </th>
+                      <th className="sticky left-[260px] z-10 min-w-[210px] border-r border-gray-100 bg-gray-50/95 px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">
+                        均价走势
+                      </th>
+                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">最新环比 (金额)</th>
+                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">最新方向结构</th>
+                      {rangeDates.generation.map((date) => (
+                        <th key={date} className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">
+                          {date} 均价
+                        </th>
+                      ))}
+                      <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">发布均价</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {generationPivotAnalysis.map((brand) => {
+                      const displayChange = { diff: brand.diff, diffPct: brand.diffPct };
+                      const isFlat = isZeroChange(displayChange.diffPct);
+                      const rowClassName = isFlat
+                        ? 'group bg-white hover:bg-gray-50'
+                        : displayChange.diffPct > 0
+                          ? 'group bg-orange-50/40 hover:bg-orange-50/70'
+                          : 'group bg-blue-50/40 hover:bg-blue-50/70';
+                      const stickyClassName = isFlat
+                        ? 'bg-white group-hover:bg-gray-50'
+                        : displayChange.diffPct > 0
+                          ? 'bg-orange-50'
+                          : 'bg-blue-50';
+
+                      return (
+                        <tr key={brand.brand} className={`transition-colors ${rowClassName}`}>
+                          <td
+                            className={`sticky left-0 z-30 min-w-[150px] border-r border-gray-100 px-6 py-2.5 text-sm font-bold shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] ${stickyClassName}`}
+                          >
+                            {brand.brand}
+                          </td>
+                          <td
+                            className={`sticky left-[150px] z-20 min-w-[110px] border-r border-gray-100 px-6 py-2.5 text-sm font-semibold text-gray-600 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.04)] ${stickyClassName}`}
+                          >
+                            {brand.skuCount}
+                          </td>
+                          <td
+                            className={`sticky left-[260px] z-10 min-w-[210px] border-r border-gray-100 px-4 py-2 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.03)] ${stickyClassName}`}
+                          >
+                            <SeriesTrendChart points={brand.trendData.filter(point => rangeDates.generation.includes(point.date) || point.date === '发布')} diffPct={displayChange.diffPct} />
+                          </td>
+                          <td className="px-6 py-2.5">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${getChangeBadgeClass(displayChange.diffPct)}`}
+                            >
+                              {isZeroChange(displayChange.diffPct) ? (
+                                <Minus size={12} />
+                              ) : displayChange.diffPct > 0 ? (
+                                <ArrowUpRight size={12} />
+                              ) : (
+                                <ArrowDownRight size={12} />
+                              )}
+                              {Math.abs(displayChange.diffPct).toFixed(1)}% ({displayChange.diff > 0 ? '+' : ''}
+                              {Math.round(displayChange.diff)})
+                            </span>
+                          </td>
+                          <td className="px-6 py-2.5 text-sm font-semibold text-gray-600">
+                            {brand.directionSummary.up}涨 / {brand.directionSummary.down}跌 / {brand.directionSummary.flat}平
+                          </td>
+                          {rangeDates.generation.map((date) => {
                             const point = brand.snapshotAvgs.find((item) => item.date === date);
                             return (
                               <td key={`${brand.brand}-${date}`} className="px-6 py-2.5 text-sm font-medium">

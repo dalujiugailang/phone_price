@@ -1,0 +1,26 @@
+{
+  "releasedAt": "2026-11-02",
+  "url": "https://gtmdudu.xyz/",
+  "image": "sha256:640b874cfb49b5b01d360800f0bd7ed2d6e0e32fd89a36138d10ee9f542c63cb",
+  "rollbackImage": "gtm-price-monitor-app:rollback-20261102-ui",
+  "archive": "/www/wwwroot/gtm-price-monitor/.archive/release-20261102-ui",
+  "frontendAsset": "index-Dy6PjFZc.js",
+  "scope": "frontend only; existing backend image and data mounts retained",
+  "checks": {
+    "typecheck": true,
+    "build": true,
+    "containerHealthy": true,
+    "healthStatus": 200,
+    "warehouseLastError": null,
+    "seriesRows": 128,
+    "historyLines": 3,
+    "historyLegend": [
+      "挂牌价（物品价）",
+      "到手价（国补后）",
+      "优惠券"
+    ],
+    "historyWidth": 1187,
+    "tableWidth": 1223,
+    "workbenchDeepLink": true
+  }
+}

@@ -53,3 +53,25 @@ test('新型号-SKU视图与既有后端汇总保留相同SKU集合', () => {
   oldEntries.push(...Object.values(old.mixed).flat().flatMap(r => r.entries.map(e => e.storage)));
   assert.deepEqual(buildSummaryModels(samples).flatMap(r => r.entries.map(e => e.storage)).sort(), oldEntries.sort());
 });
+
+test('到手价按实际差值划分；组成同向不能推断结果', async () => {
+  const { finalDirection } = await import('./changeSummary.ts');
+  assert.equal(finalDirection({...sku('a','A',100,100), finalPriceDiff:-50}), 'down');
+  assert.equal(finalDirection({...sku('b','A',100,100), finalPriceDiff:50}), 'up');
+  assert.equal(finalDirection({...sku('c','A',100,100), finalPriceDiff:20}), 'flat');
+  assert.equal(finalDirection({...sku('d','A',100,100), finalPriceDiff:null}), 'missing');
+});
+
+test('到手价报告保留组合型号单项SKU、组成抵消和仅最终价格变化', async () => {
+  const { buildFinalSummaryModels, finalDirection } = await import('./changeSummary.ts');
+  const rows = buildFinalSummaryModels([
+    {...sku('a','A',100,100), finalPriceDiff:0},
+    {...sku('b','A',100,0), finalPriceDiff:100},
+    {...sku('c','B',0,0), finalPriceDiff:-21},
+    {...sku('d','C',20,20), finalPriceDiff:20},
+    {...sku('e','D',100,0), finalPriceDiff:null},
+  ]);
+  assert.deepEqual(rows.flatMap(r=>r.entries.map(s=>s.id)).sort(), ['a','b','c','e']);
+  assert.equal(rows.find(r=>r.model==='A').entries.length,2);
+  assert.equal(finalDirection(rows.find(r=>r.model==='D').entries[0]), 'missing');
+});

@@ -34,3 +34,10 @@ export function buildBrandPivot(skus: SKUData[], dates: string[]) {
       trendData: [...(avgLaunch > 0 ? [{ date: '发布', avgPrice: avgLaunch }] : []), ...snapshotAvgs], directionSummary };
   }).sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff) || a.brand.localeCompare(b.brand, 'zh-Hans-CN'));
 }
+
+export function buildGenerationPivot(skus: SKUData[], dates: string[], models: { name: string; generation: string }[]) {
+  const configured = new Map(models.map(model => [model.name.trim(), model.generation]));
+  const order = ['N', 'N-1', 'N-2', '更早', '未配置'];
+  return buildBrandPivot(skus.map(sku => ({ ...sku, brand: configured.get(sku.model.trim()) || '未配置' })), dates)
+    .sort((a, b) => order.indexOf(a.brand) - order.indexOf(b.brand));
+}

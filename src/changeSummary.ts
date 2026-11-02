@@ -7,6 +7,7 @@ export interface SummarySku {
   storage: string;
   listPriceDiff: number;
   couponDiff: number;
+  finalPriceDiff?: number | null;
 }
 export interface SummaryModel {
   key: string;
@@ -50,4 +51,28 @@ export function summarizeAmounts(values: number[]) {
     parts.push({ direction, label: `${direction === 'up' ? '↑' : '↓'}${fmt(min)}${min === max ? '' : `–${fmt(max)}`}` });
   }
   return parts;
+}
+
+
+export type FinalDirection = 'down' | 'up' | 'flat' | 'missing';
+export function finalDirection(sku: SummarySku): FinalDirection {
+  const value = sku.finalPriceDiff;
+  return value == null || !Number.isFinite(value) ? 'missing' : Math.abs(value) <= SUMMARY_THRESHOLD ? 'flat' : value > 0 ? 'up' : 'down';
+}
+
+// The direction report includes every qualifying SKU, including single-component
+// siblings of combined SKUs and final-price changes without component changes.
+export function buildFinalSummaryModels(skus: SummarySku[]): SummaryModel[] {
+  const groups = new Map<string, SummaryModel>();
+  for (const sku of skus) {
+    const list = hasSummaryChange(sku.listPriceDiff), coupon = hasSummaryChange(sku.couponDiff);
+    if (!list && !coupon && !hasSummaryChange(sku.finalPriceDiff ?? 0)) continue;
+    const key = sku.model;
+    const group = groups.get(key) ?? {key, model: sku.model, category: 'list', entries: [], magnitude: 0};
+    group.entries.push(sku);
+    group.magnitude = Math.max(group.magnitude, Math.abs(sku.finalPriceDiff ?? 0));
+    groups.set(key, group);
+  }
+  return [...groups.values()].map(group => ({...group, entries: group.entries.sort((a,b) => a.storage.localeCompare(b.storage, 'zh-CN', {numeric:true}))}))
+    .sort((a,b) => b.magnitude - a.magnitude || a.model.localeCompare(b.model, 'zh-CN'));
 }

@@ -118,8 +118,8 @@ export function SkuVolatilityRanking({ skus, dates }: { skus: VolatilitySKU[]; d
   }, [open]);
 
   return <section className="sku-race-card" aria-label="SKU 波动排行榜">
-    <div className="sku-race-heading"><h2><TrendingUp size={20} aria-hidden="true" />SKU 波动排行榜 <span>TOP 5</span></h2><span className="sku-race-live">最新</span></div>
-    <div className="sku-race-meta"><span>{previousDate ?? '--'} → {date ?? '--'}</span><span>按 |涨跌幅| 降序</span></div>
+    <div className="sku-race-heading"><h2><TrendingUp size={20} aria-hidden="true" />SKU 波动排行榜 <span>TOP 5</span></h2><span className="sku-race-live">{previousDate ?? '--'} → {date ?? '--'} DATA</span></div>
+    <div className="sku-race-meta"><span>国补后到手价</span><span>按 |涨跌幅| 降序</span></div>
     <div className="sku-race-chart">
       <div className="sku-race-rows">
         {top.map((row, index) => {
