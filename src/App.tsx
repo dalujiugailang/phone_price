@@ -44,6 +44,7 @@ import { PriceWorkbench } from './PriceWorkbench';
 import { ChangeSummaryPanel } from './ChangeSummaryPanel';
 import { SkuVolatilityRanking } from './SkuVolatilityRanking';
 import { buildBrandPivot, buildGenerationPivot } from './brandPivot';
+import { buildDetailWorkbook } from './detailExport';
 
 type ViewMode = 'dashboard' | 'summary' | 'risk' | 'marketTrend' | 'weeklySales' | 'industryExpert' | 'table' | 'raw';
 const NAV_ITEMS: Array<{ id: ViewMode; label: string; description: string; icon: typeof LayoutDashboard }> = [
@@ -3102,7 +3103,20 @@ export default function App() {
                 <h2 className="text-lg font-bold">SKU 趋势明细 (发售价 - {latestDate})</h2>
                 <p className="mt-1 text-sm text-gray-500">深度展示每日国补后价格、挂牌价及优惠券变动明细；价格趋势从左到右：最新 → 最早，悬停查看报价</p>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  disabled={filteredSKUs.length === 0}
+                  title="按当前筛选和日期范围下载汇总、数仓类明细"
+                  onClick={() => {
+                    const workbook = buildDetailWorkbook(filteredSKUs, rangeDates.detail,
+                      (id, date) => String(rawCouponBySku.get(id)?.[date]?.coupon ?? '').trim() !== '');
+                    XLSX.writeFile(workbook, `新机售价明细_${latestDate}.xlsx`);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-orange-300 hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Download size={16} /> 下载
+                </button>
                 {dateRangeControl('detail')}
                 <span className="text-sm font-semibold text-gray-500">最新归因筛选</span>
                 <div className="relative">

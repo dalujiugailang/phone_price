@@ -1,0 +1,32 @@
+{
+  "releasedAt": "2026-11-02T17:35:00+08:00",
+  "url": "https://gtmdudu.xyz/",
+  "image": "sha256:9f321b74015b1e71120451b522a77d8b3b1dd55cac181fc7fb20abe6e5ec4005",
+  "rollbackImage": "gtm-price-monitor-app:rollback-20261102-detail-download",
+  "archive": "/www/wwwroot/gtm-price-monitor/.archive/release-20261102-detail-download",
+  "scope": "Frontend detail download: summary wide sheet and SKU/date detail sheet. Existing backend and data mounts retained.",
+  "frontendAsset": "index-DLNLSvh3.js",
+  "frontendSha256": "5536c79a33da427404cad54b49aea216eeab3ad91db1ed5d73065cc4559620ef",
+  "checks": {
+    "typecheck": true,
+    "build": true,
+    "exportRoundTripTest": true,
+    "containerHealth": "healthy",
+    "healthOk": true,
+    "warehouseLastError": null,
+    "productionBusinessTablesUnchanged": true,
+    "outboxPending": 0,
+    "localCloudAssetHashesMatch": true
+  },
+  "browserChecks": {
+    "realDownloadCompleted": true,
+    "sheetNames": ["汇总", "数仓类明细"],
+    "default": {"skuRows": 453, "dateCount": 15, "detailRows": 6795},
+    "filteredAllDates": {"brand": "华为", "search": "Mate 80", "skuRows": 13, "dateCount": 50, "detailRows": 650},
+    "wideLongSheetsReconcile": true,
+    "priceCellsMatchingCloudPage": 1950,
+    "zeroAndMissingCouponsDistinct": true,
+    "emptyResultDownloadDisabled": true
+  },
+  "evidenceDirectory": "outputs/cloud-release-20261102-detail-download"
+}

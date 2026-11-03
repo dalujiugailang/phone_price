@@ -1,0 +1,23 @@
+{
+  "source": "/Users/dudu_1/Desktop/trae/重点日常项目/【GTM】新机售价监控分析系统/data/android-e2e/browser-verified-20261102",
+  "latest": "2026-11-01",
+  "rows": {
+    "最新日经营": 2190,
+    "回收价格": 3631,
+    "普通回收竞争": 1446,
+    "换新竞争": 274,
+    "销售价格": 7511,
+    "历史经营明细": 191729,
+    "型号资料": 2389,
+    "数据质量": 5,
+    "字段说明": 28
+  },
+  "output": "/Users/dudu_1/Desktop/trae/重点日常项目/【GTM】新机售价监控分析系统/outputs/android-e2e-excel-01a19be9/安卓端到端看板数据_20261101.xlsx",
+  "historical_rows_verified": 191729,
+  "history_samples": {
+    "6": "OPPO K10 (活力版)",
+    "95870": "荣耀 9X",
+    "191734": "谷歌 Pixel 4"
+  },
+  "bytes": 15000028
+}

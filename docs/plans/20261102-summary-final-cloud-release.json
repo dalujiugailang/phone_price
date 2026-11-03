@@ -1,0 +1,59 @@
+{
+  "releasedAt": "2026-11-02T14:15:28.556708+08:00",
+  "url": "https://gtmdudu.xyz/",
+  "sourceCommit": "3914660",
+  "image": "sha256:77987fe8e07cd109e0a524d5eac01dc5764d44296e440500d9bf3056b50b83b7",
+  "rollbackImage": "gtm-price-monitor-app:rollback-20261102-summary-final",
+  "archive": "/www/wwwroot/gtm-price-monitor/.archive/release-20261102-summary-final",
+  "frontendAsset": "index-7JplMbn9.js",
+  "frontendSha256": "b10eab99db8545a382e1cd3fb2bb0bdbb5d097e76e0e29d98b771a37f6722d14",
+  "scope": "All requested page updates; frontend built locally; existing production backend image and data mounts retained",
+  "changes": [
+    "ranking date badge",
+    "generation pivot",
+    "actual post-subsidy direction summary",
+    "shared three-line history chart",
+    "default collapsed inline SKU details and whole-row toggle",
+    "workbench date/SKU deep link",
+    "consistent field labels without delta symbols",
+    "newest-first history quote table",
+    "search icon, focus style and clear button"
+  ],
+  "checks": {
+    "typecheck": true,
+    "build": true,
+    "ruleTestsPassed": 15,
+    "containerHealth": "healthy",
+    "warehouseLastError": null,
+    "scheduleEnabled": true,
+    "productionBusinessTablesUnchanged": [
+      "models",
+      "skus",
+      "daily",
+      "revisions",
+      "formal_price_publications"
+    ],
+    "outboxPending": 0,
+    "localHostContainerAssetHashesMatch": true
+  },
+  "browserChecks": {
+    "generationRows": {
+      "N": 207,
+      "N-1": 229
+    },
+    "fullGenerationDateColumns": 55,
+    "summaryDirections": {
+      "down": 119,
+      "up": 27
+    },
+    "historyDefaultCollapsed": true,
+    "detailsImmediatelyBelowClickedSku": true,
+    "historyLines": 3,
+    "historyTableFirstDate": "10.29",
+    "historyTableLastDate": "发布",
+    "searchAndClear": true,
+    "workbenchTargetHighlighted": true,
+    "originalRankingHistoryLines": 3
+  },
+  "screenshot": "outputs/cloud-release-20261102-summary-final/cloud-summary.png"
+}

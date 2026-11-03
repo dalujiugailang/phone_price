@@ -1,0 +1,24 @@
+{
+  "sheetNames": [
+    "汇总",
+    "数仓类明细"
+  ],
+  "skuRows": 13,
+  "dateCount": 50,
+  "detailRows": 650,
+  "firstDate": "11.02",
+  "lastDate": "3.16",
+  "brands": [
+    "华为"
+  ],
+  "models": [
+    "华为 Mate 80 Pro Max 风驰版",
+    "华为 Mate 80 Pro Max",
+    "华为 Mate 80 Pro",
+    "华为 Mate 80",
+    "华为 Mate 80 RS 非凡大师"
+  ],
+  "zeroCoupons": 260,
+  "missingCoupons": 162,
+  "wideLongReconcile": true
+}
