@@ -22,7 +22,7 @@ export function registerPriceWorkbenchRoutes(app,service) {
     if(!validOrigin(req))throw fault(403,'请求来源不允许');
     if(p.startsWith('/workbench/'))return next();
     if(/^\/weekly-sales\/automation\/jobs\//.test(p))return next();
-    if(['/bi-price-lookup','/expert/ask','/expert/ask/stream'].includes(p))return next();
+    if(['/bi-price-lookup','/risk-price-diagnostics','/expert/ask','/expert/ask/stream'].includes(p))return next();
     if(p==='/raw-editor-draft'){
       if(req.body?.workbookSyncMode==='latestBiPriceOnly')return res.json(service.updateBiPrices(req.body,requireUser(req,'admin')));
       throw fault(410,'整表写入已关闭，请使用每日采价工作台');

@@ -45,6 +45,7 @@ import { ChangeSummaryPanel } from './ChangeSummaryPanel';
 import { SkuVolatilityRanking } from './SkuVolatilityRanking';
 import { buildBrandPivot, buildGenerationPivot } from './brandPivot';
 import { buildDetailWorkbook } from './detailExport';
+import { RiskPriceDiagnosticsPanel } from './RiskPriceDiagnosticsPanel';
 
 type ViewMode = 'dashboard' | 'summary' | 'risk' | 'marketTrend' | 'weeklySales' | 'industryExpert' | 'table' | 'raw';
 const NAV_ITEMS: Array<{ id: ViewMode; label: string; description: string; icon: typeof LayoutDashboard }> = [
@@ -1758,7 +1759,10 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const deferredSearchTerm = useDeferredValue(searchTerm);
-  const [view, setView] = useState<ViewMode>(() => new URLSearchParams(window.location.search).get('view') === 'raw' ? 'raw' : 'dashboard');
+  const [view, setView] = useState<ViewMode>(() => {
+    const requested = new URLSearchParams(window.location.search).get('view');
+    return NAV_ITEMS.some(item => item.id === requested) ? requested as ViewMode : 'dashboard';
+  });
   const [detailBrand, setDetailBrand] = useState('all');
   const [fullDates, setFullDates] = useState({ position: false, brand: false, generation: false, series: false, detail: false });
   const [positionPivotScope, setPositionPivotScope] = useState<PositionPivotScope>('stable');
@@ -2323,7 +2327,7 @@ export default function App() {
       setBiPriceRows(lookupResult.rows);
       setRiskConfirmedAt(null);
       const matchedCount = lookupResult.rows.filter((row) => row.matched && row.biPrice).length;
-      setRiskMessage(`已拉取 ${matchedCount}/${lookupResult.rows.length} 条 BI 出货价，请核对后确认落数`);
+      setRiskMessage(`已拉取 ${matchedCount}/${lookupResult.rows.length} 条 BI 出货价，接口日期 ${lookupResult.dataDate ?? '未知'}；当前售价日期 ${latestDate}，请核对后确认落数`);
     } catch (lookupError) {
       setBiPriceRows([]);
       setRiskConfirmedAt(null);
@@ -3305,6 +3309,13 @@ function RiskMonitorPanel({
 }) {
   const [riskFilter, setRiskFilter] = useState<RiskLevel | 'all'>('all');
   const filteredRows = riskFilter === 'all' ? riskRows : riskRows.filter((row) => row.riskLevel === riskFilter);
+  const diagnosticTargets = riskRows.filter(row => row.riskLevel === 'high').map(row => {
+    const priceDate = row.latestSnapshot?.date ?? latestDate;
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(priceDate) ? priceDate : undefined;
+    return { model: row.sku.model, storage: row.sku.storage, ppv: row.sku.ppv,
+      date, riskPriceDate: priceDate, riskBiPrice: row.biPrice,
+      retailFinalPrice: row.latestSnapshot?.finalPrice ?? null };
+  });
 
   return (
     <div className="space-y-6">
@@ -3336,6 +3347,8 @@ function RiskMonitorPanel({
           icon={<Database className="text-gray-500" />}
         />
       </div>
+
+      <RiskPriceDiagnosticsPanel targets={diagnosticTargets} />
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         <div className="flex flex-col gap-4 border-b border-gray-100 p-6 lg:flex-row lg:items-start lg:justify-between">

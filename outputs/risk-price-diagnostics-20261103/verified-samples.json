@@ -1,0 +1,367 @@
+{
+  "sample": false,
+  "sourceUrl": "https://atrenew.feishu.link/app/app_17h053qz13d/",
+  "exportedAt": "2026-11-02T11:31:58.222852+00:00",
+  "sourceDate": "2026-11-01",
+  "method": "参照源看板阈值本地重算；日期轴异常字段不参与，不代表人工确认。BI反算值与daily price API的BI出货价分开。",
+  "rows": [
+    {
+      "model": "真我 Neo8",
+      "storage": "12GB+512GB",
+      "grade": "A+",
+      "os": "—",
+      "asOf": "2026-10-29",
+      "variant": "12GB+512GB|—|A+",
+      "availableVariants": [
+        "12GB+512GB|—|A1",
+        "12GB+512GB|—|D+1",
+        "12GB+512GB|—|A2",
+        "12GB+512GB|—|A+",
+        "12GB+512GB|—|A4",
+        "12GB+512GB|—|A3",
+        "12GB+512GB|—|A"
+      ],
+      "inputPpv": null,
+      "riskPriceDate": "10.29",
+      "riskBiPrice": 3204,
+      "retailFinalPrice": 2634,
+      "selectedVolume": 1,
+      "selectionDays": 30,
+      "selectionMethod": "同型号同存储规格成交量最多的PPV",
+      "scope": "先选同型号同规格成交最多的变体，再锁定该变体取整条价格链；源数据不区分颜色。该成交变体可与风险表S等级不同，诊断不修改原风险判定。",
+      "status": "partial",
+      "metrics": [
+        {
+          "id": "p1",
+          "label": "P1销售参考价",
+          "value": null,
+          "points": 0,
+          "dates": [],
+          "basis": "订单成交日"
+        },
+        {
+          "id": "tob",
+          "label": "B端实际出货价",
+          "value": null,
+          "points": 0,
+          "dates": [],
+          "basis": "销售日"
+        },
+        {
+          "id": "toc",
+          "label": "C端实际结算价",
+          "value": null,
+          "points": 0,
+          "dates": [],
+          "basis": "销售日"
+        },
+        {
+          "id": "bi",
+          "label": "BI价（反算）",
+          "value": null,
+          "points": 0,
+          "dates": [],
+          "basis": "订单创建日"
+        },
+        {
+          "id": "base",
+          "label": "基准价",
+          "value": null,
+          "points": 0,
+          "dates": [],
+          "basis": "订单创建日"
+        },
+        {
+          "id": "item",
+          "label": "回收物品价",
+          "value": null,
+          "points": 0,
+          "dates": [],
+          "basis": "订单创建日"
+        }
+      ],
+      "diagnoses": [
+        {
+          "title": "周转系数是否合理",
+          "verdict": "周转系数需回撤",
+          "owner": "周转策略维护",
+          "evidence": "周转4.7天；近3天进销比0.50；系数-2.0%"
+        }
+      ],
+      "warnings": [
+        "缺少：P1销售参考价、B端实际出货价、C端实际结算价、BI价（反算）、基准价、回收物品价；相关判断暂缺。"
+      ],
+      "windowDays": 7,
+      "windowFrom": "2026-10-23",
+      "mix": {
+        "days": 7,
+        "points": 7,
+        "toc": 14,
+        "tob": 1,
+        "unknown": 0,
+        "shareC": 0.9333333333333333,
+        "mode": "toc"
+      },
+      "coefficient": -0.02,
+      "coefficientDate": "2026-10-29",
+      "strategyName": "安卓热门品牌策略（3d>50）",
+      "strategyType": "常规周转策略",
+      "turnoverDays": 4.666666666666667,
+      "purchaseSalesRatio3d": 0.5,
+      "reason": "部分字段缺失或源日期轴异常，仅对有效字段给出判断。"
+    },
+    {
+      "model": "真我 Neo8",
+      "storage": "12GB+256GB",
+      "grade": "A+",
+      "os": "—",
+      "asOf": "2026-10-29",
+      "variant": "12GB+256GB|—|A+",
+      "availableVariants": [
+        "12GB+256GB|—|A1",
+        "12GB+256GB|—|A+",
+        "12GB+256GB|—|C+1",
+        "12GB+256GB|—|C1",
+        "12GB+256GB|—|B1",
+        "12GB+256GB|—|B",
+        "12GB+256GB|—|C+",
+        "12GB+256GB|—|D+1",
+        "12GB+256GB|—|A2",
+        "12GB+256GB|—|C2",
+        "12GB+256GB|—|D1",
+        "12GB+256GB|—|A3",
+        "12GB+256GB|—|A",
+        "12GB+256GB|—|A4",
+        "12GB+256GB|—|F+",
+        "12GB+256GB|—|C+2"
+      ],
+      "inputPpv": null,
+      "riskPriceDate": "10.29",
+      "riskBiPrice": 2744,
+      "retailFinalPrice": 2209,
+      "selectedVolume": 7,
+      "selectionDays": 7,
+      "selectionMethod": "同型号同存储规格成交量最多的PPV",
+      "scope": "先选同型号同规格成交最多的变体，再锁定该变体取整条价格链；源数据不区分颜色。该成交变体可与风险表S等级不同，诊断不修改原风险判定。",
+      "status": "partial",
+      "metrics": [
+        {
+          "id": "p1",
+          "label": "P1销售参考价",
+          "value": 2267.75,
+          "points": 4,
+          "dates": [
+            "2026-10-23",
+            "2026-10-24",
+            "2026-10-25",
+            "2026-10-29"
+          ],
+          "basis": "订单成交日"
+        },
+        {
+          "id": "tob",
+          "label": "B端实际出货价",
+          "value": null,
+          "points": 0,
+          "dates": [],
+          "basis": "销售日"
+        },
+        {
+          "id": "toc",
+          "label": "C端实际结算价",
+          "value": 2223.5,
+          "points": 2,
+          "dates": [
+            "2026-10-27",
+            "2026-10-29"
+          ],
+          "basis": "销售日"
+        },
+        {
+          "id": "bi",
+          "label": "BI价（反算）",
+          "value": null,
+          "points": 0,
+          "dates": [],
+          "basis": "订单创建日"
+        },
+        {
+          "id": "base",
+          "label": "基准价",
+          "value": null,
+          "points": 0,
+          "dates": [],
+          "basis": "订单创建日"
+        },
+        {
+          "id": "item",
+          "label": "回收物品价",
+          "value": null,
+          "points": 0,
+          "dates": [],
+          "basis": "订单创建日"
+        }
+      ],
+      "diagnoses": [
+        {
+          "title": "P1 vs C端实际结算价",
+          "verdict": "P1合理",
+          "difference": 0.019901056892286936,
+          "owner": "P1定价维护",
+          "evidence": "P1 2267.75元；C端实际结算价 2223.50元；阈值±5%"
+        },
+        {
+          "title": "周转系数是否合理",
+          "verdict": "周转系数需回撤",
+          "owner": "周转策略维护",
+          "evidence": "周转4.7天；近3天进销比0.50；系数-2.0%"
+        }
+      ],
+      "warnings": [
+        "base与dc日期轴长度不一致（30/29），未参与计算",
+        "item与dc日期轴长度不一致（30/29），未参与计算",
+        "缺少：B端实际出货价、BI价（反算）、基准价、回收物品价；相关判断暂缺。"
+      ],
+      "windowDays": 7,
+      "windowFrom": "2026-10-23",
+      "mix": {
+        "days": 7,
+        "points": 7,
+        "toc": 14,
+        "tob": 1,
+        "unknown": 0,
+        "shareC": 0.9333333333333333,
+        "mode": "toc"
+      },
+      "coefficient": -0.02,
+      "coefficientDate": "2026-10-29",
+      "strategyName": "安卓热门品牌策略（3d>50）",
+      "strategyType": "常规周转策略",
+      "turnoverDays": 4.666666666666667,
+      "purchaseSalesRatio3d": 0.5,
+      "reason": "部分字段缺失或源日期轴异常，仅对有效字段给出判断。"
+    },
+    {
+      "model": "真我 Neo8",
+      "storage": "16GB+512GB",
+      "grade": "A1",
+      "os": "—",
+      "asOf": "2026-10-29",
+      "variant": "16GB+512GB|—|A1",
+      "availableVariants": [
+        "16GB+512GB|—|A+",
+        "16GB+512GB|—|A1",
+        "16GB+512GB|—|F",
+        "16GB+512GB|—|D+1",
+        "16GB+512GB|—|C+",
+        "16GB+512GB|—|A3",
+        "16GB+512GB|—|B1",
+        "16GB+512GB|—|A4",
+        "16GB+512GB|—|C1",
+        "16GB+512GB|—|C+2",
+        "16GB+512GB|—|C+1",
+        "16GB+512GB|—|B"
+      ],
+      "inputPpv": null,
+      "riskPriceDate": "10.29",
+      "riskBiPrice": 3430,
+      "retailFinalPrice": 2899,
+      "selectedVolume": 1,
+      "selectionDays": 7,
+      "selectionMethod": "同型号同存储规格成交量最多的PPV",
+      "scope": "先选同型号同规格成交最多的变体，再锁定该变体取整条价格链；源数据不区分颜色。该成交变体可与风险表S等级不同，诊断不修改原风险判定。",
+      "status": "partial",
+      "metrics": [
+        {
+          "id": "p1",
+          "label": "P1销售参考价",
+          "value": 2545,
+          "points": 1,
+          "dates": [
+            "2026-10-24"
+          ],
+          "basis": "订单成交日"
+        },
+        {
+          "id": "tob",
+          "label": "B端实际出货价",
+          "value": null,
+          "points": 0,
+          "dates": [],
+          "basis": "销售日"
+        },
+        {
+          "id": "toc",
+          "label": "C端实际结算价",
+          "value": 2552,
+          "points": 2,
+          "dates": [
+            "2026-10-23",
+            "2026-10-24"
+          ],
+          "basis": "销售日"
+        },
+        {
+          "id": "bi",
+          "label": "BI价（反算）",
+          "value": null,
+          "points": 0,
+          "dates": [],
+          "basis": "订单创建日"
+        },
+        {
+          "id": "base",
+          "label": "基准价",
+          "value": null,
+          "points": 0,
+          "dates": [],
+          "basis": "订单创建日"
+        },
+        {
+          "id": "item",
+          "label": "回收物品价",
+          "value": null,
+          "points": 0,
+          "dates": [],
+          "basis": "订单创建日"
+        }
+      ],
+      "diagnoses": [
+        {
+          "title": "P1 vs C端实际结算价",
+          "verdict": "P1合理",
+          "difference": -0.00274294670846395,
+          "owner": "P1定价维护",
+          "evidence": "P1 2545.00元；C端实际结算价 2552.00元；阈值±5%"
+        },
+        {
+          "title": "周转系数是否合理",
+          "verdict": "周转系数需回撤",
+          "owner": "周转策略维护",
+          "evidence": "周转4.7天；近3天进销比0.50；系数-2.0%"
+        }
+      ],
+      "warnings": [
+        "缺少：B端实际出货价、BI价（反算）、基准价、回收物品价；相关判断暂缺。"
+      ],
+      "windowDays": 7,
+      "windowFrom": "2026-10-23",
+      "mix": {
+        "days": 7,
+        "points": 7,
+        "toc": 14,
+        "tob": 1,
+        "unknown": 0,
+        "shareC": 0.9333333333333333,
+        "mode": "toc"
+      },
+      "coefficient": -0.02,
+      "coefficientDate": "2026-10-29",
+      "strategyName": "安卓热门品牌策略（3d>50）",
+      "strategyType": "常规周转策略",
+      "turnoverDays": 4.666666666666667,
+      "purchaseSalesRatio3d": 0.5,
+      "reason": "部分字段缺失或源日期轴异常，仅对有效字段给出判断。"
+    }
+  ]
+}

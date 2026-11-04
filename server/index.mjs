@@ -12,6 +12,7 @@ import { registerWeeklySalesRoutes } from './lib/weekly-sales.mjs';
 import { createPriceWorkbench } from './lib/price-workbench.mjs';
 import { createMaishouProvider } from './lib/maishou-provider.mjs';
 import { registerPriceWorkbenchRoutes } from './lib/price-workbench-routes.mjs';
+import { registerAndroidRiskDiagnosticsRoutes } from './lib/android-risk-diagnostics.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,7 +33,7 @@ const port = Number(process.env.PORT || process.env.PRICE_MONITOR_API_PORT || 87
 const dailyPriceLookupUrl = process.env.DAILY_PRICE_LOOKUP_URL || 'http://127.0.0.1:8765/api/lookup';
 const dailyPriceTokenPath =
   process.env.DAILY_PRICE_TOKEN_PATH ||
-  '/Users/dudu/Desktop/trae/重点日常项目/【daily price】/data/api_token.txt';
+  path.join(projectRoot, '..', '【daily price】', 'data', 'api_token.txt');
 
 const app = express();
 let rawDatabase;
@@ -59,6 +60,7 @@ const workbench = createPriceWorkbench({
   onPublished: () => warehouseRefresh.refresh('published-price'),
 });
 registerPriceWorkbenchRoutes(app, workbench);
+registerAndroidRiskDiagnosticsRoutes(app, { projectRoot });
 const weeklySalesService = registerWeeklySalesRoutes(app, {
   dataDir,
   applyMarketWeeks: applyAutomatedMarketWeeks,
